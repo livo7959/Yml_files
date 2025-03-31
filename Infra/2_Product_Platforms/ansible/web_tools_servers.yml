@@ -1,0 +1,11 @@
+---
+- name: Apply the following tasks
+  hosts: web_tools_servers
+  become: false
+  gather_facts: true
+  roles:
+    - add_user_to_local_IIS_IUSRS
+    - add_user_to_logon_as_a_batch_for_IIS_IUSRS
+    - add_user_to_impersonate_client_after_auth
+    - add_IIS_IUSRS_to_inetpub
+    - apply_svcaccount_to_IIS_app_pool

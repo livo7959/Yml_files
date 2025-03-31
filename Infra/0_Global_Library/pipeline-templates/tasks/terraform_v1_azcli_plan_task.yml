@@ -1,0 +1,25 @@
+parameters:
+  - name: terraformDirectory
+    type: string
+  - name: azureSubscriptionServiceConnectionName
+    type: string
+  - name: tfvarsFile
+    type: string
+  - name: outputFile
+    default: "terraform.tfplan"
+
+steps:
+  - task: AzureCLI@2
+    displayName: Terraform Plan
+    inputs:
+      azureSubscription: ${{ parameters.azureSubscriptionServiceConnectionName }}
+      workingDirectory: ${{ parameters.terraformDirectory }}
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        terraform plan -var-file=${{ parameters.tfvarsFile }} -out="$(Build.ArtifactStagingDirectory)/$(outputFile)"
+    env:
+      ARM_CLIENT_ID: $(armClientID)
+      ARM_CLIENT_SECRET: $(armClientSecret)
+      ARM_TENANT_ID: $(armTenantID)
+      ARM_SUBSCRIPTION_ID: $(armSubscriptionID)

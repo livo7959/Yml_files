@@ -1,0 +1,24 @@
+- name: Skip disk initiazation in check mode
+  meta: end_play
+  when: ansible_check_mode
+
+- name: Initialize a disk
+  community.windows.win_initialize_disk:
+    disk_number: "{{ item.disk_number}}"
+  loop: "{{ data_disks | default([])}}"
+
+- name: Create a partition with drive letter and partition size
+  community.windows.win_partition:
+    drive_letter: "{{ item.drive_letter}}"
+    partition_size: -1
+    disk_number: "{{ item.disk_number}}"
+  loop: "{{ data_disks | default([]) }}"
+
+- name: Quick format the newly created partition as NTFS and label
+  community.windows.win_format:
+    drive_letter: "{{ item.drive_letter}}"
+    file_system: NTFS
+    new_label: "{{ item.disk_label}}"
+    full: false
+    allocation_unit_size: "{{ item.allocation_unit_size}}"
+  loop: "{{ data_disks | default([]) }}"

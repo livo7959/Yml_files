@@ -1,0 +1,8 @@
+- name: Install Software from \\Corp\LH-ITInfra\Software
+  win_package:
+    path: "{{ item.software_install }}"
+    state: present
+    arguments: "{{ item.arguments | default('') }}"
+    product_id: "{{ item.product_id | default('') }}"
+  loop: "{{ software }}"
+# can find product id = registry: Computer\HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\ Folder name may be product id

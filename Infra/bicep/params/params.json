@@ -1,0 +1,167 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "management_groups": {
+      "value": [
+        {
+          "name": "logixhealth",
+          "display_name": "LogixHealth",
+          "management_groups": [
+            {
+              "name": "lh-landingzones",
+              "display_name": "LH Landing Zones",
+              "management_groups": [
+                {
+                  "name": "lh-corp",
+                  "display_name": "LH Corp",
+                  "management_groups": [
+                    {
+                      "name": "lh-corp-shared",
+                      "display_name": "LH Corp Shared",
+                      "subscriptions": [
+                        {
+                          "subscription_name": "LH-Corp-Shared-001",
+                          "workload_type": "Production",
+                          "billing_account_name": "500c2dab-e8af-5608-636f-2255ea5bff6f:75db6618-5564-4b1c-9a73-42085960f210_2019-05-31",
+                          "billing_profile_name": "5MN2-ODQT-BG7-PGB",
+                          "invoice_section_name": "3FCO-NQA2-PJA-PGB",
+                          "resource_groups": [
+                            {
+                              "name": "databricks",
+                              "location": "eastus",
+                              "resource_params": "resources/shared_databricks.json",
+                              "permission_params": "permissions/shared_databricks.json"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "name": "lh-corp-dev",
+                      "display_name": "LH Corp Development",
+                      "subscriptions": [
+                        {
+                          "subscription_name": "LH-Corp-Dev-001",
+                          "workload_type": "DevTest",
+                          "billing_account_name": "500c2dab-e8af-5608-636f-2255ea5bff6f:75db6618-5564-4b1c-9a73-42085960f210_2019-05-31",
+                          "billing_profile_name": "5MN2-ODQT-BG7-PGB",
+                          "invoice_section_name": "VG3G-OEEN-PJA-PGB",
+                          "resource_groups": [
+                            {
+                              "name": "data",
+                              "location": "eastus",
+                              "resource_params": "resources/data.json"
+                            },
+                            {
+                              "name": "data-incremental",
+                              "mode": "incremental",
+                              "location": "eastus",
+                              "resource_params": "resources/data-incremental.json"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "name": "lh-corp-prod",
+                      "display_name": "LH Corp Production",
+                      "subscriptions": [
+                        {
+                          "subscription_name": "LH-Corp-Prod-001",
+                          "workload_type": "Production",
+                          "billing_account_name": "500c2dab-e8af-5608-636f-2255ea5bff6f:75db6618-5564-4b1c-9a73-42085960f210_2019-05-31",
+                          "billing_profile_name": "5MN2-ODQT-BG7-PGB",
+                          "invoice_section_name": "3FCO-NQA2-PJA-PGB",
+                          "resource_groups": [
+                            {
+                              "name": "data",
+                              "location": "eastus",
+                              "resource_params": "resources/data.json"
+                            },
+                            {
+                              "name": "data-incremental",
+                              "location": "eastus",
+                              "resource_params": "resources/data-incremental.json"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "name": "lh-corp-infrastructure",
+                      "display_name": "LH Corp Infrastructure",
+                      "management_groups": [],
+                      "subscriptions": []
+                    }
+                  ],
+                  "subscriptions": []
+                },
+                {
+                  "name": "lh-online",
+                  "display_name": "LH Online",
+                  "management_groups": [],
+                  "subscriptions": []
+                }
+              ],
+              "subscriptions": []
+            },
+            {
+              "name": "lh-decommissioned",
+              "display_name": "LH Decommissioned",
+              "management_groups": [],
+              "subscriptions": []
+            },
+            {
+              "name": "lh-platform",
+              "display_name": "LH Platform",
+              "management_groups": [
+                {
+                  "name": "lh-platform-connectivity",
+                  "display_name": "LH Connectivity",
+                  "management_groups": [],
+                  "subscriptions": []
+                },
+                {
+                  "name": "lh-platform-identity",
+                  "display_name": "LH Identity",
+                  "management_groups": [],
+                  "subscriptions": []
+                },
+                {
+                  "name": "lh-platform-management",
+                  "display_name": "LH Management",
+                  "management_groups": [],
+                  "subscriptions": []
+                }
+              ],
+              "subscriptions": []
+            },
+            {
+              "name": "lh-sandbox",
+              "display_name": "LH Sandbox",
+              "management_groups": [],
+              "subscriptions": [
+                {
+                  "subscription_name": "LH-Sandbox-Data-001",
+                  "workload_type": "DevTest",
+                  "billing_account_name": "500c2dab-e8af-5608-636f-2255ea5bff6f:75db6618-5564-4b1c-9a73-42085960f210_2019-05-31",
+                  "billing_profile_name": "5MN2-ODQT-BG7-PGB",
+                  "invoice_section_name": "2LWA-HHQH-PJA-PGB",
+                  "resource_groups": [
+                    {
+                      "name": "data",
+                      "location": "eastus",
+                      "resource_params": "resources/data.json"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "subscriptions": []
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,4 @@
+- name: Download Microsoft ODBC Driver 17 for SQL Server installer
+  win_get_url:
+    url: https://go.microsoft.com/fwlink/?linkid=2266337
+    dest: C:\temp\msodbcsql.msi

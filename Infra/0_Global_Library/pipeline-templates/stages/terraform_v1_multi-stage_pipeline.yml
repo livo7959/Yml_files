@@ -1,0 +1,49 @@
+parameters:
+  - name: environmentObjects
+    type: object
+    default: []
+  - name: variableGroups
+    type: object
+    default: []
+  - name: config
+    type: object
+    default: []
+  - name: templateFileName
+    type: string
+    default: "main"
+  - name: templateDirectory
+    type: string
+    default: "infrastructure"
+  - name: workloadName
+    type: string
+    default: "SampleApp"
+  - name: outputFile
+    type: string
+
+stages:
+  - stage: "${{ parameters.workloadName }} Build"
+    variables:
+      - ${{ each variableGroup in parameters.variableGroups }}:
+          - group: ${{ variableGroup.name }}
+    jobs:
+      - job:
+        displayName: Build_${{ parameters.workloadName }}_${{ variableGroup.environmentName }}
+        steps:
+          - template: ../tasks/terraform_v1_install_task.yml
+
+          - template: ../tasks/terraform_v1_azcli_init_task.yml
+            parameters:
+              workloadName: ${{ parameters.workloadName }}
+              terraformDirectory: ${{ parameters.templateDirectory }}
+              azureSubscriptionServiceConnectionName: ${{ variableGroup.azureSubscriptionServiceConnectionName }}
+              terraformStateStorageAccountResourceGroupName: ${{ variableGroup.tfStateStorageAccountResourceGroupName }}
+              terraformStateStorageAccountName: ${{ variableGroup.tfStateStorageAccountName }}
+              terraformStateStorageAccountContainerName: ${{ variableGroup.tfStateStorageAccountContainerName }}
+              terraformStateKey: ${{ parameters.workloadName }}_${{ variableGroup.environmentName }}.tfstate
+
+          - template: ../tasks/terraform_v1_azcli_plan_task.yml
+            parameters:
+              terraformDirectory: ${{ variableGroup.terraformDirectory }}
+              azureSubscriptionServiceConnectionName: ${{ variableGroup.azureSubscriptionServiceConnectionName }}
+              tfvarsFile: ${{ variableGroup.environmentName }}
+              outputFile: ${{ parameters.outputFileName }}

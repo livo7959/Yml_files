@@ -1,0 +1,11 @@
+---
+- name: Apply the following tasks
+  hosts: infra_servers
+  become: false
+  gather_facts: true
+  roles:
+    - add_server_access
+    - install_pdqconnect_agent
+    - install_azurearc
+    - initialize_vm_disks
+    - create_scheduled_task

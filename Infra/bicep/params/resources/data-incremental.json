@@ -1,0 +1,29 @@
+{
+  "private_endpoints": [
+    {
+      "name": "logix-data-be",
+      "private_link_service_connections": [
+        {
+          "service_connection_name": "databricks-backend",
+          "group_ids": ["databricks_ui_api"],
+          "target_resource": {
+            "resource_type": "Microsoft.Databricks/workspaces",
+            "value": "logix-data",
+            "resource_group_name": "data"
+          }
+        }
+      ],
+      "private_dns_zones": [
+        {
+          "name": "privatelink.azuredatabricks.net",
+          "resource_group_name": "data"
+        }
+      ],
+      "network": {
+        "resource_group_name": "data",
+        "vnet": "vnet-databricks",
+        "subnet": "snet-databricks-private-link"
+      }
+    }
+  ]
+}

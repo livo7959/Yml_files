@@ -1,0 +1,10 @@
+---
+- name: Apply the following tasks
+  hosts: web_allscripts_servers
+  become: false
+  gather_facts: true
+  roles:
+    - add_server_access
+    - initialize_vm_disks
+    - install_azurearc
+    - install_IIS

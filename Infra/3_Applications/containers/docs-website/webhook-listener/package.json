@@ -1,0 +1,25 @@
+{
+  "name": "docs-webhook-listener",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsx ./scripts/build.ts",
+    "lint": "tsx ./scripts/lint.ts",
+    "start": "tsx ./src/main.ts",
+    "update": "npm-check-updates --upgrade"
+  },
+  "dependencies": {
+    "@azure/identity": "^4.6.0",
+    "@azure/keyvault-secrets": "^4.9.0",
+    "@fastify/basic-auth": "^6.0.3",
+    "complete-common": "^1.0.1",
+    "complete-node": "^1.7.4",
+    "fastify": "^5.2.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "complete-lint": "^1.12.2",
+    "npm-check-updates": "^17.1.14",
+    "typescript": "^5.7.3"
+  }
+}

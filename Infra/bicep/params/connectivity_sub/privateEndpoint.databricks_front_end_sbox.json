@@ -1,0 +1,33 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "env": {
+      "value": "sbox"
+    },
+    "privateEndpointName": {
+      "value": "pep-logix-data-fe-sbox"
+    },
+    "privateEndpointGroupIds": {
+      "value": "databricks_ui_api"
+    },
+    "virtualNetworkName": {
+      "value": "vnet-private-endpoint-eus-001"
+    },
+    "subnetName": {
+      "value": "snet-pe-shared-https-eus-001"
+    },
+    "privateDnsZoneName": {
+      "value": "privatelink.azuredatabricks.net"
+    },
+    "privateDnsZoneResourceGroupName": {
+      "value": "rg-net-hub-001"
+    },
+    "privateEndpointTargetResourceId": {
+      "value": "/subscriptions/8192a5d8-1a56-4caf-b961-0eae16cbd1d3/resourceGroups/rg-databricks-sbox/providers/Microsoft.Databricks/workspaces/logix-data-sbox"
+    },
+    "privateEndpointResourceGroupName": {
+      "value": "rg-private-endpoint-eus-001"
+    }
+  }
+}

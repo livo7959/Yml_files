@@ -1,0 +1,5 @@
+variables:
+  outputFile: terraform.tfplan
+  tfStateFile: rg-private-endpoint-eus
+  tfVarsFile: ./environments/prod.tfvars
+  workingDirectory: 1_GlobalInfra/connectivity-sub-eus/rg-private-endpoint-eus/infrastructure

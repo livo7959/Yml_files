@@ -1,0 +1,9 @@
+ansible_host: bednwlbf5002.logixhealth.com #10.10.248.52 #002 node primary as of 11/12/24
+ansible_user: "{{ username }}"
+ansible_httpapi_password: "{{ password }}"
+ansible_httpapi_port: 443
+ansible_network_os: f5networks.f5_bigip.bigip
+ansible_httpapi_use_ssl: yes
+ansible_httpapi_validate_certs: no
+ansible_port: 443
+ansible_connection: httpapi

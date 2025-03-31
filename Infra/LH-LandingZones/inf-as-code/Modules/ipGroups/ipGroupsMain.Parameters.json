@@ -1,0 +1,15 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "ipgName": {
+      "value": "ipg-vnet-iaas-shared-dev-eus-001"
+    },
+    "tagUsage": {
+      "value": "vnet to AD DS FW Rules"
+    },
+    "ipAddresses": {
+      "value": ["10.120.128.0/23"]
+    }
+  }
+}

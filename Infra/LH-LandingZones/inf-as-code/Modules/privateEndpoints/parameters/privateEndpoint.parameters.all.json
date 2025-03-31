@@ -1,0 +1,33 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "env": {
+      "value": "sbox"
+    },
+    "privateEndpointName": {
+      "value": "pep-lhappstrsbox001"
+    },
+    "privateEndpointGroupIds": {
+      "value": "blob"
+    },
+    "virtualNetworkName": {
+      "value": "vnet-private-endpoint-eus-001"
+    },
+    "subnetName": {
+      "value": "snet-pe-shared-https-eus-001"
+    },
+    "privateDnsZoneName": {
+      "value": "privatelink.blob.core.windows.net"
+    },
+    "privateDnsZoneResourceGroupName": {
+      "value": "rg-net-hub-001"
+    },
+    "priavteEndpointTargetResourceId": {
+      "value": "/subscriptions/8f9efb95-0a8c-45db-8071-2085c72e48c2/resourceGroups/rg-storage-app-sbox-001/providers/Microsoft.Storage/storageAccounts/lhappstrsbox001"
+    },
+    "privateEndpointResourceGroupName": {
+      "value": "rg-private-endpoint-eus-001"
+    }
+  }
+}

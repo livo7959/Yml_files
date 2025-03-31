@@ -1,0 +1,18 @@
+# This template installs Terraform using the `TerraformInstaller` task:
+# https://github.com/jason-johnson/azure-pipelines-tasks-terraform/blob/main/overview.md
+
+# It abstracts away:
+# - Specifying the version of Terraform. (If "latest" is specified, then version 1.1.6 will be
+#   used instead of the actual latest version.)
+
+# Note that this template can only be used on Windows Agents since Linux agents are required to
+# specify a custom certificate. See v2 of this task for Linux agents.
+
+steps:
+  # Using `TerraformInstaller@2` does not work, even though the documentation says it should.
+  - task: TerraformInstaller@1
+    displayName: install terraform
+    inputs:
+      # 1.9.5 is the latest version as of August 29th, 2024.
+      # https://github.com/hashicorp/terraform/releases
+      terraformVersion: 1.9.5

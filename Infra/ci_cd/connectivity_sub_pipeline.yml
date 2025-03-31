@@ -1,0 +1,171 @@
+trigger: none
+
+pool: Build
+
+variables:
+  ServiceConnection: LH Connectivity Sub 001
+  rg_pe: rg-private-endpoint-eus-001
+  rg_hub: rg-net-hub-001
+
+stages:
+  - stage: rg_private_endpoints
+    jobs:
+      - job: private_endpoint_what_if
+        displayName: Private Endpoint rg what_if
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: ${{ variables.ServiceConnection }}
+              scriptType: pscore
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment group what-if `
+                --resource-group ${{ variables.rg_pe }} `
+                --template-file ./LH-LandingZones/inf-as-code/Modules/privateEndpoints/privateEndpointHub/privateEndpointHub.bicep `
+                --parameters ./bicep/params/connectivity_sub/rg_private_endpoint_params.json
+      - job: rg_private_endpoints_approve
+        displayName: Private Endpoint rg approve
+        dependsOn: private_endpoint_what_if
+        pool: server
+        timeoutInMinutes: 4320 # 3 days
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: |
+                nottaviano@logixhealth.com
+      - job: rg_private_endpoints_create
+        displayName: Private Endpoint rg create
+        dependsOn: rg_private_endpoints_approve
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: ${{ variables.ServiceConnection }}
+              scriptType: pscore
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment group create `
+                --resource-group ${{ variables.rg_pe }} `
+                --template-file ./LH-LandingZones/inf-as-code/Modules/privateEndpoints/privateEndpointHub/privateEndpointHub.bicep `
+                --parameters ./bicep/params/connectivity_sub/rg_private_endpoint_params.json
+
+  # stage is temporary for the databricks SSO there are some private endpoint complexities to work out.
+  - stage: rg_private_endpoints_databricks_sso
+    jobs:
+      - job: private_endpoint_databricks_sso_what_if
+        displayName: Private Endpoint rg databricks sso what_if
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: ${{ variables.ServiceConnection }}
+              scriptType: pscore
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment group what-if `
+                --resource-group ${{ variables.rg_pe }} `
+                --template-file ./LH-LandingZones/inf-as-code/Modules/privateEndpoints/main.bicep `
+                --parameters ./bicep/params/connectivity_sub/privateEndpoint.databricks_web_auth.json
+      - job: rg_private_endpoints_databricks_sso_approve
+        displayName: Private Endpoint rg databricks sso approve
+        dependsOn: private_endpoint_databricks_sso_what_if
+        pool: server
+        timeoutInMinutes: 4320 # 3 days
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: |
+                nottaviano@logixhealth.com
+      - job: rg_private_endpoints_databicks_sso_create
+        displayName: Private Endpoint rg databricks sso create
+        dependsOn: rg_private_endpoints_databricks_sso_approve
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: ${{ variables.ServiceConnection }}
+              scriptType: pscore
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment group create `
+                --resource-group ${{ variables.rg_pe }} `
+                --template-file ./LH-LandingZones/inf-as-code/Modules/privateEndpoints/main.bicep `
+                --parameters ./bicep/params/connectivity_sub/privateEndpoint.databricks_web_auth.json
+
+  # stage is temporary for the databricks front end sbox need to fix/create new module to work with hub vnet.
+  - stage: rg_private_endpoints_databricks_front_end_sbox
+    jobs:
+      - job: private_endpoint_databricks_front_end_sbox_what_if
+        displayName: Private Endpoint rg databricks front end sbox what_if
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: ${{ variables.ServiceConnection }}
+              scriptType: pscore
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment group what-if `
+                --resource-group ${{ variables.rg_pe }} `
+                --template-file ./LH-LandingZones/inf-as-code/Modules/privateEndpoints/main.bicep `
+                --parameters ./bicep/params/connectivity_sub/privateEndpoint.databricks_front_end_sbox.json
+      - job: rg_private_endpoints_databricks_front_end_sbox_approve
+        displayName: Private Endpoint rg databricks front end sbox approve
+        dependsOn: private_endpoint_databricks_front_end_sbox_what_if
+        pool: server
+        timeoutInMinutes: 4320 # 3 days
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: |
+                nottaviano@logixhealth.com
+      - job: rg_private_endpoints_databicks_front_end_sbox_create
+        displayName: Private Endpoint rg databricks front end sbox create
+        dependsOn: rg_private_endpoints_databricks_front_end_sbox_approve
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: ${{ variables.ServiceConnection }}
+              scriptType: pscore
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment group create `
+                --resource-group ${{ variables.rg_pe }} `
+                --template-file ./LH-LandingZones/inf-as-code/Modules/privateEndpoints/main.bicep `
+                --parameters ./bicep/params/connectivity_sub/privateEndpoint.databricks_front_end_sbox.json
+  # stage is temporary for the databricks front end sbox need to fix/create new module to work with hub vnet.
+  - stage: rg_private_endpoints_databricks_front_end_dev
+    jobs:
+      - job: private_endpoint_databricks_front_end_dev_what_if
+        displayName: Private Endpoint rg databricks front end dev what_if
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: ${{ variables.ServiceConnection }}
+              scriptType: pscore
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment group what-if `
+                --resource-group ${{ variables.rg_pe }} `
+                --template-file ./LH-LandingZones/inf-as-code/Modules/privateEndpoints/main.bicep `
+                --parameters ./bicep/params/connectivity_sub/privateEndpoint.databricks_front_end_dev.json
+      - job: rg_private_endpoints_databricks_front_end_dev_approve
+        displayName: Private Endpoint rg databricks front end dev approve
+        dependsOn: private_endpoint_databricks_front_end_dev_what_if
+        pool: server
+        timeoutInMinutes: 4320 # 3 days
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: |
+                nottaviano@logixhealth.com
+      - job: rg_private_endpoints_databicks_front_end_dev_create
+        displayName: Private Endpoint rg databricks front end dev create
+        dependsOn: rg_private_endpoints_databricks_front_end_dev_approve
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: ${{ variables.ServiceConnection }}
+              scriptType: pscore
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment group create `
+                --resource-group ${{ variables.rg_pe }} `
+                --template-file ./LH-LandingZones/inf-as-code/Modules/privateEndpoints/main.bicep `
+                --parameters ./bicep/params/connectivity_sub/privateEndpoint.databricks_front_end_dev.json

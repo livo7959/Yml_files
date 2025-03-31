@@ -1,0 +1,5 @@
+ subscription_id = "32759c43-ba2f-4ddc-8298-c1e77c1cfb35"
+ resource_group_name  = "rg-terraform-state"
+ storage_account_name = "lhtfstatevdi"
+ container_name       = "dev-avd-container"
+ key                  = "testsessionhost2.tfstate"

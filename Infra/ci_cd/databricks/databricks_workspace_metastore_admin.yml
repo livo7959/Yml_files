@@ -1,0 +1,164 @@
+trigger: none
+
+pool: Build
+variables:
+  exit_check: if ($LASTEXITCODE -ne 0){Write-Host “##vso[task.complete result=Failed;]”; exit 1}
+  terraform_fmt_check: terraform -chdir=terraform fmt -recursive -check;${{ variables.exit_check }}
+  terragrunt_hclfmt_check: terragrunt hclfmt --terragrunt-check --terragrunt-working-dir terraform/deployments;${{ variables.exit_check }}
+  plan_task_format_check: ${{ variables.terraform_fmt_check }};${{ variables.terragrunt_hclfmt_check }}
+  terragrunt_validate_inputs: terragrunt validate-inputs --terragrunt-strict-validate
+
+stages:
+  - stage: sbox_databricks_workspace_admin
+    variables:
+      - group: pipeline
+    jobs:
+      - job: dbx_workspace_admin_plan
+        displayName: Databricks Workspace Admin Plan
+        steps:
+          - template: ../../0_Global_Library/pipeline-templates/tasks/terraform_v1_install_task.yml
+          - task: PowerShell@2
+            displayName: Databricks Workspace Admin Plan
+            inputs:
+              targetType: inline
+              pwsh: true
+              script: |
+                ${{ variables.plan_task_format_check }}
+                ${{ variables.terragrunt_validate_inputs }} --terragrunt-working-dir terraform/deployments/sbox/databricks_workspace_metastore_admin
+                ${{ variables.exit_check }}
+                terragrunt run-all plan --terragrunt-working-dir terraform/deployments/sbox/databricks_workspace_metastore_admin
+            env:
+              ARM_CLIENT_ID: $(client_id_shared)
+              ARM_CLIENT_SECRET: $(client_secret_shared)
+              ARM_TENANT_ID: $(tenant_id)
+              DATABRICKS_HOST: $(databricks_host_sbox)
+          - template: ../templates/delete_build_files.yml
+      - job: dbx_workspace_admin_approve
+        displayName: Databricks Workspace Admin Approve
+        dependsOn: dbx_workspace_admin_plan
+        pool: server
+        timeoutInMinutes: 4320 # 3 days
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: ""
+      - job: dbx_workspace_admin_apply
+        displayName: Databricks Workspace Admin Apply
+        dependsOn: dbx_workspace_admin_approve
+        steps:
+          - template: ../../0_Global_Library/pipeline-templates/tasks/terraform_v1_install_task.yml
+          - task: PowerShell@2
+            displayName: Databricks Workspace Admin Apply
+            inputs:
+              targetType: inline
+              pwsh: true
+              script: |
+                terragrunt run-all apply --terragrunt-non-interactive --terragrunt-working-dir terraform/deployments/sbox/databricks_workspace_metastore_admin
+            env:
+              ARM_CLIENT_ID: $(client_id_shared)
+              ARM_CLIENT_SECRET: $(client_secret_shared)
+              ARM_TENANT_ID: $(tenant_id)
+              DATABRICKS_HOST: $(databricks_host_sbox)
+          - template: ../templates/delete_build_files.yml
+  - stage: stg_databricks_workspace_admin
+    variables:
+      - group: pipeline
+    jobs:
+      - job: dbx_workspace_admin_plan
+        displayName: Databricks Workspace Admin Plan
+        steps:
+          - template: ../../0_Global_Library/pipeline-templates/tasks/terraform_v1_install_task.yml
+          - task: PowerShell@2
+            displayName: Databricks Workspace Admin Plan
+            inputs:
+              targetType: inline
+              pwsh: true
+              script: |
+                ${{ variables.plan_task_format_check }}
+                ${{ variables.terragrunt_validate_inputs }} --terragrunt-working-dir terraform/deployments/stg/databricks_workspace_metastore_admin
+                ${{ variables.exit_check }}
+                terragrunt run-all plan --terragrunt-working-dir terraform/deployments/stg/databricks_workspace_metastore_admin
+            env:
+              ARM_CLIENT_ID: $(client_id_shared)
+              ARM_CLIENT_SECRET: $(client_secret_shared)
+              ARM_TENANT_ID: $(tenant_id)
+              DATABRICKS_HOST: $(databricks_host_stg)
+          - template: ../templates/delete_build_files.yml
+      - job: dbx_workspace_admin_approve
+        displayName: Databricks Workspace Admin Approve
+        dependsOn: dbx_workspace_admin_plan
+        pool: server
+        timeoutInMinutes: 4320 # 3 days
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: ""
+      - job: dbx_workspace_admin_apply
+        displayName: Databricks Workspace Admin Apply
+        dependsOn: dbx_workspace_admin_approve
+        steps:
+          - template: ../../0_Global_Library/pipeline-templates/tasks/terraform_v1_install_task.yml
+          - task: PowerShell@2
+            displayName: Databricks Workspace Admin Apply
+            inputs:
+              targetType: inline
+              pwsh: true
+              script: |
+                terragrunt run-all apply --terragrunt-non-interactive --terragrunt-working-dir terraform/deployments/stg/databricks_workspace_metastore_admin
+            env:
+              ARM_CLIENT_ID: $(client_id_shared)
+              ARM_CLIENT_SECRET: $(client_secret_shared)
+              ARM_TENANT_ID: $(tenant_id)
+              DATABRICKS_HOST: $(databricks_host_stg)
+          - template: ../templates/delete_build_files.yml
+  - stage: prod_databricks_workspace_admin
+    variables:
+      - group: pipeline
+    jobs:
+      - job: dbx_workspace_admin_plan
+        displayName: Databricks Workspace Admin Plan
+        steps:
+          - template: ../../0_Global_Library/pipeline-templates/tasks/terraform_v1_install_task.yml
+          - task: PowerShell@2
+            displayName: Databricks Workspace Admin Plan
+            inputs:
+              targetType: inline
+              pwsh: true
+              script: |
+                ${{ variables.plan_task_format_check }}
+                ${{ variables.terragrunt_validate_inputs }} --terragrunt-working-dir terraform/deployments/prod/databricks_workspace_metastore_admin
+                ${{ variables.exit_check }}
+                terragrunt run-all plan --terragrunt-working-dir terraform/deployments/prod/databricks_workspace_metastore_admin
+            env:
+              ARM_CLIENT_ID: $(client_id_shared)
+              ARM_CLIENT_SECRET: $(client_secret_shared)
+              ARM_TENANT_ID: $(tenant_id)
+              DATABRICKS_HOST: $(databricks_host_prod)
+          - template: ../templates/delete_build_files.yml
+      - job: dbx_workspace_admin_approve
+        displayName: Databricks Workspace Admin Approve
+        dependsOn: dbx_workspace_admin_plan
+        pool: server
+        timeoutInMinutes: 4320 # 3 days
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: ""
+      - job: dbx_workspace_admin_apply
+        displayName: Databricks Workspace Admin Apply
+        dependsOn: dbx_workspace_admin_approve
+        steps:
+          - template: ../../0_Global_Library/pipeline-templates/tasks/terraform_v1_install_task.yml
+          - task: PowerShell@2
+            displayName: Databricks Workspace Admin Apply
+            inputs:
+              targetType: inline
+              pwsh: true
+              script: |
+                terragrunt run-all apply --terragrunt-non-interactive --terragrunt-working-dir terraform/deployments/prod/databricks_workspace_metastore_admin
+            env:
+              ARM_CLIENT_ID: $(client_id_shared)
+              ARM_CLIENT_SECRET: $(client_secret_shared)
+              ARM_TENANT_ID: $(tenant_id)
+              DATABRICKS_HOST: $(databricks_host_prod)
+          - template: ../templates/delete_build_files.yml

@@ -1,0 +1,5 @@
+# all lower case, no spaces or hyphens
+purpose: "ecommerce"
+
+# allowed values: dev, uat, prod
+environment: "dev"

@@ -1,0 +1,147 @@
+{
+  "serviceBusNamespaces": [
+    {
+      "name": "lh-data",
+      "accountType": "Standard",
+      "alternateName": "lh_data",
+      "publicNetworkAccess": "Disabled",
+      "zoneRedundant": false,
+      "tier": "Standard",
+      "topics": [
+        {
+          "name": "sftp-file-notification",
+          "autoDeleteOnIdle": "P10675199DT2H48M5.4775807S",
+          "defaultMessageTimeToLive": "P1D",
+          "duplicateDetectionHistoryTimeWindow": "PT10M",
+          "status": "Active",
+          "subscriptions": [
+            {
+              "name": "myservicebussubscription",
+              "autoDeleteOnIdle": "P10675199DT2H48M5.4775807S",
+              "defaultMessageTimeToLive": "P1D",
+              "lockDuration": "PT1M",
+              "maxDeliveryCount": "100"
+            }
+          ]
+        },
+        {
+          "name": "external-file-fetch",
+          "autoDeleteOnIdle": "P10675199DT2H48M5.4775807S",
+          "defaultMessageTimeToLive": "P1D",
+          "duplicateDetectionHistoryTimeWindow": "PT10M",
+          "status": "Active",
+          "subscriptions": [
+            {
+              "name": "externalfilefetch",
+              "autoDeleteOnIdle": "P10675199DT2H48M5.4775807S",
+              "defaultMessageTimeToLive": "P1D",
+              "lockDuration": "PT1M",
+              "maxDeliveryCount": "100"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "storageAccounts": [
+    {
+      "name": "lhexternalsftp",
+      "accountType": "Standard_LRS",
+      "kind": "StorageV2",
+      "accessTier": "Hot",
+      "allowBlobPublicAccess": false,
+      "isSftpEnabled": true,
+      "isHnsEnabled": true,
+      "containers": ["client1", "melrosewakefield", "lhintegratorcutover"],
+      "local_users": [
+        {
+          "name": "testlocaluser",
+          "homeDirectory": "",
+          "permissions": "rl",
+          "resourceName": [
+            "client1",
+            "melrosewakefield",
+            "lhintegratorcutover"
+          ],
+          "service": "blob",
+          "description": ""
+        }
+      ],
+      "event_grid_topic_subscriptions": [
+        {
+          "name": "externalsftp-notification",
+          "includedEventTypes": [
+            "Microsoft.Storage.BlobCreated",
+            "Microsoft.Storage.BlobRenamed"
+          ],
+          "destination_topic_namespace": "lh-data",
+          "destination_topic_name": "sftp-file-notification"
+        }
+      ]
+    },
+    {
+      "name": "lhfunctionapps",
+      "accountType": "Standard_LRS",
+      "kind": "StorageV2",
+      "accessTier": "Hot",
+      "allowBlobPublicAccess": false,
+      "isSftpEnabled": false,
+      "isHnsEnabled": true,
+      "containers": []
+    },
+    {
+      "name": "lhdatalakestorage",
+      "accountType": "Standard_GRS",
+      "kind": "StorageV2",
+      "accessTier": "Hot",
+      "allowBlobPublicAccess": false,
+      "isSftpEnabled": false,
+      "isHnsEnabled": true,
+      "containers": ["raw-fhir"]
+    }
+  ],
+  "container_registries": [
+    {
+      "name": "lhacr",
+      "sku": "Premium"
+    }
+  ],
+  "hosting_plans": [
+    {
+      "name": "function-app-host",
+      "function_apps": [
+        {
+          "name": "external-data-handler",
+          "storageAccountName": "lhfunctionapps"
+        }
+      ]
+    }
+  ],
+  "network_security_groups": [],
+  "private_dns_zones": [],
+  "nat_gateways": [],
+  "virtual_networks": [],
+  "databricks_workspaces": [],
+  "container_apps": [],
+  "key_vaults": [
+    {
+      "name": "lh-azkv"
+    }
+  ],
+  "data_factories": [
+    {
+      "name": "logix-data",
+      "integration_runtimes": ["DataIntegrationRuntime"]
+    }
+  ],
+  "data_factories_with_role_assignments": [
+    {
+      "environment_name": "sbox",
+      "name": "lh-adf-dev-fhir-001",
+      "subscription_id": "8f9efb95-0a8c-45db-8071-2085c72e48c2",
+      "resource_group_name": "SoftwareDev",
+      "storageAccountName": "lhdatalakesbox",
+      "storageContainerName": "raw-fhir"
+    }
+  ]
+}

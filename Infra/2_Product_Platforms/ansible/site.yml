@@ -1,0 +1,21 @@
+- import_playbook: infra_servers.yml
+- import_playbook: web_autosvc_servers.yml
+- import_playbook: web_bi_servers.yml
+- import_playbook: web_test_servers.yml
+# - import_playbook: azdo_servers.yml
+# - import_playbook: sql_infra_servers.yml
+# - import_playbook: sql_softdev_servers.yml
+# - import_playbook: web_autoeng_servers.yml
+# - import_playbook: web_billingapi_servers.yml
+# - import_playbook: web_billingui_servers.yml
+# - import_playbook: web_cv_servers.yml
+- import_playbook: web_file_servers.yml
+# - import_playbook: web_icerapi_servers.yml
+# - import_playbook: web_icerui_servers.yml
+# - import_playbook: web_int_servers.yml
+# - import_playbook: web_ops_servers.yml
+# - import_playbook: web_rre_servers.yml
+# - import_playbook: web_saas_servers.yml
+# - import_playbook: web_svc_servers.yml
+# - import_playbook: web_tools_servers.yml
+- import_playbook: web_intsvcs_servers.yml

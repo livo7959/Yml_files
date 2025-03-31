@@ -1,0 +1,16 @@
+- name: Ensure the Windows service is stopped
+  win_service:
+    name: "{{ azdo_agent_service_name }}"
+    state: stopped
+
+- name: Set new service account credentials
+  win_service:
+    name: "{{ azdo_agent_service_name }}"
+    start_mode: auto
+    username: "{{ azdo_agent_service_account }}"
+    password: "{{ azdo_agent_service_password }}"
+
+- name: Start the Windows service
+  win_service:
+    name: "{{ azdo_agent_service_name }}"
+    state: started

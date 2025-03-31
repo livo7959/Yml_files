@@ -1,0 +1,101 @@
+{
+  "class": "AS3",
+  "action": "deploy",
+  "persist": true,
+  "declaration": {
+    "class": "ADC",
+    "schemaVersion": "3.52.0",
+    "id": "test-declaration",
+    "label": "test-declaration",
+    "remark": "test-declaration",
+    "lab": {
+      "class": "Tenant",
+      "logixtest": {
+        "class": "Application",
+        "template": "generic",
+        "logixtest_mon": {
+          "class": "Monitor",
+          "monitorType": "https",
+          "send": "GET / HTTP/1.1\r\nHost: logixtest.logixhealth.com\r\nConnection: Close\r\n\r\n",
+          "receive": "I am up",
+          "timeout": 60,
+          "interval": 10,
+          "clientTLS": {
+            "use": "logixtest_serverssl"
+          }
+        },
+        "logixtest_pool": {
+          "class": "Pool",
+          "label": "logixtest",
+          "loadBalancingMode": "least-connections-member",
+          "slowRampTime": 10,
+          "monitors": [{ "use": "logixtest_mon" }],
+          "members": [
+            {
+              "servicePort": 443,
+              "serverAddresses": ["10.10.33.29"],
+              "remark": "BEDITEST001",
+              "metadata": {
+                "description": {
+                  "value": "BEDITEST001"
+                }
+              }
+            },
+            {
+              "servicePort": 443,
+              "serverAddresses": ["10.10.33.31"],
+              "remark": "BEDITEST002",
+              "metadata": {
+                "description": {
+                  "value": "BEDITEST002"
+                }
+              }
+            }
+          ]
+        },
+        "logixtest_clientssl": {
+          "class": "TLS_Server",
+          "certificates": [
+            {
+              "certificate": "test_wildcard_cert"
+            }
+          ]
+        },
+        "logixtest_serverssl": {
+          "class": "TLS_Client",
+          "clientCertificate": "test_wildcard_cert"
+        },
+        "test_wildcard_cert": {
+          "class": "Certificate",
+          "remark": "test cert - old",
+          "certificate": {
+            "bigip": "/Common/2022_LH_wildcard.crt"
+          },
+          "privateKey": {
+            "bigip": "/Common/2022_LH_wildcard.key"
+          }
+        },
+        "logixtest_vs": {
+          "class": "Service_HTTPS",
+          "virtualAddresses": ["20.20.20.20"],
+          "pool": "logixtest_pool",
+          "serverTLS": "logixtest_clientssl",
+          "clientTLS": "logixtest_serverssl",
+          "snat": "auto",
+          "profileHTTP": {
+            "bigip": "/Common/logix-hsts-http"
+          },
+          "profileTCP": {
+            "ingress": { "bigip": "/Common/logix-tcp-wan" },
+            "egress": { "bigip": "/Common/logix-tcp-lan" }
+          },
+          "persistenceMethods": [
+            {
+              "bigip": "/Common/logix_cookie_insert"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

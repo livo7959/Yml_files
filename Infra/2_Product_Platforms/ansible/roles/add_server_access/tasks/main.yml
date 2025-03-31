@@ -1,0 +1,14 @@
+# Server Access Groups
+- name: Add domain groups and members to local built-in remote desktop users group
+  win_group_membership:
+    name: Remote Desktop Users
+    members:
+      - "{{rdp_access_group_name}}"
+    state: pure
+
+- name: Add domain groups and members to local built-in administrators group
+  win_group_membership:
+    name: Administrators
+    members:
+      - "{{admin_access_group_name}}"
+    state: present

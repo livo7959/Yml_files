@@ -1,0 +1,24 @@
+# This pipeline checks to see if every pull request contains secrets that should not be committed to
+# the remote repository.
+
+pool: BuildLinux
+
+trigger: none
+
+stages:
+  - stage: gitleaks
+    jobs:
+      - job: gitleaks
+        displayName: Secrets Check (Using Gitleaks)
+        steps:
+          - task: Gitleaks@2
+            inputs:
+              # The default is "predefined". "custom" allows you to set a custom configuration file.
+              configtype: custom
+              # The default is "$(Build.SourcesDirectory)/.gitleaks.toml".
+              configfile: $(Build.SourcesDirectory)/.gitleaks.toml
+              # The default is "smart". "prevalidation" will scan only the commits that are part of
+              # a pull request.
+              scanmode: prevalidation
+              # The default is "false".
+              verbose: true

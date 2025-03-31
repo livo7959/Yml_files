@@ -1,0 +1,121 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "type": "string"
+    },
+    "privateEndpointName": {
+      "type": "string"
+    },
+    "privateLinkResource": {
+      "type": "string"
+    },
+    "targetSubResource": {
+      "type": "array"
+    },
+    "requestMessage": {
+      "type": "string"
+    },
+    "subnet": {
+      "type": "string"
+    },
+    "virtualNetworkId": {
+      "type": "string"
+    },
+    "virtualNetworkResourceGroup": {
+      "type": "string"
+    },
+    "subnetDeploymentName": {
+      "type": "string"
+    }
+  },
+  "resources": [
+    {
+      "location": "[parameters('location')]",
+      "name": "[parameters('privateEndpointName')]",
+      "type": "Microsoft.Network/privateEndpoints",
+      "apiVersion": "2021-05-01",
+      "properties": {
+        "subnet": {
+          "id": "[parameters('subnet')]"
+        },
+        "customNetworkInterfaceName": "nic-pe-lhitinfrafileshares",
+        "privateLinkServiceConnections": [
+          {
+            "name": "[parameters('privateEndpointName')]",
+            "properties": {
+              "privateLinkServiceId": "[parameters('privateLinkResource')]",
+              "groupIds": "[parameters('targetSubResource')]"
+            }
+          }
+        ]
+      },
+      "tags": {},
+      "dependsOn": ["[parameters('subnetDeploymentName')]"]
+    },
+    {
+      "apiVersion": "2017-05-10",
+      "name": "[parameters('subnetDeploymentName')]",
+      "type": "Microsoft.Resources/deployments",
+      "resourceGroup": "[parameters('virtualNetworkResourceGroup')]",
+      "properties": {
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "resources": [
+            {
+              "name": "vnet-private-endpoint-eus-001/snet-corp-fileshares-eus-001",
+              "id": "/subscriptions/da07f21c-d54b-41ca-9f74-9e124d6c2b99/resourceGroups/rg-private-endpoint-eus-001/providers/Microsoft.Network/virtualNetworks/vnet-private-endpoint-eus-001/subnets/snet-corp-fileshares-eus-001",
+              "properties": {
+                "provisioningState": "Succeeded",
+                "addressPrefix": "10.120.16.0/27",
+                "networkSecurityGroup": {
+                  "id": "/subscriptions/da07f21c-d54b-41ca-9f74-9e124d6c2b99/resourceGroups/rg-private-endpoint-eus-001/providers/Microsoft.Network/networkSecurityGroups/nsg-snet-corp-fileshares-eus-001"
+                },
+                "delegations": [],
+                "privateEndpointNetworkPolicies": "Disabled",
+                "privateLinkServiceNetworkPolicies": "Enabled"
+              },
+              "type": "Microsoft.Network/virtualNetworks/subnets",
+              "apiVersion": "2021-01-01"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "apiVersion": "2017-05-10",
+      "name": "DnsZoneGroup-20230418163700",
+      "type": "Microsoft.Resources/deployments",
+      "resourceGroup": "rg-net-hub-001",
+      "dependsOn": ["[parameters('privateEndpointName')]"],
+      "properties": {
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "resources": [
+            {
+              "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+              "apiVersion": "2021-05-01",
+              "name": "[concat(parameters('privateEndpointName'), '/', 'default')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "privateDnsZoneConfigs": [
+                  {
+                    "name": "privatelink-file-core-windows-net",
+                    "properties": {
+                      "privateDnsZoneId": "/subscriptions/da07f21c-d54b-41ca-9f74-9e124d6c2b99/resourceGroups/rg-net-hub-001/providers/Microsoft.Network/privateDnsZones/privatelink.file.core.windows.net"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

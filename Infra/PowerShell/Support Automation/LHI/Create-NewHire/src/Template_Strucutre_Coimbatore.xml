@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Organization>
+  <Departments>
+        
+      <Department name="Administration">
+        <Base_User_Template>"CN=Administration Template,OU=Template Accounts,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+        <AD_Destination_OU>"OU=Admin,OU=Department Users,OU=Internal,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+      </Department>
+
+      <Department name="Administration and Finance">
+        <Base_User_Template>"CN=Administration Template,OU=Template Accounts,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+        <AD_Destination_OU>"OU=Admin,OU=Department Users,OU=Internal,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+      </Department>
+
+      <Department name="Billing">
+        <Base_User_Template>"CN=Administration Template,OU=Template Accounts,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+        <Base_User_Trainee_Template>"CN=Administration Template,OU=Template Accounts,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Trainee_Template>
+        <AD_Destination_OU>"OU=Billing,OU=Department Users,OU=Internal,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+      </Department>
+
+      <Department name="Billing Operations">
+        <Base_User_Template>"CN=Administration Template,OU=Template Accounts,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+        <AD_Destination_OU>"OU=Billing,OU=Department Users,OU=Internal,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+      </Department>
+
+      <Department name="Business Transformation">
+        <Base_User_Template>"CN=Business Transformation Template,OU=Template Accounts,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+        <AD_Destination_OU>"OU=Business Transformation,OU=Department Users,OU=Internal,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+      </Department>
+
+      <Department name="Coding">
+        <Base_User_Template>"CN=Coding Template,OU=Template Accounts,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+        <AD_Destination_OU>"OU=Coding,OU=Department Users,OU=Internal,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+      </Department>
+
+      <Department name="Finance">
+        <Base_User_Template></Base_User_Template>
+        <AD_Destination_OU>"OU=Finance,OU=Department Users,OU=Internal,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+      </Department>
+
+      <Department name="Human Resources">
+        <Base_User_Template>"CN=Human Resources Template,OU=Template Accounts,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+        <AD_Destination_OU>"OU=HR,OU=Department Users,OU=Internal,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+      </Department>
+
+      <Department name="Integration Services">
+        <Base_User_Template>"CN=PR Template,OU=Template Accounts,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+        <AD_Destination_OU>"OU=Billing,OU=Department Users,OU=Internal,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+      </Department>
+
+      <Department name="IT Development">
+        <Base_User_Template>"CN=IT Development Template,OU=Template Accounts,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+        <AD_Destination_OU>" OU=Infrastructure,OU=Department Users,OU=Internal,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+      </Department>
+
+      <Department name="IT Infrastructure">
+        <Base_User_Template>"CN=IT Infrastructure Template,OU=Template Accounts,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+        <AD_Destination_OU>"OU=Infrastructure,OU=Department Users,OU=Internal,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+      </Department>
+
+      <Department name="LogixHealth India">
+        <Base_User_Template>"CN=S-Ops Template,OU=Template Accounts,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+        <AD_Destination_OU>"OU=SO,OU=Department Users,OU=Internal,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+      </Department>
+
+      <Department name="Operations">
+        <Base_User_Template>"CN=Business Transformation Template,OU=Template Accounts,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+        <AD_Destination_OU>"OU=Business Transformation,OU=Department Users,OU=Internal,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+      </Department>
+      
+      <Department name="Provider Reimbursement">
+        <Base_User_Template>"CN=PR Template,OU=Template Accounts,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+        <AD_Destination_OU>"OU=Billing,OU=Department Users,OU=Internal,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+      </Department>
+
+      <Department name="RCM Operations">
+        <Base_User_Template>"CN=PR Template,OU=Template Accounts,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+        <AD_Destination_OU>"OU=Billing,OU=Department Users,OU=Internal,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+      </Department>
+
+      <Department name="Strategic Operations">
+        <Base_User_Template>"CN=S-Ops Template,OU=Template Accounts,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+        <AD_Destination_OU>"OU=SO,OU=Department Users,OU=Internal,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL "</AD_Destination_OU>
+      </Department>
+
+      <Department name="Talent Transformation">
+        <Base_User_Template>"CN=Business Transformation Template,OU=Template Accounts,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+        <AD_Destination_OU>"OU=Business Transformation,OU=Department Users,OU=Internal,OU=Coimbatore,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+      </Department>
+
+    </Departments>
+</Organization>

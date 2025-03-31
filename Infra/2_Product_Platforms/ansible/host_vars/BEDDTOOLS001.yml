@@ -1,0 +1,26 @@
+---
+#AzDO Agent Info
+azdo_agent_service_name: vstsagent.azuredevops.DEV.BEDDTOOLS001
+azdo_agent_service_account: CORP\svc_azdo_dev
+azdo_agent_service_password: $(dev_azdo_agent_service_password)
+
+#Application Insights
+app_insights_connection_string: "InstrumentationKey=7ca7aa59-8a4c-4eb6-9e9a-a74b19ece91f;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=809c3918-c9b4-4f77-ad9d-042d52975c12"
+
+#Variable values for all IIS Website Apps
+iis_website_app_info:
+  # - app_pool_name: StaffingSOService
+  #   website_state: started
+  #   gMSA: CORP\gmsa_dstaffing$
+  #   mpl_mode: Integrated
+  #   runtime_version: v4.0
+  # - app_pool_name: QAShiftOptimizationService
+  #   website_state: started
+  #   gMSA: CORP\gmsa_qstaffSO$
+  #   mpl_mode: Integrated
+  #   runtime_version: v4.0
+  - app_pool_name: UATShiftOptimizationService
+    website_state: started
+    gMSA: CORP\gmsa_ustaffSO$
+    mpl_mode: Integrated
+    runtime_version: v4.0

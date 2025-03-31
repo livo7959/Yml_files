@@ -1,0 +1,26 @@
+- name: Get a list of all services
+  win_shell: |
+    Get-Service | Select-Object -Property Name
+  register: all_services
+
+- name: Parse service names
+  set_fact:
+    services_to_remove: >-
+      {{
+        all_services.stdout_lines 
+        | select('search', '^vstsagent\.bedtfsapp003\..*') 
+        | map('regex_replace', '\s+', '') 
+        | list
+      }}
+
+- name: Ensure there are services to remove
+  debug:
+    msg: "No services to remove with the specified prefix."
+  when: services_to_remove | length == 0
+
+- name: Remove the filtered services
+  win_service:
+    name: "{{ item }}"
+    state: absent
+  loop: "{{ services_to_remove }}"
+  when: services_to_remove | length > 0

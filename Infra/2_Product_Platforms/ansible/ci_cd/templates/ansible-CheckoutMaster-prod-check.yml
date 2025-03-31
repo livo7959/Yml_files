@@ -1,0 +1,13 @@
+steps:
+  - task: CmdLine@2
+    displayName: Ansible Check
+    inputs:
+      script:
+        'ansible-playbook 2_Product_Platforms/ansible/$(playbook_to_run) -i 2_Product_Platforms/ansible/inventory/$(inventory) --check
+        --extra-vars "ansible_password=$(ansiblepw)
+        az_arc_service_principal_id=$(az_arc_service_principal_id)
+        az_arc_service_principal_secret=$(az_arc_service_principal_secret)
+        az_arc_tenant_id=$(az_arc_tenant_id)
+        az_arc_subscription_id=$(az_arc_subscription_id)
+        az_arc_location=$(az_arc_location)
+        azdo_agent_service_password=$(prod_azdo_agent_service_password)"'

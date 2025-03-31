@@ -1,0 +1,64 @@
+trigger: none
+
+pool: Build
+variables:
+  exit_check: if ($LASTEXITCODE -ne 0){Write-Host “##vso[task.complete result=Failed;]”; exit 1}
+  terraform_fmt_check: terraform -chdir=terraform fmt -recursive -check;${{ variables.exit_check }}
+  terragrunt_hclfmt_check: terragrunt hclfmt --terragrunt-check --terragrunt-working-dir terraform/deployments;${{ variables.exit_check }}
+  plan_task_format_check: ${{ variables.terraform_fmt_check }};${{ variables.terragrunt_hclfmt_check }}
+  terragrunt_validate_inputs: terragrunt validate-inputs --terragrunt-strict-validate
+
+stages:
+  - stage: databricks_account
+    variables:
+      - group: pipeline
+    jobs:
+      - job: dbx_account_plan
+        displayName: Databricks Account Plan
+        steps:
+          - template: ../../0_Global_Library/pipeline-templates/tasks/terraform_v1_install_task.yml
+          - task: PowerShell@2
+            displayName: Databricks Account Plan
+            inputs:
+              targetType: inline
+              pwsh: true
+              script: |
+                ${{ variables.plan_task_format_check }}
+                ${{ variables.terragrunt_validate_inputs }} --terragrunt-working-dir terraform/deployments/shared/databricks_account
+                ${{ variables.exit_check }}
+                terragrunt run-all plan --terragrunt-working-dir terraform/deployments/shared/databricks_account
+            env:
+              ARM_CLIENT_ID: $(client_id_shared)
+              ARM_CLIENT_SECRET: $(client_secret_shared)
+              ARM_TENANT_ID: $(tenant_id)
+              DATABRICKS_ACCOUNT_ID: $(databricks_account_id)
+              DATABRICKS_HOST: https://accounts.azuredatabricks.net
+          - template: ../templates/delete_build_files.yml
+      - job: dbx_account_approve
+        displayName: Databricks Account Approve
+        dependsOn: dbx_account_plan
+        pool: server
+        timeoutInMinutes: 4320 # 3 days
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: ""
+      - job: dbx_account_apply
+        displayName: Databricks Account Apply
+        dependsOn: dbx_account_approve
+        steps:
+          - template: ../../0_Global_Library/pipeline-templates/tasks/terraform_v1_install_task.yml
+          - task: PowerShell@2
+            displayName: Databricks Account Apply
+            inputs:
+              targetType: inline
+              pwsh: true
+              script: |
+                terragrunt run-all apply --terragrunt-non-interactive --terragrunt-working-dir terraform/deployments/shared/databricks_account
+            env:
+              ARM_CLIENT_ID: $(client_id_shared)
+              ARM_CLIENT_SECRET: $(client_secret_shared)
+              ARM_TENANT_ID: $(tenant_id)
+              DATABRICKS_ACCOUNT_ID: $(databricks_account_id)
+              DATABRICKS_HOST: https://accounts.azuredatabricks.net
+          - template: ../templates/delete_build_files.yml

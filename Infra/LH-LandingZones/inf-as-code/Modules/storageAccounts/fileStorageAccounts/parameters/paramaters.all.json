@@ -1,0 +1,52 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "storageAccountName": {
+      "value": "lhprodazfs001"
+    },
+    "storageAccountSku": {
+      "value": "Standard_ZRS"
+    },
+    "storageAccountKind": {
+      "value": "StorageV2"
+    },
+    "environment": {
+      "value": "prod"
+    },
+    "accessTier": {
+      "value": "Hot"
+    },
+    "largeFileShareState": {
+      "value": "Enabled"
+    },
+    "allowPublicBlobAccess": {
+      "value": false
+    },
+    "allowPublicNetworkAccess": {
+      "value": "Disabled"
+    },
+    "allowedIpAddresses": {
+      "value": "66.97.189.250"
+    },
+    "activeDirectoryServicesOptions": {
+      "value": "AADKERB"
+    },
+    "activeDirectoryDomainGuid": {
+      "value": "818e82e7-9372-42e5-8de8-fc55a12b7af5"
+    },
+    "activeDirectoryDomainName": {
+      "value": "corp.logixhealth.local"
+    },
+    "azureFileShares": {
+      "value": [
+        {
+          "name": "reports",
+          "accessTier": "Hot",
+          "enabledProtocols": "SMB",
+          "shareQuota": "1024"
+        }
+      ]
+    }
+  }
+}

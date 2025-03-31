@@ -1,0 +1,13 @@
+sched_task_info:
+  - task_name: DeleteOldLogsTask
+    task_descrip: Deletes old log files under a particular folder
+    task_exe: powershell.exe
+    arguments_statement: -NoProfile -ExecutionPolicy Bypass -File "D:\scripts\delete_old_logs.ps1"
+    task_sched_type: weekly
+    task_days: Sunday
+    task_weeks_interval: 2
+    task_sched_time: "2024-08-10T02:00:00"
+    task_gmsa: SYSTEM
+    logon_type: service_account
+    run_level: highest
+    enabled_flag: false

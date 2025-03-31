@@ -1,0 +1,5 @@
+variables:
+  outputFile: terraform.tfplan
+  workingDirectory: 1_GlobalInfra/connectivity-sub-eus/express_route/modules
+  tfVarsFile: ../ci/prod.tfvars
+  tfBackend: "../ci/config.azurerm.tfbackend"

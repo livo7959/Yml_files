@@ -1,0 +1,21 @@
+---
+- name: Apply the following tasks
+  hosts: web_test_servers
+  become: false
+  gather_facts: false
+  roles:
+    - add_regedit
+    - add_server_access
+    - initialize_vm_disks
+    - install_azurearc
+    - install_pdqconnect_agent
+    - install_app_lh_itinfra
+    - install_windows_features
+
+    # - create_website_in_IIS
+    # - apply_svcaccount_to_IIS_app_pool
+    # - add_user_to_local_IIS_IUSRS
+    # - add_user_to_logon_as_a_batch_for_IIS_IUSRS
+    # - add_user_to_impersonate_client_after_auth
+    # - add_IIS_IUSRS_to_inetpub
+    # - apply_svcaccount_to_IIS_app_pool

@@ -1,0 +1,3 @@
+- name: Install Microsoft ODBC Driver 17 for SQL Server
+  win_command: >
+    msiexec.exe /i "C:\\temp\\msodbcsql.msi" IACCEPTMSODBCSQLLICENSETERMS=YES /quiet /norestart

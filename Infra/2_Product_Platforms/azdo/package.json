@@ -1,0 +1,18 @@
+{
+  "name": "azdo",
+  "private": "true",
+  "description": "Infrastructure as Code for Azure DevOps Services",
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "lint": "tsx ./scripts/lint.ts"
+  },
+  "dependencies": {
+    "@pulumi/azuredevops": "^3.3.1"
+  },
+  "devDependencies": {
+    "complete-lint": "^1.10.1",
+    "complete-node": "^1.7.0",
+    "typescript": "^5.6.3"
+  }
+}

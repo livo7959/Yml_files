@@ -1,0 +1,8 @@
+- name: Install Windows Features
+  ansible.windows.win_feature:
+    name: "{{ item.name }}"
+    state: "{{ item.state | default('present') }}"
+    include_management_tools: "{{ item.include_management_tools | default(false) }}"
+    include_sub_features: "{{ item.include_sub_features | default(false) }}"
+  loop: "{{ windows_features }}"
+  when: windows_features is defined

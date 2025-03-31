@@ -1,0 +1,5 @@
+subscription_id      = "6491734a-d237-48c2-a8e3-7fe4cfd1205a"
+resource_group_name  = "rg-terraform-state"
+storage_account_name = "lhdevopstfstate"
+container_name       = "entra-id-lob-apps-uat"
+key                  = "entra-id-lob-apps-uat.tfstate"

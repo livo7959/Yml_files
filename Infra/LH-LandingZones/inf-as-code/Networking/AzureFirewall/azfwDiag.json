@@ -1,0 +1,29 @@
+{
+  "id": "/subscriptions/da07f21c-d54b-41ca-9f74-9e124d6c2b99/resourcegroups/rg-net-hub-001/providers/Microsoft.Network/azureFirewalls/azfw-hub-eus-001/providers/microsoft.insights/diagnosticSettings/diag-azfw-hub-eus-001",
+  "name": "diag-azfw-hub-eus-001",
+  "properties": {
+    "logs": [
+      {
+        "category": null,
+        "categoryGroup": "allLogs",
+        "enabled": true,
+        "retentionPolicy": {
+          "days": 0,
+          "enabled": false
+        }
+      }
+    ],
+    "metrics": [
+      {
+        "enabled": true,
+        "retentionPolicy": {
+          "days": 0,
+          "enabled": false
+        },
+        "category": "AllMetrics"
+      }
+    ],
+    "workspaceId": "/subscriptions/fa5c2028-2067-4378-a45a-e3cc445f532b/resourcegroups/rg-lh-logging-001/providers/microsoft.operationalinsights/workspaces/lh-log-analytics",
+    "logAnalyticsDestinationType": "AzureDiagnostics"
+  }
+}

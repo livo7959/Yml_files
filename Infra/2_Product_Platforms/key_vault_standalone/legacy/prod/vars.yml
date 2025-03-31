@@ -1,0 +1,5 @@
+variables:
+  outputFile: terraform.tfplan
+  tfStateFile: kv-standalone-prod
+  tfVarsFile: ./environments/prod.tfvars
+  workingDirectory: 2_Product_Platforms/key_vault_standalone/legacy/prod

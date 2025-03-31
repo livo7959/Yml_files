@@ -1,0 +1,16 @@
+---
+- name: Apply the following tasks
+  hosts: web_autosvc_servers
+  become: false
+  gather_facts: true
+  roles:
+    - add_server_access
+    - install_pdqconnect_agent
+    - install_azurearc
+    - install_windows_features
+    - create_directory
+    - create_website_in_IIS
+    - add_subsite_to_IIS_site
+
+    #- create_windows_service
+    ## To Add: Roles to provision service account^

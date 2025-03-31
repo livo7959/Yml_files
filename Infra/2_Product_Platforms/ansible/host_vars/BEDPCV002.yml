@@ -1,0 +1,44 @@
+---
+#AzDO Agent Info
+azdo_agent_service_name: vstsagent.azuredevops.PROD.BED_PCV002
+azdo_agent_service_account: CORP\svc_azdo_prod
+azdo_agent_service_password: $(prod_azdo_agent_service_password)
+
+#Application Insights
+app_insights_connection_string: "InstrumentationKey=a0927c33-2208-4838-aa4d-6c606c85a171;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=a785815c-2d1f-47f2-a33b-51d5bc7580b6"
+
+#Variable values for all IIS Website Apps
+iis_website_app_info:
+  - app_pool_name: LogixNCV
+    website_state: started
+    gMSA: CORP\gmsa_ncv$
+    mpl_mode: Integrated
+    runtime_version: "v4.0"
+    ParentSite: LogixNCV
+    Sub_website_name: #NA
+    host_name: logixncv.logixhealth.com
+    root_path: D:\TFS\LogixNCV\Release
+    custom_path: 'C:\Program Files (x86)\NConvert-win64'
+    thumbprint_value: b4c9bf811256b4edae718e03902f5aa341a3e557
+  #For Additional NCV App pools
+  - app_pool_name: NCVMAIN
+    website_state: started
+    gMSA: CORP\gmsa_ncv$
+    mpl_mode: Integrated
+    runtime_version: "v4.0"
+  - app_pool_name: NCVAPP
+    website_state: started
+    gMSA: CORP\gmsa_ncv$
+    mpl_mode: Integrated
+    runtime_version: "v4.0"
+  - app_pool_name: NCVMERGE
+    website_state: started
+    gMSA: CORP\gmsa_ncv$
+    mpl_mode: Integrated
+    runtime_version: "v4.0"
+  - app_pool_name: NCVSVC
+    website_state: started
+    gMSA: CORP\gmsa_ncv$
+    mpl_mode: Integrated
+    runtime_version: "v4.0"
+#END of Additional NCV App pools

@@ -1,0 +1,5 @@
+- name: Ensure ODBC is uninstalled
+  win_package:
+    product_id: "{0E0F96AC-80DE-4400-A40C-429D63293651}" # Replace with actual ODBC driver name
+    state: absent
+  register: odbc_uninstall_status

@@ -1,0 +1,19 @@
+sbox:
+  - auth_url: https://vendorservices.epic.com/interconnect-amcurprd-oauth/oauth2/token
+    key_name: epic-fhir-ec384
+    secret_name: epic-fhir-sandbox-access-token
+    client_id: 2611ec5d-e16f-45ee-9de0-1f9a8e7986c5
+stg:
+  - auth_url: https://epicx-soap.wakemed.org/FHIR-POC/oauth2/token
+    key_name: epic-fhir-ec384
+    secret_name: epic-fhir-wakemed-poc-access-token
+    client_id: 4e6b140b-484f-42a3-aa51-79de8f9c7c0b
+  - auth_url: https://epicx-soap.wakemed.org/FHIR-TST/oauth2/token
+    key_name: epic-fhir-ec384
+    secret_name: epic-fhir-wakemed-tst-access-token
+    client_id: 4e6b140b-484f-42a3-aa51-79de8f9c7c0b
+prod:
+  - auth_url: https://epic-soap.wakemed.org/FHIR/oauth2/token
+    key_name: epic-fhir-ec384
+    secret_name: epic-fhir-wakemed-access-token
+    client_id: 4be814f7-0486-46f0-bc77-fbb3563cbbb5

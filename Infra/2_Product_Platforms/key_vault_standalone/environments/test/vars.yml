@@ -1,0 +1,5 @@
+variables:
+  outputFile: terraform.tfplan
+  tfVarsFile: ../environments/test/test.tfvars
+  backendFile: ../environments/test/config.azurerm.tfbackend
+  workingDirectory: 2_Product_Platforms/key_vault_standalone/modules

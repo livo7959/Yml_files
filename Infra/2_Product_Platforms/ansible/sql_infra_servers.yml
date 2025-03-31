@@ -1,0 +1,7 @@
+---
+- name: Apply the following tasks
+  hosts: sql_infra_servers
+  become: false
+  gather_facts: true
+  roles:
+    - install_azurearc

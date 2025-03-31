@@ -1,0 +1,25 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "vmSize": {
+      "value": ""
+    },
+    "imageReference": {
+      "value": {}
+    },
+    "osDisk": {
+      "value": {}
+    },
+    "adminUsername": {
+      "value": ""
+    },
+    "managedIdentities": {},
+    "nicConfigurations": {
+      "value": []
+    },
+    "lock": {},
+    "tags": {},
+    "osType": {}
+  }
+}

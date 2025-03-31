@@ -1,0 +1,56 @@
+trigger: none
+
+pool: Build
+variables:
+  - group: pipeline
+stages:
+  - stage: staging
+    jobs:
+      - job: staging_fetch_access_token
+        displayName: Staging Fetch Access Token
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: "3.12"
+              addToPath: true
+          - task: PowerShell@2
+            displayName: Fetch Access Token
+            inputs:
+              targetType: inline
+              pwsh: true
+              script: |
+                cd python
+                python -m pip install --upgrade pip
+                pip install -r requirements.txt
+                python ./scripts/symplr-auth.py --env stg
+            env:
+              COMMON_PACKAGE_PATH: "./common"
+              AZURE_CLIENT_ID: $(client_id_stg)
+              AZURE_CLIENT_SECRET: $(client_secret_stg)
+              AZURE_TENANT_ID: $(tenant_id)
+          - template: ../../templates/delete_build_files.yml
+  - stage: prod
+    jobs:
+      - job: prod_fetch_access_token
+        displayName: Prod Fetch Access Token
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: "3.12"
+              addToPath: true
+          - task: PowerShell@2
+            displayName: Fetch Access Token
+            inputs:
+              targetType: inline
+              pwsh: true
+              script: |
+                cd python
+                python -m pip install --upgrade pip
+                pip install -r requirements.txt
+                python ./scripts/symplr-auth.py --env prod
+            env:
+              COMMON_PACKAGE_PATH: "./common"
+              AZURE_CLIENT_ID: $(client_id_prod)
+              AZURE_CLIENT_SECRET: $(client_secret_prod)
+              AZURE_TENANT_ID: $(tenant_id)
+          - template: ../../templates/delete_build_files.yml

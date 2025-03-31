@@ -1,0 +1,36 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "resourceGroupName": {
+      "value": "rg-net-vdi-eus-001"
+    },
+    "subscriptionId": {
+      "value": "32759c43-ba2f-4ddc-8298-c1e77c1cfb35"
+    },
+    "vnetName": {
+      "value": "vnet-cloudpc-eus-001"
+    },
+    "vnetAddressPrefix": {
+      "value": "10.120.28.0/24"
+    },
+    "snetName": {
+      "value": "snet-cloudpc-eus-001"
+    },
+    "snetAddressPrefix": {
+      "value": "10.120.28.0/24"
+    },
+    "hubVnetId": {
+      "value": "/subscriptions/da07f21c-d54b-41ca-9f74-9e124d6c2b99/resourceGroups/rg-net-hub-001/providers/Microsoft.Network/virtualNetworks/vnet-hub-eus-001"
+    },
+    "tagDepartment": {
+      "value": "Infrastructure"
+    },
+    "tagEnvironment": {
+      "value": "Production"
+    },
+    "disableBgpRoutePropagation": {
+      "value": true
+    }
+  }
+}

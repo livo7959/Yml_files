@@ -1,0 +1,8 @@
+azure-keyvault-certificates
+azure-keyvault-keys
+azure-keyvault-secrets
+azure-identity
+azure-storage-blob
+azure-storage-file-datalake
+PyYAML==6.0.2
+${COMMON_PACKAGE_PATH}

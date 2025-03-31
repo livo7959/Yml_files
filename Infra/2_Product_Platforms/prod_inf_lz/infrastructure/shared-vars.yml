@@ -1,0 +1,5 @@
+# all lower case, no spaces or hyphens
+purpose: "infrastructure"
+
+# allowed values: sbox, dev, qa,uat, prod
+environment: "prod"

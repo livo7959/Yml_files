@@ -1,0 +1,18 @@
+- name: Create the Windows service
+  win_service:
+    name: "{{ item.service_name }}"
+    executable: "{{ item.exe_path }}"
+    display_name: "{{ item.display_name }}"
+    description: "{{ item.description }}"
+    start_type: auto
+    state: started
+    user: LocalSystem
+    password: ""
+  loop: "{{ windows_services_app_info }}"
+  # for user and password will keep LocalSystem and "" afterwards we can run role apply_svcaccount_to_windows_service
+
+- name: Ensure the service is started
+  win_service:
+    name: "{{ item.service_name}}"
+    state: started
+  loop: "{{ windows_services_app_info }}"

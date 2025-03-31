@@ -1,0 +1,60 @@
+---
+#AzDO Agent Info
+azdo_agent_service_name: vstsagent.azuredevops.UAT.BED_USVC001
+azdo_agent_service_account: CORP\svc_azdo_uat
+azdo_agent_service_password: $(uat_azdo_agent_service_password)
+
+#Application Insights
+app_insights_connection_string: "InstrumentationKey=c8a0377f-70ce-4bd4-9206-dc39e82538cf;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=1b54760d-4ec8-4f14-9d03-ae579970e11f"
+
+#Variable values for all IIS Website Apps
+iis_website_app_info:
+  - app_pool_name: mobilepay.umicrosvc.logixhealth.com
+    website_state: started
+    gMSA: CORP\gmsa_umobpayapi$
+    mpl_mode: Integrated
+    runtime_version: ""
+    root_path: D:\TFS\MicroServices\Atomic\MobilePay\Release\MobilePayAPI
+    website_name: mobilepay.umicrosvuc.logixhealth.com
+    host_name: mobilepay.umicrosvuc.logixhealth.com
+    thumbprint_value: 3773e4afa05b75783e93639ff7e50ae6538aca0e
+  # - app_pool_name: refunds.uorchsvc.logixhealth.com
+  #   runtime_version: ""
+  #   mpl_mode: Integrated
+  #   website_name: refunds.uorchsvc.logixhealth.com
+  #   host_name: refunds.uorchsvc.logixhealth.com
+  #   root_path: D:\TFS\MicroServices\Atomic\ApiPartner\Release\ApiPartner
+  #   thumbprint_value: 3bcb101da7eff535ede70df9f84869fc35280dd4
+  #   gMSA: corp\gmsa_urechsvc$
+  #   website_state: Started
+#Variable values for all Windows Services Apps
+windows_service_app_info:
+  - service_name: LogixAvailityFileWatcher
+    gMSA: CORP\gmsa_uavailfw$
+#   - service_name: LogixHealthDataExchangeFileWatcher
+#     gMSA: CORP\gmsa_uavailfw$
+#   - service_name: LogixHealth Claim Appeal Services
+#     gMSA: CORP\gmsa_uavailfw$
+
+#AD Group used to manage service accounts needed to run Windows Services Apps
+logon_as_a_service_AD_group: CORP\UAT_Microservice_Windows_Services
+#Scheduled Task Info for Claims Appeal Daily & Status Reports
+# sched_task_info:
+#   - task_name: LogixHealth Claims Appeal Daily Summary Report
+#     task_descrip: LogixHealth Claims Appeal Daily Summary Report Job for Billing team's UHC worker service
+#     task_exe: D:\AzureDevOps\ConsoleApps\ClaimsAppealDailySummaryReport\Release\ClaimsAppealDailySummaryReport\LogixHealth.App.AppealDailyReport.exe
+#     task_sched_type: daily
+#     task_sched_time: "2024-07-26T00:15:00"
+#     task_gmsa: CORP\gmsa_uclaimsum$
+#     logon_type: password
+#     run_level: highest
+#     enabled_flag: true
+#   - task_name: LogixHealth Daily Claims Status Report
+#     task_descrip: LogixHealth Daily Claims Status Report Job for Billing team's UHC worker service
+#     task_exe: D:\AzureDevOps\ConsoleApps\ClaimsAppealStatusReport\Release\ClaimsAppealStatusReport\LogixHealth.Service.ClaimsAppealStatus.exe
+#     task_sched_type: daily
+#     task_sched_time: "2024-07-26T00:30:00"
+#     task_gmsa: CORP\gmsa_uclaimstat$
+#     logon_type: password
+#     run_level: highest
+#     enabled_flag: true

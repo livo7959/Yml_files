@@ -1,0 +1,190 @@
+trigger: none
+
+pool: Build
+variables:
+  exit_check: if ($LASTEXITCODE -ne 0){Write-Host “##vso[task.complete result=Failed;]”; exit 1}
+  terraform_fmt_check: terraform -chdir=terraform fmt -recursive -check;${{ variables.exit_check }}
+  terragrunt_hclfmt_check: terragrunt hclfmt --terragrunt-check --terragrunt-working-dir terraform/deployments;${{ variables.exit_check }}
+  plan_task_format_check: ${{ variables.terraform_fmt_check }};${{ variables.terragrunt_hclfmt_check }}
+  terragrunt_validate_inputs: terragrunt validate-inputs --terragrunt-strict-validate
+
+stages:
+  - stage: sandbox_databricks_workspace
+    variables:
+      - group: pipeline
+    jobs:
+      - job: sandbox_databricks_workspace_plan
+        displayName: Azure Sandbox Plan
+        steps:
+          - template: ../../0_Global_Library/pipeline-templates/tasks/terraform_v1_install_task.yml
+          - task: PowerShell@2
+            displayName: Sandbox Plan Data
+            inputs:
+              targetType: inline
+              pwsh: true
+              script: |
+                ${{ variables.plan_task_format_check }}
+                ${{ variables.terragrunt_validate_inputs }} --terragrunt-working-dir terraform/deployments/sbox/databricks_workspace
+                ${{ variables.exit_check }}
+                terragrunt run-all plan --terragrunt-working-dir terraform/deployments/sbox/databricks_workspace
+            env:
+              # Variables for the AzureRM Terraform provider.
+              ARM_CLIENT_ID: $(client_id_sbox)
+              ARM_CLIENT_SECRET: $(client_secret_sbox)
+              ARM_TENANT_ID: $(tenant_id)
+              # Variables for the built-in Python `DefaultAzureCredential`, needed to hit the
+              # Databricks API:
+              # https://learn.microsoft.com/en-us/python/api/azure-identity/azure.identity.defaultazurecredential?view=azure-python
+              AZURE_CLIENT_ID: $(client_id_sbox)
+              AZURE_CLIENT_SECRET: $(client_secret_sbox)
+              AZURE_TENANT_ID: $(tenant_id)
+              DATABRICKS_HOST: $(databricks_host_sbox)
+          - template: ../templates/delete_build_files.yml
+      - job: sandbox_databricks_workspace_approve
+        displayName: Azure Sandbox Approve TF
+        dependsOn: sandbox_databricks_workspace_plan
+        pool: server
+        timeoutInMinutes: 4320 # 3 days
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: ""
+      - job: sandbox_databricks_workspace_apply
+        displayName: Azure Sandbox Apply
+        dependsOn: sandbox_databricks_workspace_approve
+        steps:
+          - template: ../../0_Global_Library/pipeline-templates/tasks/terraform_v1_install_task.yml
+          - task: PowerShell@2
+            displayName: Sandbox Apply Data
+            inputs:
+              targetType: inline
+              pwsh: true
+              script: |
+                terragrunt run-all apply --terragrunt-non-interactive --terragrunt-working-dir terraform/deployments/sbox/databricks_workspace
+            env:
+              ARM_CLIENT_ID: $(client_id_sbox)
+              ARM_CLIENT_SECRET: $(client_secret_sbox)
+              ARM_TENANT_ID: $(tenant_id)
+              AZURE_CLIENT_ID: $(client_id_sbox)
+              AZURE_CLIENT_SECRET: $(client_secret_sbox)
+              AZURE_TENANT_ID: $(tenant_id)
+              DATABRICKS_HOST: $(databricks_host_sbox)
+          - template: ../templates/delete_build_files.yml
+  - stage: stage_databricks_workspace
+    variables:
+      - group: pipeline
+    jobs:
+      - job: stage_databricks_workspace_plan
+        displayName: Azure Stage Plan
+        steps:
+          - template: ../../0_Global_Library/pipeline-templates/tasks/terraform_v1_install_task.yml
+          - task: PowerShell@2
+            displayName: Stage Plan Data
+            inputs:
+              targetType: inline
+              pwsh: true
+              script: |
+                ${{ variables.plan_task_format_check }}
+                ${{ variables.terragrunt_validate_inputs }} --terragrunt-working-dir terraform/deployments/stg/databricks_workspace
+                ${{ variables.exit_check }}
+                terragrunt run-all plan --terragrunt-working-dir terraform/deployments/stg/databricks_workspace
+            env:
+              ARM_CLIENT_ID: $(client_id_stg)
+              ARM_CLIENT_SECRET: $(client_secret_stg)
+              ARM_TENANT_ID: $(tenant_id)
+              AZURE_CLIENT_ID: $(client_id_stg)
+              AZURE_CLIENT_SECRET: $(client_secret_stg)
+              AZURE_TENANT_ID: $(tenant_id)
+              DATABRICKS_HOST: $(databricks_host_stg)
+          - template: ../templates/delete_build_files.yml
+      - job: stage_databricks_workspace_approve
+        displayName: Azure Stage Approve TF
+        dependsOn: stage_databricks_workspace_plan
+        pool: server
+        timeoutInMinutes: 4320 # 3 days
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: ""
+      - job: stage_databricks_workspace_apply
+        displayName: Azure Stage Apply
+        dependsOn: stage_databricks_workspace_approve
+        steps:
+          - template: ../../0_Global_Library/pipeline-templates/tasks/terraform_v1_install_task.yml
+          - task: PowerShell@2
+            displayName: Stage Apply Data
+            inputs:
+              targetType: inline
+              pwsh: true
+              script: |
+                terragrunt run-all apply --terragrunt-non-interactive --terragrunt-working-dir terraform/deployments/stg/databricks_workspace
+            env:
+              ARM_CLIENT_ID: $(client_id_stg)
+              ARM_CLIENT_SECRET: $(client_secret_stg)
+              ARM_TENANT_ID: $(tenant_id)
+              AZURE_CLIENT_ID: $(client_id_stg)
+              AZURE_CLIENT_SECRET: $(client_secret_stg)
+              AZURE_TENANT_ID: $(tenant_id)
+              DATABRICKS_HOST: $(databricks_host_stg)
+          - template: ../templates/delete_build_files.yml
+  - stage: prod_databricks_workspace
+    variables:
+      - group: pipeline
+    jobs:
+      - job: prod_databricks_workspace_plan
+        displayName: Azure Prod Plan
+        steps:
+          - template: ../../0_Global_Library/pipeline-templates/tasks/terraform_v1_install_task.yml
+          - task: PowerShell@2
+            displayName: Prod Plan Data
+            inputs:
+              targetType: inline
+              pwsh: true
+              script: |
+                ${{ variables.plan_task_format_check }}
+                ${{ variables.terragrunt_validate_inputs }} --terragrunt-working-dir terraform/deployments/prod/databricks_workspace
+                ${{ variables.exit_check }}
+                terragrunt run-all plan --terragrunt-working-dir terraform/deployments/prod/databricks_workspace
+            env:
+              # Variables for the AzureRM Terraform provider.
+              ARM_CLIENT_ID: $(client_id_prod)
+              ARM_CLIENT_SECRET: $(client_secret_prod)
+              ARM_TENANT_ID: $(tenant_id)
+              # Variables for the built-in Python `DefaultAzureCredential`, needed to hit the
+              # Databricks API:
+              # https://learn.microsoft.com/en-us/python/api/azure-identity/azure.identity.defaultazurecredential?view=azure-python
+              AZURE_CLIENT_ID: $(client_id_prod)
+              AZURE_CLIENT_SECRET: $(client_secret_prod)
+              AZURE_TENANT_ID: $(tenant_id)
+              DATABRICKS_HOST: $(databricks_host_prod)
+          - template: ../templates/delete_build_files.yml
+      - job: prod_databricks_workspace_approve
+        displayName: Azure Prod Approve TF
+        dependsOn: prod_databricks_workspace_plan
+        pool: server
+        timeoutInMinutes: 4320 # 3 days
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: ""
+      - job: prod_databricks_workspace_apply
+        displayName: Azure Prod Apply
+        dependsOn: prod_databricks_workspace_approve
+        steps:
+          - template: ../../0_Global_Library/pipeline-templates/tasks/terraform_v1_install_task.yml
+          - task: PowerShell@2
+            displayName: Prod Apply Data
+            inputs:
+              targetType: inline
+              pwsh: true
+              script: |
+                terragrunt run-all apply --terragrunt-non-interactive --terragrunt-working-dir terraform/deployments/prod/databricks_workspace
+            env:
+              ARM_CLIENT_ID: $(client_id_prod)
+              ARM_CLIENT_SECRET: $(client_secret_prod)
+              ARM_TENANT_ID: $(tenant_id)
+              AZURE_CLIENT_ID: $(client_id_prod)
+              AZURE_CLIENT_SECRET: $(client_secret_prod)
+              AZURE_TENANT_ID: $(tenant_id)
+              DATABRICKS_HOST: $(databricks_host_prod)
+          - template: ../templates/delete_build_files.yml

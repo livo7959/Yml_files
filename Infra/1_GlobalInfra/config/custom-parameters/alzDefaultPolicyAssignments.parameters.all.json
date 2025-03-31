@@ -1,0 +1,51 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "parTopLevelManagementGroupPrefix": {
+      "value": "lh"
+    },
+    "parTopLevelManagementGroupSuffix": {
+      "value": ""
+    },
+    "parLogAnalyticsWorkSpaceAndAutomationAccountLocation": {
+      "value": "eastus2"
+    },
+    "parLogAnalyticsWorkspaceResourceId": {
+      "value": "/subscriptions/fa5c2028-2067-4378-a45a-e3cc445f532b/resourcegroups/rg-lh-logging/providers/microsoft.operationalinsights/workspaces/alz-log-analytics"
+    },
+    "parLogAnalyticsWorkspaceLogRetentionInDays": {
+      "value": "365"
+    },
+    "parAutomationAccountName": {
+      "value": "alz-automation-account"
+    },
+    "parMsDefenderForCloudEmailSecurityContact": {
+      "value": "dthiele@bdo.com"
+    },
+    "parDdosProtectionPlanId": {
+      "value": "/subscriptions/da07f21c-d54b-41ca-9f74-9e124d6c2b99/resourceGroups/rg-lh-connectivity/providers/Microsoft.Network/ddosProtectionPlans/alz-ddos-plan"
+    },
+    "parPrivateDnsResourceGroupId": {
+      "value": "/subscriptions/da07f21c-d54b-41ca-9f74-9e124d6c2b99/resourceGroups/rg-lh-connectivity"
+    },
+    "parPrivateDnsZonesNamesToAuditInCorp": {
+      "value": []
+    },
+    "parDisableAlzDefaultPolicies": {
+      "value": false
+    },
+    "parVmBackupExclusionTagName": {
+      "value": ""
+    },
+    "parVmBackupExclusionTagValue": {
+      "value": []
+    },
+    "parExcludedPolicyAssignments": {
+      "value": []
+    },
+    "parTelemetryOptOut": {
+      "value": false
+    }
+  }
+}

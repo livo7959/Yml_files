@@ -1,0 +1,72 @@
+trigger:
+  paths:
+    include:
+      - 2_Product_Platforms/dev_lz/* # Note that changes to the L0 templates won't trigger any pipeline runs.
+
+# IMPORTANT: For new pipelines, add build validation policy to master branch based on this pipeline with the above path filters.
+
+pool: Build
+
+stages:
+  - template: ../../../0_Global_Library/pipeline-templates/pipeline-template.yml
+    parameters:
+      config:
+        isDeploy: true
+        destroyAbsentResources: false
+        environment: AzureGlobalInfraL1
+      components:
+        # - name: 'DeployToMgmtGrpScope'
+        #  deploymentScope: 'managementGroup'
+        #  location: eastus
+        #  managementGroupId: 'mg-lh-corp-dev'
+        #  serviceConnectionName: 'LH Tenant'
+        #  type: Bicep.V1
+        #  templateDirectory: '2_Product_platforms/dev_lz/infrastructure'
+        #  module: 'mg'
+        #  state: present
+        # tests:
+        #  - name: Bicep Validate and What-If
+        #    type: Bicep.V1
+
+        - name: "DeployToSubScope"
+          deploymentScope: "subscription"
+          subscriptionId: "1f05644e-f734-46ef-abb5-0fea35e3f76e"
+          serviceConnectionName: "LH Corp Dev 002"
+          type: Bicep.V1
+          templateDirectory: "2_Product_platforms/dev_lz/infrastructure"
+          module: "subv2"
+          location: eastus
+          tests:
+            - name: Bicep Validate and What-If
+              type: Bicep.V1
+          state: present
+# - template: ../../../0_Global_Library/pipeline-templates/pipeline-template-delete-only.yml
+#   parameters:
+#     config:
+#       deleteAbsentResources: true
+#     # Add resources you want to destroy here. Currently only supports resource groups.
+#     deleteItems:
+#     # - name: EastUSNetResourceGroup
+#     #   deploymentScope: 'subscription'
+#     #   resourceGroupName: rg-eastus-net-001
+#     #   subscriptionId: '1f05644e-f734-46ef-abb5-0fea35e3f76e'
+#     #   serviceConnectionName: 'LH Tenant'
+#     #   type: AzureCLI.V1
+#     #   state: absent
+#     # - name: Peering1
+#     #   deploymentScope: subscription
+#     #   subscriptionId: '1f05644e-f734-46ef-abb5-0fea35e3f76e'
+#     #   serviceConnectionName: 'LH Tenant'
+#     #   type: AzureCLICommand.V1
+#     #   checkcommand: 'az network vnet peering show --resource-group rg-vnet-iaas-dev-eus-01 --name vnet-spoke-iaas-dev-01-vnet-hub-eus-001 --vnet-name vnet-spoke-iaas-dev-01'
+#     #   deletecommand: 'az network vnet peering delete --resource-group rg-vnet-iaas-dev-eus-01 --name vnet-spoke-iaas-dev-01-vnet-hub-eus-001 --vnet-name vnet-spoke-iaas-dev-01'
+#     #   state: absent
+#     - name: Peering2
+#       deploymentScope: subscription
+#       subscriptionId: 'da07f21c-d54b-41ca-9f74-9e124d6c2b99'
+#       serviceConnectionName: 'LH Tenant'
+#       type: AzureCLICommand.V1
+#       checkcommand: 'az network vnet peering show --resource-group rg-net-hub-001 --name vnet-spoke-iaas-dev-01-peering-wwq5gjfgmiytm --vnet-name vnet-hub-eus-001'
+#       deletecommand: 'az network vnet peering delete --resource-group rg-net-hub-001 --name vnet-spoke-iaas-dev-01-peering-wwq5gjfgmiytm --vnet-name vnet-hub-eus-001'
+#       state: absent
+

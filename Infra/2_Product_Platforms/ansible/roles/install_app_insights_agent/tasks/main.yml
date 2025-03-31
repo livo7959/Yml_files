@@ -1,0 +1,19 @@
+- name: Run PowerShell script to install PowerShell Gallery
+  ansible.windows.win_powershell:
+    script: |
+      Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process -Force
+      Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+      Set-PSRepository -Name "PSGallery" -InstallationPolicy Trusted
+      Install-Module -Name PowerShellGet -Force
+
+- name: Run PowerShell script to Install Insights Agent
+  ansible.windows.win_powershell:
+    script: |
+      Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process -Force
+      Install-Module -Name Az.ApplicationMonitor -AllowPrerelease -AcceptLicense
+
+- name: Run PowerShell script to enable Monitoring
+  ansible.windows.win_powershell:
+    script: |
+      Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process -Force
+      Enable-ApplicationInsightsMonitoring -ConnectionString "{{ app_insights_connection_string }}" -AcceptLicense

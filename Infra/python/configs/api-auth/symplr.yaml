@@ -1,0 +1,10 @@
+stg:
+  - auth_url: https://logixhealth.payer.symplr.com/testngservices/api/auth/ticket
+    secret_name: symplr-access-token
+    client_id: symplr-write-client-id
+    client_key: symplr-write-client-secret
+prod:
+  - auth_url: https://logixhealth.payer.symplr.com/prodngservices/api/auth/ticket
+    secret_name: symplr-access-token
+    client_id: symplr-write-client-id
+    client_key: symplr-write-client-secret

@@ -1,0 +1,31 @@
+---
+#AzDO Agent Info
+azdo_agent_service_name: vstsagent.azuredevops.UAT.BED_UWEBPM001
+azdo_agent_service_account: CORP\svc_azdo_uat
+azdo_agent_service_password: $(uat_azdo_agent_service_password)
+
+#Application Insights
+app_insights_connection_string: "InstrumentationKey=3a6412af-c124-47ae-a91d-85ecb11ae17b;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=65a47fb5-4f89-4c21-bb0d-709c7e581b7b"
+
+#Variable values for all IIS Website Apps
+iis_website_app_info:
+  - app_pool_name: LogixClaimStatus
+    website_state: started
+    gMSA: CORP\gmsa_uclaim$
+    mpl_mode: Integrated
+    runtime_version: ""
+  - app_pool_name: LogixEligibility
+    website_state: started
+    gMSA: CORP\gmsa_uelig$
+    mpl_mode: Integrated
+    runtime_version: ""
+  - app_pool_name: LogixRemitParser
+    website_state: started
+    gMSA: CORP\gmsa_uremit$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+  # - app_pool_name: LogixProjection
+  #   website_state: started
+  #   gMSA: CORP\gmsa_uprojecton$
+  #   mpl_mode: Integrated
+  #   runtime_version: v4.0

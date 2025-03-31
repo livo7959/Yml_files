@@ -1,0 +1,6 @@
+- stage:
+  jobs:
+    - job: Build
+      steps:
+        - script: |
+            az bicep build --file ${{path}}

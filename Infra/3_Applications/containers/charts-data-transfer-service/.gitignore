@@ -1,0 +1,9 @@
+# Compiled output
+# (An entry for this is needed for Knip to work properly.)
+dist
+
+# Database file
+uploaded-files.txt
+
+# Logs
+logs/*.log

@@ -1,0 +1,150 @@
+trigger:
+  paths:
+    include:
+      - 2_Product_Platforms/vmware/virtual_machines/module/*
+      - 2_Product_Platforms/vmware/virtual_machines/environments/prod/apps/*
+
+pool: Build
+
+variables:
+  - group: vg-vmware
+  - template: ./vars.yml
+
+stages:
+  - stage: BuildStage
+    jobs:
+      - job: BuildJob
+        displayName: Terraform Build
+        steps:
+          - template: ../../../../../../0_Global_Library/pipeline-templates/tasks/terraform_v1_install_task.yml
+
+          - task: AzureCLI@2
+            displayName: Terraform Init
+            inputs:
+              azureSubscription: $(azureSubscriptionServiceConnectionName)
+              workingDirectory: $(workingDirectory)
+              scriptType: pscore
+              scriptLocation: inlineScript
+              inlineScript: |
+                terraform init -backend-config="$(backendConfig)" -input=false
+            env:
+              ARM_CLIENT_ID: $(armClientID)
+              ARM_CLIENT_SECRET: $(armClientSecret)
+              ARM_TENANT_ID: $(armTenantID)
+              ARM_SUBSCRIPTION_ID: $(armSubscriptionID)
+              TF_VAR_vcenter_password: $(svc_terravm_pw)
+              TF_VAR_local_admin_password: $(temp_local_admin_pw)
+              TF_VAR_domain_join_password: $(svc_jdvmware_pw)
+
+          - task: AzureCLI@2
+            displayName: Terraform Plan
+            inputs:
+              azureSubscription: $(azureSubscriptionServiceConnectionName)
+              workingDirectory: $(workingDirectory)
+              scriptType: pscore
+              scriptLocation: inlineScript
+              inlineScript: |
+                terraform plan -var-file="$(tfVarsFile)" -out="$(Build.ArtifactStagingDirectory)/$(outputFile)"
+            env:
+              ARM_CLIENT_ID: $(armClientID)
+              ARM_CLIENT_SECRET: $(armClientSecret)
+              ARM_TENANT_ID: $(armTenantID)
+              ARM_SUBSCRIPTION_ID: $(armSubscriptionID)
+              TF_VAR_vcenter_password: $(svc_terravm_pw)
+              TF_VAR_local_admin_password: $(temp_local_admin_pw)
+              TF_VAR_domain_join_password: $(svc_jdvmware_pw)
+
+  - ${{if and(eq(variables['Build.Reason'], 'IndividualCI'), eq(variables['Build.SourceBranch'], 'refs/heads/master'))}}:
+      - stage: ApproveStage
+        dependsOn: BuildStage
+        jobs:
+          - job: ApproveJob
+            displayName: Terraform Approve
+            pool: server
+            timeoutInMinutes: 180 # 3 hours
+            steps:
+              - task: ManualValidation@0
+                inputs:
+                  notifyUsers: |
+                    ttaing@logixhealth.com
+                    abaiatian@logixhealth.com
+
+  - ${{if and(eq(variables['Build.Reason'], 'IndividualCI'), eq(variables['Build.SourceBranch'], 'refs/heads/master'))}}:
+      - stage: ApplyStage
+        dependsOn: ApproveStage
+        jobs:
+          - deployment:
+            displayName: Terraform Apply
+            environment: Infrastructure-Prod
+            strategy:
+              runOnce:
+                deploy:
+                  steps:
+                    - template: ../../../../../../0_Global_Library/pipeline-templates/tasks/terraform_v1_install_task.yml
+
+                    - task: AzureCLI@2
+                      displayName: Terraform Init
+                      inputs:
+                        azureSubscription: $(azureSubscriptionServiceConnectionName)
+                        workingDirectory: $(workingDirectory)
+                        scriptType: pscore
+                        scriptLocation: inlineScript
+                        inlineScript: |
+                          terraform init -backend-config="$(backendConfig)" -input=false
+                      env:
+                        ARM_CLIENT_ID: $(armClientID)
+                        ARM_CLIENT_SECRET: $(armClientSecret)
+                        ARM_TENANT_ID: $(armTenantID)
+                        ARM_SUBSCRIPTION_ID: $(armSubscriptionID)
+                        TF_VAR_vcenter_password: $(svc_terravm_pw)
+                        TF_VAR_local_admin_password: $(temp_local_admin_pw)
+                        TF_VAR_domain_join_password: $(svc_jdvmware_pw)
+
+                    - task: AzureCLI@2
+                      displayName: Terraform Plan
+                      inputs:
+                        azureSubscription: $(azureSubscriptionServiceConnectionName)
+                        workingDirectory: $(workingDirectory)
+                        scriptType: pscore
+                        scriptLocation: inlineScript
+                        inlineScript: |
+                          terraform plan -var-file="$(tfVarsFile)" -out="$(Build.ArtifactStagingDirectory)/$(outputFile)"
+                      env:
+                        ARM_CLIENT_ID: $(armClientID)
+                        ARM_CLIENT_SECRET: $(armClientSecret)
+                        ARM_TENANT_ID: $(armTenantID)
+                        ARM_SUBSCRIPTION_ID: $(armSubscriptionID)
+                        TF_VAR_vcenter_password: $(svc_terravm_pw)
+                        TF_VAR_local_admin_password: $(temp_local_admin_pw)
+                        TF_VAR_domain_join_password: $(svc_jdvmware_pw)
+
+                    - task: PublishBuildArtifacts@1
+                      inputs:
+                        PathtoPublish: $(Build.ArtifactStagingDirectory)
+                        ArtifactName: $(Build.BuildNumber)-tfplan
+                        publishLocation: Container
+
+                    - task: DownloadBuildArtifacts@1
+                      inputs:
+                        buildType: current
+                        downloadType: single
+                        artifactName: $(Build.BuildNumber)-tfplan
+                        downloadPath: $(Pipeline.Workspace)
+
+                    - task: AzureCLI@2
+                      displayName: Terraform Apply
+                      inputs:
+                        azureSubscription: $(azureSubscriptionServiceConnectionName)
+                        workingDirectory: $(workingDirectory)
+                        scriptType: pscore
+                        scriptLocation: inlineScript
+                        inlineScript: |
+                          terraform apply -auto-approve "$(Pipeline.Workspace)\$(Build.BuildNumber)-tfplan\$(outputFile)"
+                      env:
+                        ARM_CLIENT_ID: $(armClientID)
+                        ARM_CLIENT_SECRET: $(armClientSecret)
+                        ARM_TENANT_ID: $(armTenantID)
+                        ARM_SUBSCRIPTION_ID: $(armSubscriptionID)
+                        TF_VAR_vcenter_password: $(svc_terravm_pw)
+                        TF_VAR_local_admin_password: $(temp_local_admin_pw)
+                        TF_VAR_domain_join_password: $(svc_jdvmware_pw)

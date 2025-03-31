@@ -1,0 +1,153 @@
+parameters:
+  - name: component
+    type: object
+  - name: config
+    type: object
+  - name: test
+    type: object
+
+steps:
+  # TODO - add logic for handling various deployment scopes as noted in https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-cli#deployment-scope
+
+  # TODO - add linting and validation steps
+
+  # TODO - include ideas, concepts and best practices from these reference sites:
+  # https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/best-practices
+  # patterns - https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/patterns-configuration-set
+  # common scenarios like secrets and others - https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/scenarios-secrets
+
+  # need to identify what Service Connections to use for each and what parameters are required for each
+
+  # tenant scoped deployments requires Owner role at the / (root) tenant level
+  - ${{if eq(parameters.component.deploymentScope, 'managementGroup')}}:
+      - task: AzureCLI@2
+        displayName: Validate - ${{ parameters.component.name }}
+        name: validate_${{parameters.component.name}}
+        inputs:
+          # TODO - add looping to handle environments object iterations, then switch to this parameter
+          azureSubscription: ${{ parameters.component.serviceConnectionName }}
+          # azureSubscription: LH Tenant
+          scriptType: pscore
+          scriptLocation: inlineScript
+          # TODO - add if statements to handle deploymentScope options and variations to inlineScript for each scope level
+          inlineScript: |
+            az deployment mg validate `
+              --template-file ${{ parameters.component.templateDirectory }}/${{ parameters.component.module }}.bicep `
+              --location ${{ parameters.component.location }} `
+              --management-group-id ${{ parameters.component.managementGroupId }} `
+              --name validate-${{parameters.component.name}}-$(Build.BuildNumber) `
+              --no-prompt
+
+  - ${{if eq(parameters.component.deploymentScope, 'subscription')}}:
+      - task: AzureCLI@2
+        displayName: Validate - ${{ parameters.component.name }}
+        name: validate_${{parameters.component.name}}
+        inputs:
+          # TODO - add looping to handle environments object iterations, then switch to this parameter
+          azureSubscription: ${{ parameters.component.serviceConnectionName }}
+          # azureSubscription: LH Tenant
+          scriptType: pscore
+          scriptLocation: inlineScript
+          # TODO - add if statements to handle deploymentScope options and variations to inlineScript for each scope level
+          inlineScript: |
+            az account set --subscription ${{ parameters.component.subscriptionId }}
+            az deployment sub validate `
+            --template-file ${{ parameters.component.templateDirectory }}/${{ parameters.component.module }}.bicep `
+            --location ${{ parameters.component.location }} `
+            --name validate-${{parameters.component.name}}-$(Build.BuildNumber) `
+            --no-prompt
+
+  - ${{if eq(parameters.component.deploymentScope, 'resourceGroup')}}:
+      - task: AzureCLI@2
+        displayName: Validate - ${{ parameters.component.name }}
+        name: validate_${{parameters.component.name}}
+        inputs:
+          # TODO - add looping to handle environments object iterations, then switch to this parameter
+          azureSubscription: ${{ parameters.component.serviceConnectionName }}
+          # azureSubscription: LH Tenant
+          scriptType: pscore
+          scriptLocation: inlineScript
+          # TODO - add if statements to handle deploymentScope options and variations to inlineScript for each scope level
+          inlineScript: |
+            az deployment group validate `
+            --template-file ${{ parameters.component.templateDirectory }}/${{ parameters.component.module }}.bicep `
+            --location ${{ parameters.component.location }} `
+            --resource-group ${{ parameters.component.resourceGroupName }}
+            --name validate-${{parameters.component.name}}-$(Build.BuildNumber) `
+            --no-prompt
+
+  - ${{if eq(parameters.component.deploymentScope, 'managementGroup')}}:
+      - task: AzureCLI@2
+        displayName: What-If test ${{ parameters.component.name }}
+        name: test_${{parameters.component.name}}
+        inputs:
+          # TODO - add looping to handle environments object iterations, then switch to this parameter
+          azureSubscription: ${{ parameters.component.serviceConnectionName }}
+          # azureSubscription: LH Tenant
+          scriptType: pscore
+          scriptLocation: inlineScript
+          # TODO - add if statements to handle deploymentScope options and variations to inlineScript for each scope level
+          inlineScript: |
+            az deployment mg what-if `
+            --template-file ${{ parameters.component.templateDirectory }}/${{ parameters.component.module }}.bicep `
+            --location ${{ parameters.component.location }} `
+            --management-group-id ${{ parameters.component.managementGroupId }} `
+            --name what-if-${{parameters.component.name}}-$(Build.BuildNumber) `
+            --no-prompt
+
+  - ${{if eq(parameters.component.deploymentScope, 'subscription')}}:
+      - task: AzureCLI@2
+        displayName: What-If test ${{ parameters.component.name }}
+        name: test_${{parameters.component.name}}
+        inputs:
+          # TODO - add looping to handle environments object iterations, then switch to this parameter
+          azureSubscription: ${{ parameters.component.serviceConnectionName }}
+          # azureSubscription: LH Tenant
+          scriptType: pscore
+          scriptLocation: inlineScript
+          # TODO - add if statements to handle deploymentScope options and variations to inlineScript for each scope level
+          inlineScript: |
+            az account set --subscription ${{ parameters.component.subscriptionId }}
+            az deployment sub what-if `
+            --template-file ${{ parameters.component.templateDirectory }}/${{ parameters.component.module }}.bicep `
+            --location ${{ parameters.component.location }} `
+            --name what-if-${{parameters.component.name}}-$(Build.BuildNumber) `
+            --no-prompt
+
+  - ${{if eq(parameters.component.deploymentScope, 'resourceGroup')}}:
+      - task: AzureCLI@2
+        displayName: What-If test ${{ parameters.component.name }}
+        name: test_${{parameters.component.name}}
+        inputs:
+          # TODO - add looping to handle environments object iterations, then switch to this parameter
+          azureSubscription: ${{ parameters.component.serviceConnectionName }}
+          # azureSubscription: LH Tenant
+          scriptType: pscore
+          scriptLocation: inlineScript
+          # TODO - add if statements to handle deploymentScope options and variations to inlineScript for each scope level
+          inlineScript: |
+            az deployment group what-if `
+            --template-file ${{ parameters.component.templateDirectory }}/${{ parameters.component.module }}.bicep `
+            --location ${{ parameters.component.location }} `
+            --resource-group ${{ parameters.component.resourceGroupName }}
+            --name what-if-${{parameters.component.name}}-$(Build.BuildNumber) `
+            --no-prompt
+
+        # arguments: '${{ parameters.component.module }} ${{ parameters.component.parameters }} ${{ parameters.component.location }} ${{parameters.component.name}}'
+        # scriptLocation: 'scriptPath'
+        # scriptPath: './Bicep.V1.Build.ps1'
+        # inlineScript: |
+        #   az deployment tenant what-if `
+        #   --template-file ../infrastructure_templates/bicep/local-unpublished/$1.bicep `
+        #   --parameters $2 `
+        #   --location $3 `
+        #   --name test-$4-$(Build.BuildNumber)
+        # NOTE: make sure the module name and bicep template file name do not have a hyphen in the name.
+        # inlineScript: |
+        #   az deployment mg what-if `
+        #   --template-file 0_Global_Library/infrastructure_templates/bicep/local-unpublished/${{ parameters.component.module }}.bicep `
+        #   --parameters ${{ parameters.component.parameters }} `
+        #   --location ${{ parameters.component.location }} `
+        #   --management-group-id ${{ parameters.component.managementGroupId }} `
+        #   --name test-${{parameters.component.name}}-$(Build.BuildNumber) `
+        #   --debug

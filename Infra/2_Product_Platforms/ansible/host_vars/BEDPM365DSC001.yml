@@ -1,0 +1,3 @@
+# Server_Access role vars
+rdp_access_group_name: CORP\SRV_BEDPM365DSC001_RDP
+admin_access_group_name: CORP\SRV_BEDPM365DSC001_Admin

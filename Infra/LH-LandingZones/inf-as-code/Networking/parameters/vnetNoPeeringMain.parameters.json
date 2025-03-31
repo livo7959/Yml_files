@@ -1,0 +1,27 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "vnetName": {
+      "value": "vnet-cloudpc-eus-001"
+    },
+    "vnetAddressPrefix": {
+      "value": "10.120.28.0/24"
+    },
+    "snetName": {
+      "value": "snet-cloudpc-eus-001"
+    },
+    "snetAddressPrefix": {
+      "value": "10.120.28.0/24"
+    },
+    "tagDepartment": {
+      "value": "Infrastructure"
+    },
+    "tagEnvironment": {
+      "value": "Production"
+    },
+    "disableBgpRoutePropagation": {
+      "value": true
+    }
+  }
+}

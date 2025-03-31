@@ -1,0 +1,23 @@
+---
+rootpaths:
+  - 'D:\Business Process\Billing Appeals'
+
+rootpathsubs:
+  - path: 'D:\Integration_Services\ValleyEmergency\Input\Charts'
+  - path: 'D:\Integration_Services\ValleyEmergency\Input\Demographic'
+  - path: 'D:\Integration_Services\ValleyEmergency\Output\Charts'
+  - path: 'D:\Integration_Services\ValleyEmergency\Output\Demographic'
+  - path: 'D:\Integration_Services\TahoeEmergency\Input\Charts'
+  - path: 'D:\Integration_Services\TahoeEmergency\Input\EDLog'
+  - path: 'D:\Integration_Services\TahoeEmergency\Input\Demographic'
+  - path: 'D:\Integration_Services\TahoeEmergency\Output\Charts'
+  - path: 'D:\Integration_Services\TahoeEmergency\Output\EDLog'
+  - path: 'D:\Integration_Services\TahoeEmergency\Output\Demographic'
+  - path: 'D:\Integration_Services\KentMemorial\Input\Charts'
+  - path: 'D:\Integration_Services\KentMemorial\Output\Charts'
+
+readwriteaccess:
+  - CORP\svc_dappeal
+
+adgroup:
+  - CORP\FS_BEDDCFS001_Business_Process_RW

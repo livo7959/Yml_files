@@ -1,0 +1,1 @@
+Get-ChildItem -Path \\lhprodvdifs.file.core.windows.net\avdappfslogix\dsktp_profiles -Filter "*.vhd*" -Recurse -File | Select-Object Name, @{n = 'SizeInGB'; e = {[math]::round($_.length/1GB,2)}} | Export-Csv -Path C:\_IT\fslogix.csv

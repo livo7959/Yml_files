@@ -1,0 +1,4 @@
+purpose: "iaas"
+environment: "dev"
+azfwIp: "10.120.0.68"
+locationShortName: "eus"

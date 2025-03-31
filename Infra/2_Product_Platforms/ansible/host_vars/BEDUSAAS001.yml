@@ -1,0 +1,141 @@
+---
+#AzDO Agent Info
+azdo_agent_service_name: vstsagent.azuredevops.UAT.BED_USAAS001
+azdo_agent_service_account: CORP\svc_azdo_uat
+azdo_agent_service_password: $(uat_azdo_agent_service_password)
+
+#Application Insights
+app_insights_connection_string: "InstrumentationKey=939a99fe-45ca-4c46-8f5d-781b770c053d;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=13e3dad9-fe16-4494-ba25-e8e46ea07745"
+
+#Variable values for all IIS Website Apps
+iis_website_app_info:
+  - app_pool_name: DoctorPayments
+    website_state: started
+    gMSA: CORP\gmsa_udrpay$
+    mpl_mode: Integrated
+    runtime_version: ""
+  - app_pool_name: LogixDenials
+    website_state: started
+    gMSA: CORP\gmsa_udenials$
+    mpl_mode: Integrated
+    runtime_version: ""
+  - app_pool_name: LogixDenials-API
+    website_state: started
+    gMSA: CORP\gmsa_udenials$
+    mpl_mode: Integrated
+    runtime_version: ""
+  - app_pool_name: LogixLogger
+    website_state: started
+    gMSA: CORP\gmsa_ulogger$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+  - app_pool_name: LogixHealth
+    website_state: started
+    gMSA: CORP\gmsa_uwebsite$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+  - app_pool_name: WebsiteAPI
+    website_state: started
+    gMSA: CORP\gmsa_uwebapi$
+    mpl_mode: Integrated
+    runtime_version: ""
+  - app_pool_name: EMPinfo
+    website_state: started
+    gMSA: CORP\gmsa_uhrms$
+    mpl_mode: Integrated
+    runtime_version: ""
+  - app_pool_name: EMPInfoApi
+    website_state: started
+    gMSA: CORP\gmsa_uhrms$
+    mpl_mode: Integrated
+    runtime_version: ""
+  - app_pool_name: LogixHRMS
+    website_state: started
+    gMSA: CORP\gmsa_uhrms$
+    mpl_mode: Integrated
+    runtime_version: ""
+  - app_pool_name: LogixHRMSapi
+    website_state: started
+    gMSA: CORP\gmsa_uhrms$
+    mpl_mode: Integrated
+    runtime_version: ""
+  - app_pool_name: LogixPaidRight
+    website_state: started
+    gMSA: CORP\gmsa_upaidright$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+  - app_pool_name: LogixRefunds
+    website_state: started
+    gMSA: CORP\gmsa_urefunds$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+  - app_pool_name: LogixScheduler
+    website_state: started
+    gMSA: CORP\gmsa_uscheduler$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+  - app_pool_name: LogixScripts
+    website_state: started
+    gMSA: CORP\gmsa_uscripts$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+  - app_pool_name: WebSurveys
+    website_state: started
+    gMSA: CORP\gmsa_uwebsurvey$
+    mpl_mode: Integrated
+    runtime_version: ""
+
+  # - app_pool_name: GatewayAppPool
+  #   website_state: started
+  #   gMSA: CORP\gmsa_uservices$
+  #   mpl_mode: Integrated
+  #   runtime_version: ""
+  # - app_pool_name: LogixConnect
+  #   website_state: started
+  #   gMSA: CORP\gmsa_uconnect$
+  #   mpl_mode: Integrated
+  #   runtime_version: v4.0
+  # - app_pool_name: LogixFeedback
+  #   website_state: started
+  #   gMSA: gmsa_ufeedback$
+  #   mpl_mode: Integrated
+  #   runtime_version: v4.0
+  # - app_pool_name: LogixHelp
+  #   website_state: started
+  #   gMSA: CORP\gmsa_uconnect$
+  #   mpl_mode: Integrated
+  #   runtime_version: v4.0
+  # - app_pool_name: LogixLearning
+  #   website_state: started
+  #   gMSA: CORP\gmsa_ulearning$
+  #   mpl_mode: Integrated
+  #   runtime_version: v4.0
+  # - app_pool_name: LogixTraining
+  #   website_state: started
+  #   gMSA: CORP\gmsa_ulearning$
+  #   mpl_mode: Integrated
+  #   runtime_version: v4.0
+  # - app_pool_name: LogixReporting
+  #   website_state: started
+  #   gMSA: CORP\gmsa_ureporting$
+  #   mpl_mode: Integrated
+  #   runtime_version: v4.0
+  # - app_pool_name: LogixSettings
+  #   website_state: started
+  #   gMSA: CORP\gmsa_usettings$
+  #   mpl_mode: Integrated
+  #   runtime_version: v4.0
+  # - app_pool_name: LogixServices
+  #   website_state: started
+  #   gMSA: CORP\gmsa_uservices$
+  #   mpl_mode: Integrated
+  #   runtime_version: v4.0
+  # - app_pool_name: LogixStaffing
+  #   website_state: started
+  #   gMSA: CORP\gmsa_ustaffing$
+  #   mpl_mode: Integrated
+  #   runtime_version: v4.0
+
+#for url rewrite variable
+iis_xorigin_site_info:
+  - WebsiteName: LogixScripts

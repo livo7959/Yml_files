@@ -1,0 +1,81 @@
+trigger: none
+
+pool: Build
+variables:
+  - group: pipeline
+stages:
+  - stage: sandbox
+    jobs:
+      - job: sandbox_generate_jwks
+        displayName: Sandbox Generate JWKS
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: "3.12"
+              addToPath: true
+          - task: PowerShell@2
+            displayName: Generate JWKS
+            inputs:
+              targetType: inline
+              pwsh: true
+              script: |
+                cd python
+                python -m pip install --upgrade pip
+                pip install -r requirements.txt
+                python ./scripts/generate_jwk_set.py --env sbox
+            env:
+              COMMON_PACKAGE_PATH: "./common"
+              AZURE_CLIENT_ID: $(client_id_sbox)
+              AZURE_CLIENT_SECRET: $(client_secret_sbox)
+              AZURE_TENANT_ID: $(tenant_id)
+          - template: ../../templates/delete_build_files.yml
+  - stage: staging
+    jobs:
+      - job: staging_generate_jwks
+        displayName: Staging Generate JWKS
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: "3.12"
+              addToPath: true
+          - task: PowerShell@2
+            displayName: Generate JWKS
+            inputs:
+              targetType: inline
+              pwsh: true
+              script: |
+                cd python
+                python -m pip install --upgrade pip
+                pip install -r requirements.txt
+                python ./scripts/generate_jwk_set.py --env stg
+            env:
+              COMMON_PACKAGE_PATH: "./common"
+              AZURE_CLIENT_ID: $(client_id_stg)
+              AZURE_CLIENT_SECRET: $(client_secret_stg)
+              AZURE_TENANT_ID: $(tenant_id)
+          - template: ../../templates/delete_build_files.yml
+  - stage: prod
+    jobs:
+      - job: prod_generate_jwks
+        displayName: Prod Generate JWKS
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: "3.12"
+              addToPath: true
+          - task: PowerShell@2
+            displayName: Generate JWKS
+            inputs:
+              targetType: inline
+              pwsh: true
+              script: |
+                cd python
+                python -m pip install --upgrade pip
+                pip install -r requirements.txt
+                python ./scripts/generate_jwk_set.py --env prod
+            env:
+              COMMON_PACKAGE_PATH: "./common"
+              AZURE_CLIENT_ID: $(client_id_prod)
+              AZURE_CLIENT_SECRET: $(client_secret_prod)
+              AZURE_TENANT_ID: $(tenant_id)
+          - template: ../../templates/delete_build_files.yml

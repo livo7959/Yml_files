@@ -1,0 +1,115 @@
+variables:
+  - group: vg-ansible-vault
+  - name: playbook_to_run
+    value: site.yml
+
+pool:
+  name: Ansible
+
+stages:
+  - stage: TEST
+    jobs:
+      - job: Check_Ansible_Playbook
+        displayName: Check Config Management Changes
+        variables:
+          - group: vg-ansible-test
+        steps:
+          - template: templates/ansible-CheckoutMaster-test-check.yml
+      - job: Approve_To_Test
+        displayName: Approve Config Management Changes
+        dependsOn: Check_Ansible_Playbook
+        pool: server
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              instructions: "test"
+      - job: Run_Ansible_Playbook
+        displayName: Execute Config Management Changes
+        dependsOn: Approve_To_Test
+        variables:
+          - group: vg-ansible-test
+        steps:
+          - template: templates/ansible-CheckoutMaster-test.yml
+
+  - stage: DEV
+    jobs:
+      - job: Check_Ansible_Playbook
+        displayName: Check Config Management Changes
+        variables:
+          - group: vg-ansible-dev
+        steps:
+          - template: templates/ansible-CheckoutMaster-dev-check.yml
+      - job: Approve_To_DEV
+        displayName: Approve Config Management Changes
+        dependsOn: Check_Ansible_Playbook
+        pool: server
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: '[LogixHealth]\DevOps Team'
+              instructions: "Please Approve or Reject the Config Management changes to the DEV Environment."
+      - job: Execute_In_DEV
+        displayName: Execute Config Management Changes
+        dependsOn: Approve_To_DEV
+        variables:
+          - group: vg-ansible-dev
+        steps:
+          - template: templates/ansible-CheckoutMaster-dev.yml
+
+  - stage: UAT
+    jobs:
+      - job: Check_Ansible_Playbook
+        displayName: Check Config Management Changes
+        variables:
+          - group: vg-ansible-uat
+        steps:
+          - template: templates/ansible-CheckoutMaster-uat-check.yml
+      - job: Approve_To_UAT
+        displayName: Approve Config Management Changes
+        dependsOn: Check_Ansible_Playbook
+        pool: server
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: '[LogixHealth]\DevOps Team'
+              instructions: "Please Approve or Reject the Config Management changes to the UAT Environment."
+      - job: Execute_In_UAT
+        displayName: Execute Config Management Changes
+        dependsOn: Approve_To_UAT
+        variables:
+          - group: vg-ansible-uat
+        steps:
+          - template: templates/ansible-CheckoutMaster-uat.yml
+
+  - stage: PROD
+    jobs:
+      - job: Check_Ansible_Playbook
+        displayName: Check Config Management Changes
+        variables:
+          - group: vg-ansible-prod
+        steps:
+          - template: templates/ansible-CheckoutMaster-prod-check.yml
+      - job: Approve_To_PROD
+        displayName: Approve Config Management Changes
+        dependsOn: Check_Ansible_Playbook
+        pool: server
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: '[LogixHealth]\DevOps Team'
+              instructions: "Please Approve or Reject the Config Management changes to the PROD Environment."
+
+          # Having two manual validations is redundant. In the future, if we want to have a
+          # different group validate a production deployment, we can uncomment this block.
+          #- task: ManualValidation@0
+          #  inputs:
+          #    notifyUsers: '[LogixHealth]\Exec Team' # TODO; this does not actually exist
+          #    instructions: "Are you absolutely positive you want to execute these Config Management changes to the PROD Environment."
+
+      - job: PROD
+        displayName: Execute Config Management Changes
+        dependsOn: Approve_To_PROD
+        variables:
+          - group: vg-ansible-prod
+        steps:
+          - template: templates/ansible-CheckoutMaster-prod.yml

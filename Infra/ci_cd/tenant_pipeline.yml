@@ -1,0 +1,43 @@
+trigger: none
+
+pool: Build
+
+stages:
+  - stage: tenant
+    jobs:
+      - job: setup
+        displayName: Prepare Params
+        steps:
+          - template: templates/decompose_params.yml
+      - job: tenant_what_if
+        displayName: Azure Tenant What If
+        dependsOn: setup
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: LH Tenant
+              scriptType: ps
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment tenant what-if -l eastus --parameters ./bicep/params/prepared_params.json --template-file ./bicep/tenant_target.bicep
+      - job: tenant_approve
+        displayName: Azure Tenant Approve
+        dependsOn: tenant_what_if
+        pool: server
+        timeoutInMinutes: 4320 # 3 days
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: |
+                iberg@logixhealth.com
+      - job: tenant_create
+        displayName: Azure Tenant Create
+        dependsOn: tenant_approve
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: LH Tenant
+              scriptType: ps
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment tenant create -l eastus --parameters ./bicep/params/prepared_params.json --template-file ./bicep/tenant_target.bicep

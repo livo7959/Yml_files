@@ -1,0 +1,89 @@
+# Azure Firewall Policy Plan
+
+## Important items to note
+
+- **Main firewall policy**: `policy-azfw-hub-eus-001`
+- **Parent firewall policy**: `policy-azfw-base-eus-001`
+  - Only used for items we want to set globally across multiple firewalls.
+  - Note these will take precedence over the Main (child) firewall policy.
+
+## LogixHealth Best Practices
+
+- Organize Rules Rule Collection Groups by workload type. See examples below.
+- The child policy Rule Collection Groups start at 1000 and go incrementally up 100. That gives us ample room to re-configure priority as needed.
+- Always use IP Groups when possible, when writing rules. These are like an Address Group in Palo Alto. They offer organization and performance advantages.
+
+## Rule processing hierarchy
+
+- Parent rules are always processed first
+- Child DNAT rules are processed second
+- Child Network rules are processed third
+- Child Application rules are processed last
+
+This holds true even if you give an application rule collection group a higher priority than a network rule collection group.
+
+For more information refer to this document: Azure Firewall Rule Processing
+
+## Naming Convention
+
+### Example for domain controllers
+
+- **Rule Collection Group**: `rcg-workloadType-allow` (Priority number, does not go in name)
+  - `rcg-identity-allow 1100`
+- **Rule Collection**: `rc-workloadType-ruleType-direction-location-allow`
+  - `rc-net-identity-outbound-external-allow (100)`
+  - `rc-net-identity-outbound-internal-allow (110)`
+  - `rc-net-identity-inbound-internal-allow (120)`
+  - `rc-app-identity-outbound-external-allow (200)`
+  - `rc-app-identity-inbound-allow (210)`
+
+# LogixHealth Azure IP Addressing Strategy
+
+## Synopsis
+
+This document outlines the LogixHealth internal IP addressing strategy in the East US region.
+
+## Overall Strategy
+
+The recommended path from Microsoft is to allocate one /16 network per region in Azure. Currently, we are allocating the `10.120.0.0/16` address range to our Azure East US region. If we had to expand upon that we could add more ranges as required.
+
+## IP Address Allocation
+
+These are carved into /19’s for ease of distribution.
+
+For a view of IP ranges currently in use please refer to this document: [insert link]
+
+| CIDR            | Usable Host Range             | Usage               | Description                                     |
+| --------------- | ----------------------------- | ------------------- | ----------------------------------------------- |
+| 10.120.0.0/19   | 10.120.0.1 - 10.120.31.254    | Core Infrastructure | Core networking, Private Endpoints, Identity    |
+| 10.120.32.0/19  | 10.120.32.1 - 10.120.63.254   | Production          | Prod, UAT Business Application, Data production |
+| 10.120.64.0/19  | 10.120.64.1 - 10.120.95.254   | Production          | Prod, UAT Business Application, Data production |
+| 10.120.96.0/19  | 10.120.96.1 - 10.120.127.254  | Production          | Extra for prod expansion                        |
+| 10.120.128.0/19 | 10.120.128.1 - 10.120.159.254 | DevTest             | Dev, QA                                         |
+| 10.120.160.0/19 | 10.120.160.1 - 10.120.191.254 | DevTest             | Dev, QA                                         |
+| 10.120.192.0/19 | 10.120.192.1 - 10.120.223.254 | DevTest             | Dev, QA                                         |
+| 10.120.224.0/19 | 10.120.224.1 - 10.120.255.254 | Extra for expansion |                                                 |
+
+## Thought process on allocating new addresses
+
+When being requested for a new virtual network and IP address space, questions below will need to be understood and answered. It’s imperative as many PaaS services require complete subnet delegation and nothing else can run inside them.
+
+1. Will on-premise connectivity be required?
+1. What Azure services will be deployed into these networks?
+1. Is VNet peering to the hub required?
+1. Will you need to be able to access Private DNS Zones? If so, for which services?
+
+## Setting up a new VNet to be routed and inspected through Azure Firewall
+
+A few core things need to be done in this scenario:
+
+1. A route table on the subnet with a `0.0.0.0/0` route to `10.120.0.68` (Azure Firewall internal IP)
+1. If on-premise connectivity is required, a new entry on the Gateway subnet route table (`rt-hub-gateway-eus-001`) for the VNet or subnet ranges to point to `10.120.0.68`.
+
+## Setting up a new VNet to resolve Private DNS Zones
+
+This requires the private DNS Zones to be linked to the new VNet. The Private DNS Zones are located in the `LH-Connectivity-Sub-001` under the `rg-net-hub-001` resource group.
+
+In order to resolve the private DNS zone, the virtual network needs to be linked to the zone. This can be done from the Private DNS Zone settings.
+
+![](az-network-image1.png)

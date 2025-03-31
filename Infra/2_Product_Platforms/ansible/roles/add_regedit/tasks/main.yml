@@ -1,0 +1,8 @@
+- name: Registry Settings
+  ansible.windows.win_regedit:
+    path: "{{ item.path }}"
+    name: "{{ item.name }}"
+    data: "{{ item.data }}"
+    type: "{{ item.type }}"
+  loop: "{{ registry_settings }}"
+  when: registry_settings is defined

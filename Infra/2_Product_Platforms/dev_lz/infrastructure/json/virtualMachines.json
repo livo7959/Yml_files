@@ -1,0 +1,62 @@
+{
+  "virtualMachines": [
+    {
+      "name": "vmName001",
+      "env": "dev",
+      "computerName": "vmName001",
+      "vmSize": "vmSku",
+      "osDiskSizeGb": 128,
+      "osVersion": "2019-Datacenter",
+      "adminUsername": "lhadmin",
+      "adminPassword": "Thisisaverylongpassy!",
+      "encryptionAtHost": true,
+      "enableAccelleratedNetworking": false,
+      "enableIpForwarding": false,
+      "dataDisks": [
+        {
+          "createOption": "Empty",
+          "lun": 0,
+          "diskSizeGB": 128,
+          "caching": "ReadOnly",
+          "storageAccountType": "StandardSSD_LRS"
+        },
+        {
+          "createOption": "Empty",
+          "lun": 1,
+          "diskSizeGB": 128,
+          "caching": "None",
+          "storageAccountType": "StandardSSD_LRS"
+        }
+      ]
+    },
+    {
+      "name": "vmName002",
+      "env": "dev",
+      "computerName": "vmName002",
+      "vmSize": "vmSku",
+      "osDiskSizeGb": 128,
+      "osVersion": "2019-Datacenter",
+      "adminUsername": "lhadmin",
+      "adminPassword": "Thisisaverylongpassy!",
+      "encryptionAtHost": true,
+      "enableAccelleratedNetworking": false,
+      "enableIpForwarding": false,
+      "dataDisks": [
+        {
+          "createOption": "Empty",
+          "lun": 0,
+          "diskSizeGB": 128,
+          "caching": "ReadOnly",
+          "storageAccountType": "StandardSSD_LRS"
+        },
+        {
+          "createOption": "Empty",
+          "lun": 1,
+          "diskSizeGB": 128,
+          "caching": "None",
+          "storageAccountType": "StandardSSD_LRS"
+        }
+      ]
+    }
+  ]
+}

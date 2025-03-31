@@ -1,0 +1,74 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "component": {
+      "value": "shared"
+    },
+    "product": {
+      "value": "sql"
+    },
+    "env": {
+      "value": "prod"
+    },
+    "addressPrefixes": {
+      "value": ["10.120.64.0/23"]
+    },
+    "dnsServers": {
+      "value": []
+    },
+    "locationList": {
+      "value": {
+        "northcentralus": "ncenus",
+        "southcentralus": "scenus",
+        "eastus": "eus"
+      }
+    },
+    "deployRouteTable": {
+      "value": false
+    },
+    "disableBgpRoutePropagation": {
+      "value": null
+    },
+    "subnets": {
+      "value": [
+        {
+          "name": "sql",
+          "subnetPrefix": "10.120.64.0/24",
+          "delegation": "Microsoft.Web/serverfarms",
+          "privateEndpointNetworkPolicies": "disabled",
+          "serviceEndpoints": [
+            {
+              "service": "Microsoft.KeyVault",
+              "locations": ["*"]
+            },
+            {
+              "service": "Microsoft.Web",
+              "locations": ["*"]
+            }
+          ]
+        },
+        {
+          "name": "backend",
+          "subnetPrefix": "172.16.3.0/24",
+          "delegation": "Microsoft.Web/serverfarms",
+          "privateEndpointNetworkPolicies": "enabled",
+          "serviceEndpoints": [
+            {
+              "service": "Microsoft.KeyVault",
+              "locations": ["*"]
+            },
+            {
+              "service": "Microsoft.Web",
+              "locations": ["*"]
+            },
+            {
+              "service": "Microsoft.AzureCosmosDB",
+              "locations": ["*"]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

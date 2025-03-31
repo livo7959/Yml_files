@@ -1,0 +1,5 @@
+variables:
+  outputFile: terraform.tfplan
+  tfVarsFile: ../environments/prod/infra/infra.tfvars
+  workingDirectory: 2_Product_Platforms/vmware/virtual_machines/modules
+  backendConfig: ../environments/prod/infra/config.azurerm.tfbackend

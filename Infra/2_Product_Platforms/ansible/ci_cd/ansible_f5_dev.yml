@@ -1,0 +1,20 @@
+pool:
+  name: Ansible
+
+trigger:
+  paths:
+    include:
+      - 2_Product_Platforms/ansible/f5_dev_partition.yml
+
+variables:
+  - group: vg-ansible-f5
+
+stages:
+  - stage: devpartition
+    jobs:
+      - job: DeployAS3
+        variables:
+          - name: playbook
+            value: "2_Product_Platforms/ansible/f5_dev_partition.yml"
+        steps:
+          - template: templates/ansible_f5_checkout.yml

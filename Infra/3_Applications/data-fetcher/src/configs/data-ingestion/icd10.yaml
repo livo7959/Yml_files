@@ -1,0 +1,92 @@
+auth_type: None
+base_url: https://icd10cmtool.cdc.gov/api/
+request_type: GET
+operations:
+  files:
+    response_type: zip
+    base_url: https://ftp.cdc.gov/pub/Health_Statistics/NCHS/Publications/ICD10CM/
+    endpoint: "{year}/{file_name}"
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: public-data
+        filename: icd_10/source_files/{year}/{file_name}
+  metadata:
+    endpoint: metadata
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: public-data
+        filename: icd_10/metadata/metadata
+  tabular_code:
+    endpoint: "{fiscal_year}/tabular/{code}"
+    chained_requests:
+      - operation: excludes_1
+      - operation: excludes_2
+      - operation: note
+      - operation: additional_code
+      - operation: code_first
+      - operation: code_also
+      - operation: seventh_char
+      - operation: include
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: public-data
+        filename: icd_10/tabular_code/{fiscal_year}/{code}
+  excludes_1:
+    endpoint: "{fiscal_year}/tabular/instructions/category/excludes1/{code}"
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: public-data
+        filename: icd_10/excludes_1/{fiscal_year}/{code}
+  excludes_2:
+    endpoint: "{fiscal_year}/tabular/instructions/category/excludes2/{code}"
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: public-data
+        filename: icd_10/excludes_2/{fiscal_year}/{code}
+  note:
+    endpoint: "{fiscal_year}/tabular/instructions/category/note/{code}"
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: public-data
+        filename: icd_10/note/{fiscal_year}/{code}
+  additional_code:
+    endpoint: "{fiscal_year}/tabular/instructions/category/addcode/{code}"
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: public-data
+        filename: icd_10/additional_code/{fiscal_year}/{code}
+  code_first:
+    endpoint: "{fiscal_year}/tabular/instructions/category/codefirst/{code}"
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: public-data
+        filename: icd_10/code_first/{fiscal_year}/{code}
+  code_also:
+    endpoint: "{fiscal_year}/tabular/instructions/category/codealso/{code}"
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: public-data
+        filename: icd_10/code_also/{fiscal_year}/{code}
+  seventh_char:
+    endpoint: "{fiscal_year}/tabular/instructions/category/seventhchar/{code}"
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: public-data
+        filename: icd_10/seventh_char/{fiscal_year}/{code}
+  include:
+    endpoint: "{fiscal_year}/tabular/instructions/category/include/{code}"
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: public-data
+        filename: icd_10/include/{fiscal_year}/{code}

@@ -1,0 +1,9 @@
+- name: Install Python
+  win_package:
+    path: C:\temp\python-installer.exe
+    arguments: /quiet InstallAllUsers=1 PrependPath=1
+    state: present
+
+- name: Verify Python installation
+  win_command: python --version
+  register: python_version

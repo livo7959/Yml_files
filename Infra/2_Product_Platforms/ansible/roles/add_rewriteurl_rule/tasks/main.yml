@@ -1,0 +1,16 @@
+- name: Add rewrite configuration to applicationHost.config
+  win_lineinfile:
+    path: C:\Windows\System32\inetsrv\config\applicationHost.config
+    insertafter: "</location>" # Adjust this to the appropriate place
+    line: |
+      <location path="{{ item.WebsiteName}}">
+          <system.webServer>
+              <rewrite>
+                  <allowedServerVariables>
+                      <add name="RESPONSE_Access-Control-Allow-Origin" />
+                  </allowedServerVariables>
+              </rewrite>
+          </system.webServer>
+      </location>
+    backup: yes
+  loop: "{{ iis_xorigin_site_info }}"

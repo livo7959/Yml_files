@@ -1,0 +1,7 @@
+---
+- name: Apply the following tasks
+  hosts: sql_softdev_servers
+  become: false
+  gather_facts: true
+  roles:
+    - upgrade_sqlpackage_step3

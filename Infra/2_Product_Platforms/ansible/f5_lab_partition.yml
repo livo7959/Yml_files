@@ -1,0 +1,36 @@
+- name: App Collection f5_bigip
+  hosts: bigip
+  connection: httpapi
+  gather_facts: false
+
+  vars:
+    partition: lab
+    apps:
+      - name: logixtommy
+        vsip: 20.20.20.40
+        members:
+          - 10.10.33.29
+          - 10.10.33.31
+        certificate: logixtommy.logixhealth.com
+      - name: logixderek
+        vsip: 20.20.20.41
+        members:
+          - 10.10.33.29
+          - 10.10.33.31
+        certificate: logixderek.logixhealth.com
+      - name: logixnich
+        vsip: 20.20.20.43
+        members:
+          - 10.10.33.29
+          - 10.10.33.31
+        certificate: 2025_wildcard_LH_internal
+
+  tasks:
+    - name: AS3
+      f5networks.f5_bigip.bigip_as3_deploy:
+        content: "{{ lookup('template', 'f5_as3/as3_templates/logixapps.json.jinja2') }}"
+
+    - name: Sync configuration from device to group
+      f5networks.f5_bigip.bigip_configsync_action:
+        device_group: sync-fail
+        sync_device_to_group: yes

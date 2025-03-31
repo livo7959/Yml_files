@@ -1,0 +1,7 @@
+{
+  "location_shortnames": {
+    "northcentralus": "ncenus",
+    "southcentralus": "scenus",
+    "eastus": "eus"
+  }
+}

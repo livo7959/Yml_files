@@ -1,0 +1,120 @@
+# TODO create pipeline for resource groups to a subscription target
+trigger: none
+
+pool: Build
+variables:
+  az_cli_command: --location eastus --template-file ./bicep/iam_subscription.bicep --parameters ./bicep/params/prepared_params.json environment_name=
+
+stages:
+  - stage: setup
+    jobs:
+      - job: setup
+        displayName: Prepare Params
+        steps:
+          - template: templates/decompose_params.yml
+  - stage: sandbox
+    variables:
+      environment_name: sbox
+    jobs:
+      - job: sandbox_what_if
+        displayName: Azure Sandbox What If
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: LH Sandbox IAM Sub
+              scriptType: ps
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment sub what-if ${{ variables.az_cli_command }}${{ variables.environment_name }}
+      - job: sandbox_approve
+        displayName: Azure Sandbox Approve
+        dependsOn: sandbox_what_if
+        pool: server
+        timeoutInMinutes: 4320 # 3 days
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: |
+                iberg@logixhealth.com
+      - job: sandbox_create
+        displayName: Azure Sandbox Create
+        dependsOn: sandbox_approve
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: LH Sandbox IAM Sub
+              scriptType: ps
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment sub create ${{ variables.az_cli_command }}${{ variables.environment_name }}
+  - stage: dev
+    variables:
+      environment_name: dev
+    jobs:
+      - job: dev_what_if
+        displayName: Azure Dev What If
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: LH Dev IAM Sub
+              scriptType: ps
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment sub what-if ${{ variables.az_cli_command }}${{ variables.environment_name }}
+      - job: dev_approve
+        displayName: Azure Dev Approve
+        dependsOn: dev_what_if
+        pool: server
+        timeoutInMinutes: 4320 # 3 days
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: |
+                iberg@logixhealth.com
+      - job: dev_create
+        displayName: Azure Dev Create
+        dependsOn: dev_approve
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: LH Dev IAM Sub
+              scriptType: ps
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment sub create ${{ variables.az_cli_command }}${{ variables.environment_name }}
+  - stage: prod
+    condition: contains(variables['build.sourceBranch'], 'refs/heads/master')
+    variables:
+      environment_name: prod
+    jobs:
+      - job: prod_what_if
+        displayName: Azure Prod What If
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: LH Prod IAM Sub
+              scriptType: ps
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment sub what-if ${{ variables.az_cli_command }}${{ variables.environment_name }}
+      - job: prod_approve
+        displayName: Azure Prod Approve
+        dependsOn: prod_what_if
+        pool: server
+        timeoutInMinutes: 4320 # 3 days
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: |
+                iberg@logixhealth.com
+      - job: prod_create
+        displayName: Azure Prod Create
+        dependsOn: prod_approve
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: LH Prod IAM Sub
+              scriptType: ps
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment sub create ${{ variables.az_cli_command }}${{ variables.environment_name }}

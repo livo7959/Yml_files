@@ -1,0 +1,153 @@
+---
+#AzDO Agent Info
+azdo_agent_service_name: vstsagent.azuredevops.DEV.BED_DSVC001
+azdo_agent_service_account: CORP\svc_azdo_dev
+azdo_agent_service_password: $(dev_azdo_agent_service_password)
+
+#Application Insights
+app_insights_connection_string: "InstrumentationKey=d7dbf718-a80f-46dc-a68a-2b684c6ab481;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=6659ee94-f2e7-4682-8a0a-a64271cd0a01"
+
+#Variable values for all IIS Website Apps
+iis_website_app_info:
+  - app_pool_name: LogixServices-ApiIVR
+    website_state: started
+    gMSA: CORP\gmsa_dservices$
+    mpl_mode: Integrated
+    runtime_version: ""
+    ParentSite: LogixServices
+    Sub_website_name: ApiIVR
+    host_name: dservices.logixhealth.com
+    root_path: D:\AzureDevOps\LogixServices\ApiVR\Release\ApiIVR
+    thumbprint_value: b3ccf578f5c85020786bfa8e3fde352b9cc0f179
+  - app_pool_name: LogixServices-Common
+    website_state: started
+    gMSA: CORP\gmsa_dservices$
+    mpl_mode: Integrated
+    runtime_version: "v4.0"
+    ParentSite: LogixServices
+    Sub_website_name: Common
+    host_name: dservices.logixhealth.com
+    root_path: D:\AzureDevOps\LogixServices\Common\Release\connectPortalCommonServices
+    thumbprint_value: b3ccf578f5c85020786bfa8e3fde352b9cc0f179
+  - app_pool_name: LogixServices-ConnectPortalServices
+    website_state: started
+    gMSA: CORP\gmsa_dservices$
+    mpl_mode: Integrated
+    runtime_version: "v4.0"
+    ParentSite: LogixServices
+    Sub_website_name: ConnectPortalServices
+    host_name: dservices.logixhealth.com
+    root_path: D:\AzureDevOps\LogixServices\ConnectPortalServices\Release\connectPortalServices
+    thumbprint_value: b3ccf578f5c85020786bfa8e3fde352b9cc0f179
+  - app_pool_name: LogixServices-DrPayAPI
+    website_state: started
+    gMSA: CORP\gmsa_ddrpay$
+    mpl_mode: Integrated
+    runtime_version: ""
+    ParentSite: LogixServices
+    Sub_website_name: DrPayAPI
+    host_name: dservices.logixhealth.com
+    root_path: D:\AzureDevOps\LogixServices\DrPayAPI\Release\DoctorPaymentsAPI
+    thumbprint_value: b3ccf578f5c85020786bfa8e3fde352b9cc0f179
+  - app_pool_name: LogixServices-Gateway
+    website_state: started
+    gMSA: CORP\gmsa_dservices$
+    mpl_mode: Integrated
+    runtime_version: ""
+    ParentSite: LogixServices
+    Sub_website_name: Gateway
+    host_name: dservices.logixhealth.com
+    root_path: D:\AzureDevOps\LogixServices\Gateway\Release\ExternalGateway
+    thumbprint_value: b3ccf578f5c85020786bfa8e3fde352b9cc0f179
+  - app_pool_name: LogixServices-IDM
+    website_state: started
+    gMSA: CORP\gmsa_dservices$
+    mpl_mode: Integrated
+    runtime_version: "v4.0"
+    ParentSite: LogixServices
+    Sub_website_name: IdentityManagement
+    host_name: dservices.logixhealth.com
+    root_path: D:\AzureDevOps\LogixServices\IdentityManagement\Release\IdentityManagement
+    thumbprint_value: b3ccf578f5c85020786bfa8e3fde352b9cc0f179
+  - app_pool_name: LogixServices-IDP
+    website_state: started
+    gMSA: CORP\gmsa_dservices$
+    mpl_mode: Integrated
+    runtime_version: "v4.0"
+    ParentSite: LogixServices
+    Sub_website_name: IdentityProvider
+    host_name: dservices.logixhealth.com
+    root_path: D:\AzureDevOps\LogixServices\IdentityProvider\Release\IdentityProvider
+    thumbprint_value: b3ccf578f5c85020786bfa8e3fde352b9cc0f179
+  - app_pool_name: LogixServices-IDPServices
+    website_state: started
+    gMSA: CORP\gmsa_dservices$
+    mpl_mode: Integrated
+    runtime_version: "v4.0"
+    ParentSite: LogixServices
+    Sub_website_name: IdentityProviderServices
+    host_name: dservices.logixhealth.com
+    root_path: D:\AzureDevOps\LogixServices\IdentityProviderServices\Release\IdentityProviderServices
+    thumbprint_value: b3ccf578f5c85020786bfa8e3fde352b9cc0f179
+  - app_pool_name: LogixServices-Notify
+    website_state: started
+    gMSA: CORP\gmsa_dservices$
+    mpl_mode: Integrated
+    runtime_version: "v4.0"
+    ParentSite: LogixServices
+    Sub_website_name: Notify
+    host_name: dservices.logixhealth.com
+    root_path: D:\AzureDevOps\LogixServices\Notify\Release\Notify
+    thumbprint_value: b3ccf578f5c85020786bfa8e3fde352b9cc0f179
+  - app_pool_name: LogixServices-SMSServices
+    website_state: started
+    gMSA: CORP\gmsa_dservices$
+    mpl_mode: Integrated
+    runtime_version: "v4.0"
+    ParentSite: LogixServices
+    Sub_website_name: SMSServices
+    host_name: dservices.logixhealth.com
+    root_path: D:\AzureDevOps\LogixServices\SMSServices\Release\SMSServices
+    thumbprint_value: b3ccf578f5c85020786bfa8e3fde352b9cc0f179
+  - app_pool_name: LogixServices-WebsiteAPI
+    website_state: started
+    gMSA: CORP\gmsa_dwebsite$
+    mpl_mode: Integrated
+    runtime_version: ""
+    ParentSite: LogixServices
+    Sub_website_name: WebsiteAPI
+    host_name: dservices.logixhealth.com
+    root_path: D:\AzureDevOps\LogixServices\WebsiteAPI\Release\WebsiteAPI
+    thumbprint_value: b3ccf578f5c85020786bfa8e3fde352b9cc0f179
+
+rootpathsubs:
+  - path: 'D:\Test\test\new'
+
+#Variable values for all Windows Services Apps
+windows_service_app_info:
+  - service_name: LogixAvailityFileWatcher
+    gMSA: CORP\gmsa_davailfw$
+
+#AD Group used to manage service accounts needed to run Windows Services Apps
+logon_as_a_service_AD_group: CORP\DEV_Microservice_Windows_Services
+
+#Scheduled Task Info for Claims Appeal Daily & Status Reports
+sched_task_info:
+  - task_name: LogixHealth Claims Appeal Daily Summary Report
+    task_descrip: LogixHealth Claims Appeal Daily Summary Report Job for Billing team's UHC worker service
+    task_exe: D:\AzureDevOps\ConsoleApps\ClaimsAppealDailySummaryReport\Release\ClaimsAppealDailySummaryReport\LogixHealth.App.AppealDailyReport.exe
+    task_sched_type: daily
+    task_sched_time: "2024-07-23T00:15:00"
+    task_gmsa: CORP\gmsa_dclaimsum$
+    logon_type: password
+    run_level: highest
+    enabled_flag: true
+  - task_name: LogixHealth Daily Claims Status Report
+    task_descrip: LogixHealth Daily Claims Status Report Job for Billing team's UHC worker service
+    task_exe: D:\AzureDevOps\ConsoleApps\ClaimsAppealStatusReport\Release\ClaimsAppealStatusReport\LogixHealth.Service.ClaimsAppealStatus.exe
+    task_sched_type: daily
+    task_sched_time: "2024-07-23T00:30:00"
+    task_gmsa: CORP\gmsa_dclaimstat$
+    logon_type: password
+    run_level: highest
+    enabled_flag: true

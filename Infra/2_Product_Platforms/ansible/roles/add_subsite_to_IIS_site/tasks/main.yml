@@ -1,0 +1,13 @@
+- name: Skip this role in check mode
+  meta: end_play
+  when: ansible_check_mode
+
+- name: Create the subsite
+  win_iis_webapplication:
+    name: "{{ item.Sub_website_name}}"
+    site: "{{ item.ParentSite}}"
+    state: present
+    application_pool: "{{ item.app_pool_name}}"
+    physical_path: "{{ item.root_path}}"
+  loop: "{{ sub_iis_website_app_info }}"
+  when: sub_iis_website_app_info is defined

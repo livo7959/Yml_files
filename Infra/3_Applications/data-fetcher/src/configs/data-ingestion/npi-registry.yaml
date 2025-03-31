@@ -1,0 +1,11 @@
+auth_type: None
+base_url: https://npiregistry.cms.hhs.gov/api/?
+request_type: GET
+operations:
+  individual_npi:
+    endpoint: version=2.1&number={npi}
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: public-data
+        filename: nppes/npi/{npi}

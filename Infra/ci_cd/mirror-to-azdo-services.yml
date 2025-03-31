@@ -1,0 +1,37 @@
+# This pipeline mirrors the "infrastructure" repository from:
+# https://azuredevops.logixhealth.com/LogixHealth/Infrastructure/_git/infrastructure
+# to:
+# https://dev.azure.com/logixhealth/LogixHealth/_git/infrastructure
+
+trigger:
+  - master
+
+pool: BuildLinux
+
+variables:
+  - group: mirror-to-azdo-services
+
+stages:
+  - stage: mirror
+    jobs:
+      - job: mirror
+        steps:
+          - checkout: self
+            displayName: Checkout
+            persistCredentials: true
+            # The default is 1, which is a shallow clone. We need to check out the entire repository
+            # for the mirror to work correctly.
+            fetchDepth: 0
+            clean: true
+
+          - task: Bash@3
+            displayName: Git push to remote
+            inputs:
+              targetType: inline
+              script: |
+                git config --global user.email "azdo-server-to-azdo-services@logixhealth.com"
+                git config --global user.name "azdo-server-to-azdo-services"
+                git remote remove azdo-services || true
+                git remote add azdo-services https://$(MIRROR_TO_AZDO_SERVICES_PAT)@dev.azure.com/logixhealth/LogixHealth/_git/infrastructure
+                git pull
+                git push azdo-services HEAD:master

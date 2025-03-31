@@ -1,0 +1,36 @@
+FROM node:lts-slim
+
+# Install dependencies.
+RUN DEBIAN_FRONTEND=noninteractive \
+    && apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y -qq --no-install-recommends \
+        # cifs-utils is needed for SMB.
+        cifs-utils \
+        # curl is needed to install the Azure CLI.
+         curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install the Azure CLI.
+RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+
+# Create the SMB mount directory.
+RUN mkdir -p "/ntierfiles"
+
+# Create a dedicated directory for this application.
+WORKDIR /app
+COPY . .
+RUN npm install --omit=dev
+
+# Create a non-root user for increased security.
+RUN addgroup --system --gid 1001 app \
+    && adduser --system --uid 1001 app
+RUN chown app:app /app --recursive
+# (We do not want to immediately switch to the "app" user because we need to mount the SMB share as
+# the root user.)
+
+RUN chmod +x ./entrypoint.sh
+ENTRYPOINT ["./entrypoint.sh"]
+
+CMD ["node", "./dist/main.js"]

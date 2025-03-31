@@ -1,0 +1,54 @@
+---
+#AzDO Agent Info
+azdo_agent_service_name: vstsagent.azuredevops.DEV.BED_DAPPICER001
+azdo_agent_service_account: CORP\svc_azdo_dev
+azdo_agent_service_password: $(dev_azdo_agent_service_password)
+app_insights_connection_string: "InstrumentationKey=8540194e-7057-4541-9521-611906f78c88;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=b79fb60f-c364-4672-8a6a-ab74d961054c"
+
+#Variable values for all IIS Website Apps
+iis_website_app_info:
+  - app_pool_name: LogixCodify
+    website_state: started
+    gMSA: CORP\gmsa_dcodify$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+  - app_pool_name: LogixCommonDataService
+    website_state: started
+    gMSA: CORP\gmsa_dcodify$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+  - app_pool_name: LogixCS
+    website_state: started
+    gMSA: CORP\gmsa_dcodify$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+  - app_pool_name: LogixExpress
+    website_state: started
+    gMSA: CORP\gmsa_dexpress$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+  - app_pool_name: LogixIntegrator
+    website_state: started
+    gMSA: CORP\gmsa_dintegratr$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+  - app_pool_name: LogixReconciler
+    website_state: started
+    gMSA: CORP\gmsa_dreconcilr$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+  - app_pool_name: LogixRequest
+    website_state: started
+    gMSA: CORP\gmsa_drequest$
+    mpl_mode: Integrated
+    runtime_version: ""
+
+#Variable values for all Windows Services Apps
+windows_service_app_info:
+  - service_name: LogixCoordinator
+    gMSA: CORP\gmsa_dcoord$
+  - service_name: ReconcilerService
+    gMSA: CORP\gmsa_drre$
+
+#AD Group used to manage service accounts needed to run Windows Services Apps
+logon_as_a_service_AD_group: CORP\DEV_ICER_Windows_Services

@@ -1,0 +1,23 @@
+trigger: none
+
+pool: Build
+variables:
+  factory_name: logix-data
+  pipeline_name: BEDPSQLSI02_LogixCodify_to_adls2
+  rg_name: rg-data
+
+stages:
+  - stage: staging
+    variables:
+      environment_name: stg
+    jobs:
+      - job: staging_invoke_pipeline
+        displayName: Staging AZ CLI Invoke Pipeline
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: LH Staging Subscription
+              scriptType: pscore
+              scriptLocation: inlineScript
+              inlineScript: |
+                az datafactory pipeline create-run --factory-name "${{ variables.factory_name }}-${{ variables.environment_name }}" --name "${{ variables.pipeline_name }}" --resource-group "${{ variables.rg_name }}-${{ variables.environment_name }}" --parameters '{\"schema_name\":\"$(schema_name)\",\"table_name\":\"$(table_name)\"}'

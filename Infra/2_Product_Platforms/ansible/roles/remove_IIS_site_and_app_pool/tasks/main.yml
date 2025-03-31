@@ -1,0 +1,13 @@
+- name: Remove the IIS site
+  win_iis_website:
+    name: "{{ item.site_name }}"
+    state: absent
+  when: item.site_name | length > 0
+  loop: "{{ obsolete_iis_website_app_info }}"
+
+- name: Remove the application pool
+  win_iis_webapppool:
+    name: "{{ item.app_pool_name }}"
+    state: absent
+  when: item.app_pool_name | length > 0
+  loop: "{{ obsolete_iis_website_app_info }}"

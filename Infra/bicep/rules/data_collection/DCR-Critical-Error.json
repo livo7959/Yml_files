@@ -1,0 +1,53 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "dataCollectionRules_DCR_Critical_Error_name": {
+      "defaultValue": "DCR-Critical-Error",
+      "type": "String"
+    },
+    "workspaces_log_azure_sentinel_eus_externalid": {
+      "defaultValue": "/subscriptions/51298843-868a-4c67-a307-fc8f6b953ecd/resourceGroups/rg-sentinel-shared/providers/Microsoft.OperationalInsights/workspaces/log-azure-sentinel-eus",
+      "type": "String"
+    }
+  },
+  "variables": {},
+  "resources": [
+    {
+      "type": "Microsoft.Insights/dataCollectionRules",
+      "apiVersion": "2021-09-01-preview",
+      "name": "[parameters('dataCollectionRules_DCR_Critical_Error_name')]",
+      "location": "eastus",
+      "kind": "Windows",
+      "properties": {
+        "dataSources": {
+          "windowsEventLogs": [
+            {
+              "streams": ["Microsoft-Event"],
+              "xPathQueries": [
+                "Application!*[System[(Level=1 or Level=2)]]",
+                "Security!*[System[(band(Keywords,4503599627370496))]]",
+                "System!*[System[(Level=1 or Level=2)]]"
+              ],
+              "name": "eventLogsDataSource"
+            }
+          ]
+        },
+        "destinations": {
+          "logAnalytics": [
+            {
+              "workspaceResourceId": "[parameters('workspaces_log_azure_sentinel_eus_externalid')]",
+              "name": "la--1178665619"
+            }
+          ]
+        },
+        "dataFlows": [
+          {
+            "streams": ["Microsoft-Event"],
+            "destinations": ["la--1178665619"]
+          }
+        ]
+      }
+    }
+  ]
+}

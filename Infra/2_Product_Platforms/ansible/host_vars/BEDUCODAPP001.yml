@@ -1,0 +1,392 @@
+---
+#Scheduled Task Info for Integration Services Conversions
+sched_task_info:
+  #Valley Emergency Chart Conversion
+  - task_name: Valley Emergency Room CNRRAI
+    task_descrip: Chart Conversion for Valley Emergency
+    task_exe: D:\Integration_Services\HL7toPDF\Release\HL7ToPDF\HL7ToPDF.exe
+    task_argument: ValleyEmergencyRoom_CNRRAI
+    task_sched_type: daily
+    task_sched_time: "2024-11-21T09:00:00"
+    task_gmsa: CORP\gmsa_uhl7topdf$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+  #Valley Emergency Demo Conversion
+  - task_name: Valley Emergency Room HL7 Demo Conversion
+    task_descrip: Demo Conversion for Valley Emergency
+    task_exe: D:\Integration_Services\HL7DemoConversion\Release\HL7DemoConversion\HL7DemoConversion.exe
+    task_argument: ValleyEmergencyRoom
+    task_sched_type: daily
+    task_sched_time: "2024-11-21T07:00:00"
+    task_gmsa: CORP\gmsa_uhl7demo$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+  #Tahoe Emergency Chart Conversion
+  - task_name: Tahoe Emergency PDF to TIF Chart Conversion
+    task_descrip: Chart Conversion for Tahoe Emergency
+    task_exe: D:\Integration_Services\HL7toPDF\Release\HL7ToPDF\HL7ToPDF.exe
+    task_argument: TahoeEmergency
+    task_sched_type: daily
+    task_sched_time: "2024-12-13T09:45:00"
+    task_gmsa: CORP\gmsa_uhl7topdf$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+  #Tahoe Emergency EDLog Conversion
+  - task_name: Tahoe Emergency Excel file conversion
+    task_descrip: EDLog Conversion for Tahoe Emergency
+    task_exe: D:\Integration_Services\HL7FilesToExcel\Release\HL7FilesToExcel\HL7FilesToExcel.exe
+    task_argument: TahoeEmergency
+    task_sched_type: daily
+    task_sched_time: "2024-12-13T06:00:00"
+    task_gmsa: CORP\gmsa_uhl7toxlsx$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+  #Tahoe Emergency Demo Conversion
+  - task_name: Tahoe Emergency HL7 Demo Conversion
+    task_descrip: Demo Conversion for Tahoe Emergency
+    task_exe: D:\Integration_Services\HL7DemoConversion\Release\HL7DemoConversion\HL7DemoConversion.exe
+    task_argument: TahoeEmergency
+    task_sched_type: daily
+    task_sched_time: "2024-12-13T08:00:00"
+    task_gmsa: CORP\gmsa_uhl7demo$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+  #Kent Memorial Chart Conversion
+  - task_name: Kent PDF to TIFF Chart Conversion
+    task_descrip: Chart Conversion for Kent Memorial
+    task_exe: D:\Integration_Services\HL7toPDF\Release\HL7ToPDF\HL7ToPDF.exe
+    task_argument: TahoeEmergency
+    task_sched_type: daily
+    task_sched_time: "2024-12-13T05:00:00"
+    task_gmsa: CORP\gmsa_uhl7topdf$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+    task_interval: PT30M
+    task_duration: PT16H
+  #Hawaii Emergency Kohala Chart Conversion
+  - task_name: Hawaii Emergency Kohala Chart Conversion
+    task_descrip: Chart Conversion for Hawaii Emergency Kohala
+    task_exe: D:\Integration_Services\HL7toPDF\Release\HL7ToPDF\HL7ToPDF.exe
+    task_argument: HawaiiEmergency_Kohala_PDF
+    task_sched_type: daily
+    task_sched_time: "2025-02-12T07:00:00"
+    task_gmsa: CORP\gmsa_uhl7topdf$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+  #Hawaii Emergency Kohala Chart Conversion
+  - task_name: Hawaii Emergency Kona Chart Conversion
+    task_descrip: Chart Conversion for Hawaii Emergency Kona
+    task_exe: D:\Integration_Services\HL7toPDF\Release\HL7ToPDF\HL7ToPDF.exe
+    task_argument: HawaiiEmergency_Kona_PDF
+    task_sched_type: daily
+    task_sched_time: "2025-02-12T07:00:00"
+    task_gmsa: CORP\gmsa_uhl7topdf$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+  #Hawaii Emergency Molokai Chart Conversion
+  - task_name: Hawaii Emergency Molokai Chart Conversion
+    task_descrip: Chart Conversion for Hawaii Emergency Molokai
+    task_exe: D:\Integration_Services\HL7toPDF\Release\HL7ToPDF\HL7ToPDF.exe
+    task_argument: HawaiiEmergency_Molokai
+    task_sched_type: daily
+    task_sched_time: "2025-02-12T07:00:00"
+    task_gmsa: CORP\gmsa_uhl7topdf$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+  #Hawaii Emergency Queens Chart Conversion
+  - task_name: Hawaii Emergency Queens Chart Conversion
+    task_descrip: Chart Conversion for Hawaii Emergency Queens
+    task_exe: D:\Integration_Services\HL7toPDF\Release\HL7ToPDF\HL7ToPDF.exe
+    task_argument: HawaiiEmergency_Queens
+    task_sched_type: daily
+    task_sched_time: "2025-02-12T07:00:00"
+    task_gmsa: CORP\gmsa_uhl7topdf$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+  #Hawaii Emergency Castle Chart Conversion
+  - task_name: Hawaii Emergency Castle Chart Conversion
+    task_descrip: Chart Conversion for Hawaii Emergency Castle
+    task_exe: D:\Integration_Services\HL7toPDF\Release\HL7ToPDF\HL7ToPDF.exe
+    task_argument: HawaiiEmergencyCastle
+    task_sched_type: daily
+    task_sched_time: "2025-02-12T08:00:00"
+    task_gmsa: CORP\gmsa_uhl7topdf$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+  #Hawaii Emergency Wahiawa CNRRAI Chart Conversion
+  - task_name: Hawaii Emergency Wahiawa Chart Conversion
+    task_descrip: Chart Conversion for Hawaii Emergency Wahiawa
+    task_exe: D:\Integration_Services\HL7toPDF\Release\HL7ToPDF\HL7ToPDF.exe
+    task_argument: HawaiiEmergency_Wahiawa
+    task_sched_type: daily
+    task_sched_time: "2025-02-12T07:00:00"
+    task_gmsa: CORP\gmsa_uhl7topdf$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+  #Hawaii Emergency HHSC Combined HL7 Chart Conversion
+  - task_name: Hawaii Emergency HHSC Combined HL7 Chart Conversion
+    task_descrip: Chart Conversion for Hawaii Emergency HHSC Combined HL7
+    task_exe: D:\Integration_Services\HL7toPDF\Release\HL7ToPDF\HL7ToPDF.exe
+    task_argument: HawaiiEmergencyHHSC
+    task_sched_type: daily
+    task_sched_time: "2025-02-12T06:45:00"
+    task_gmsa: CORP\gmsa_uhl7topdf$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+  #Hawaii Emergency Kauai Veterans CNRRAI Chart Conversion
+  - task_name: Hawaii Emergency Kauai Veterans CNRRAI Chart Conversion
+    task_descrip: Chart Conversion for Hawaii Emergency Kauai Veterans CNRRAI
+    task_exe: D:\Integration_Services\HL7toPDF\Release\HL7ToPDF\HL7ToPDF.exe
+    task_argument: HawaiiEmergency_KauaiVet_CNRRAI
+    task_sched_type: daily
+    task_sched_time: "2025-02-12T14:30:00"
+    task_gmsa: CORP\gmsa_uhl7topdf$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+  #Hawaii Emergency Sam Mahelona CNRRAI Chart Conversion
+  - task_name: Hawaii Emergency Sam Mahelona CNRRAI Chart Conversion
+    task_descrip: Chart Conversion for Hawaii Emergency Sam Mahelona CNRRAI
+    task_exe: D:\Integration_Services\HL7toPDF\Release\HL7ToPDF\HL7ToPDF.exe
+    task_argument: HawaiiEmergency_SamMahelona_CNRRAI
+    task_sched_type: daily
+    task_sched_time: "2025-02-12T14:30:00"
+    task_gmsa: CORP\gmsa_uhl7topdf$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+  #Hawaii Emergency HHSC Group Combined Orders Chart Conversion
+  - task_name: Hawaii Emergency HHSC Group Combined Orders Chart Conversion
+    task_descrip: Chart Conversion for Hawaii Emergency HHSC Group Combined Orders
+    task_exe: D:\Integration_Services\HL7toPDF\Release\HL7ToPDF\HL7ToPDF.exe
+    task_argument: HawaiiEmergencyHHSCOrders
+    task_sched_type: daily
+    task_sched_time: "2025-02-12T13:45:00"
+    task_gmsa: CORP\gmsa_uhl7topdf$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+  #Hawaii Emergency All Sites CNRRAI Chart Conversion
+  - task_name: Hawaii Emergency All Sites CNRRAI Chart Conversion
+    task_descrip: Chart Conversion for Hawaii Emergency All Sites CNRRAI
+    task_exe: D:\Integration_Services\HL7toPDF\Release\HL7ToPDF\HL7ToPDF.exe
+    task_argument: Hawaii_Emergency_AllSites_CNRRAI
+    task_sched_type: daily
+    task_sched_time: "2025-02-12T15:00:00"
+    task_gmsa: CORP\gmsa_uhl7topdf$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+  #Hawaii Emergency Kahuku CNRRAI Chart Conversion
+  - task_name: Hawaii Emergency Kahuku CNRRAI Chart Conversion
+    task_descrip: Chart Conversion for Hawaii Emergency Kahuku CNRRAI
+    task_exe: D:\Integration_Services\HL7toPDF\Release\HL7ToPDF\HL7ToPDF.exe
+    task_argument: HawaiiEmergency_Kahuku_CNRRAI
+    task_sched_type: daily
+    task_sched_time: "2025-02-12T14:30:00"
+    task_gmsa: CORP\gmsa_uhl7topdf$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+  #Hawaii Emergency Castle HL7 Demo Conversion
+  - task_name: Hawaii Emergency Castle HL7 Demo Conversion
+    task_descrip: Demo Conversion for Hawaii Emergency Castle
+    task_exe: D:\Integration_Services\HL7DemoConversion\Release\HL7DemoConversion\HL7DemoConversion.exe
+    task_argument: HawaiiEmergencyCastle
+    task_sched_type: daily
+    task_sched_time: "2025-02-12T06:15:00"
+    task_gmsa: CORP\gmsa_uhl7demo$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+  #Hawaii Emergency Castle HL7 Demo Conversion
+  - task_name: Hawaii Emergency Queens Group Combined HL7 Demo Conversion
+    task_descrip: Demo Conversion for Hawaii Emergency Queens Group Combined
+    task_exe: D:\Integration_Services\HL7DemoConversion\Release\HL7DemoConversion\HL7DemoConversion.exe
+    task_argument: HawaiiEmergency
+    task_sched_type: daily
+    task_sched_time: "2025-02-12T06:15:00"
+    task_gmsa: CORP\gmsa_uhl7demo$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+  #Hawaii Emergency Mid Pacific HL7 Demo Conversion
+  - task_name: Hawaii Emergency Mid Pacific HL7 Demo Conversion
+    task_descrip: Demo Conversion for Hawaii Emergency Mid Pacific
+    task_exe: D:\Integration_Services\HL7DemoConversion\Release\HL7DemoConversion\HL7DemoConversion.exe
+    task_argument: HawaiiMidPacific
+    task_sched_type: daily
+    task_sched_time: "2025-02-12T13:30:00"
+    task_gmsa: CORP\gmsa_uhl7demo$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+  #Hawaii Emergency SMMH KVMH Combined HL7 Demo Conversion
+  - task_name: Hawaii Emergency SMMH KVMH Combined HL7 Demo Conversion
+    task_descrip: Demo Conversion for Hawaii Emergency SMMH KVMH Combined
+    task_exe: D:\Integration_Services\HL7DemoConversion\Release\HL7DemoConversion\HL7DemoConversion.exe
+    task_argument: HawaiiSamMahelona
+    task_sched_type: daily
+    task_sched_time: "2025-02-12T05:45:00"
+    task_gmsa: CORP\gmsa_uhl7demo$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+  #Hawaii Emergency HHSC HL7 Demo Conversion
+  - task_name: Hawaii Emergency HHSC HL7 Demo Conversion
+    task_descrip: Demo Conversion for Hawaii Emergency HHSC
+    task_exe: D:\Integration_Services\HL7DemoConversion\Release\HL7DemoConversion\HL7DemoConversion.exe
+    task_argument: HawaiiEmergencyHHSC
+    task_sched_type: daily
+    task_sched_time: "2025-02-12T06:15:00"
+    task_gmsa: CORP\gmsa_uhl7demo$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+  #Hawaii Castle HL7 Excel Conversion
+  - task_name: Hawaii Castle HL7 Excel Conversion
+    task_descrip: EDLog Conversion for Hawaii Castle
+    task_exe: D:\Integration_Services\HL7FilesToExcel\Release\HL7FilesToExcel\HL7FilesToExcel.exe
+    task_argument: HawaiiCastle
+    task_sched_type: daily
+    task_sched_time: "2025-02-12T05:45:00"
+    task_gmsa: CORP\gmsa_uhl7toxlsx$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+  #HEPA Hawaii MidPacific DFT to HL7 to Allscripts
+  - task_name: HEPA Hawaii MidPacific DFT to HL7 to Allscripts
+    task_descrip: DFT to HL7 to Allscripts Conversion for HEPA Hawaii MidPacific
+    task_exe: D:\Integration_Services\Inbound_Proc2HL7\Release\Inbound_Proc2HL7\Inbound_Proc2HL7.exe
+    task_argument: HEPAHawaiiMidPacific
+    task_sched_type: daily
+    task_sched_time: "2025-02-12T11:40:00"
+    task_gmsa: CORP\gmsa_uproctohl7$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+  #HEPA Hawaii MidPacific DFT file import
+  - task_name: HEPA Hawaii MidPacific DFT file import
+    task_descrip: DFT File Import Conversion for HEPA Hawaii MidPacific
+    task_exe: D:\Integration_Services\Inbound_Proc2HL7\Release\Inbound_Proc2HL7\Inbound_Proc2HL7.exe
+    task_argument: HEPAHawaiiMidPacificDFT
+    task_sched_type: daily
+    task_sched_time: "2025-02-12T11:10:00"
+    task_gmsa: CORP\gmsa_uproctohl7$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+  #HEPA Castle Feedback HL7 files Import
+  - task_name: HEPA Castle Feedback HL7 files Import
+    task_descrip: Feedback File Conversion for HEPA Castle
+    task_exe: D:\Integration_Services\LoadDataToFeedback\Release\LoadDataToFeedback\LoadDataToFeedback.exe
+    task_argument: HEPA_Castle Demo
+    task_sched_type: daily
+    task_sched_time: "2025-02-12T11:30:00"
+    task_gmsa: CORP\gmsa_udatafdbk$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+  #HEPA HHSC Group Feedback HL7 files Import
+  - task_name: HEPA HHSC Group Feedback HL7 files Import
+    task_descrip: Feedback File Conversion for HEPA HHSC Group
+    task_exe: D:\Integration_Services\LoadDataToFeedback\Release\LoadDataToFeedback\LoadDataToFeedback.exe
+    task_argument: HEPA_HHSC Demo
+    task_sched_type: daily
+    task_sched_time: "2025-02-12T11:00:00"
+    task_gmsa: CORP\gmsa_udatafdbk$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+  #HEPA Queens Group Feedback HL7 files Import
+  - task_name: HEPA Queens Group Feedback HL7 files Import
+    task_descrip: Feedback File Conversion for HEPA Queens Group
+    task_exe: D:\Integration_Services\LoadDataToFeedback\Release\LoadDataToFeedback\LoadDataToFeedback.exe
+    task_argument: HEPA_Queens Demo
+    task_sched_type: daily
+    task_sched_time: "2025-02-12T11:15:00"
+    task_gmsa: CORP\gmsa_udatafdbk$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+  #HEPA SMMH-KVMH Group Feedback HL7 and Census files Import
+  - task_name: HEPA SMMH-KVMH Group Feedback HL7 and Census files Import
+    task_descrip: Feedback File and Sensus Files Import Conversion for HEPA SMMH-KVMH Group
+    task_exe: D:\Integration_Services\LoadDataToFeedback\Release\LoadDataToFeedback\LoadDataToFeedback.exe
+    task_argument: HEPA_SMMH-KVMH Demo
+    task_sched_type: daily
+    task_sched_time: "2025-02-12T13:20:00"
+    task_gmsa: CORP\gmsa_udatafdbk$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+
+  # #Burbank Daily Demo Conversion
+  # - task_name: Burbank Daily Demo Conversion
+  #   task_descrip: Burbank Daily Demo Conversion
+  #   task_exe: D:\Integration_Services\HL7DemoConversion\HL7DemoConversion\HL7DemoConversion.exe
+  #   task_argument: Burbank
+  #   task_sched_type: daily
+  #   task_days_of_week: sunday, monday, tuesday, wednesday, thursday, friday, saturday
+  #   task_sched_time: "2024-09-18T13:45:00"
+  #   task_gmsa: CORP\gmsa_dhl7demo$
+  #   logon_type: password
+  #   run_level: highest
+  #   task_mult_instances: 2
+  #   enabled_flag: true
+  # #Burbank Update Demo Conversion
+  # - task_name: Burbank Update Demo Conversion
+  #   task_descrip: Burbank Update Demo Conversion
+  #   task_exe: D:\Integration_Services\HL7DemoConversion\HL7DemoConversion\HL7DemoConversion.exe
+  #   task_argument: Burbank_update
+  #   task_sched_type: weekly
+  #   task_days_of_week: friday
+  #   task_sched_time: "2024-09-18T13:45:00"
+  #   task_gmsa: CORP\gmsa_dhl7demo$
+  #   logon_type: password
+  #   run_level: highest
+  #   task_mult_instances: 2
+  #   enabled_flag: true

@@ -1,0 +1,63 @@
+# AzureArc role vars
+az_arc_resource_group: rg-azure-arc-webapp-servers
+
+# Install_Windows_Features role vars
+windows_features:
+  - name: Web-Server
+  - name: Web-Static-Content
+  - name: Web-Default-Doc
+  - name: Web-Http-Errors
+  - name: Web-Http-Logging
+  - name: Web-Stat-Compression
+  - name: Web-Filtering
+  - name: Web-Net-Ext45
+  - name: Web-Asp-Net45
+  - name: Web-ISAPI-Ext
+  - name: Web-ISAPI-Filter
+  - name: Web-Mgmt-Console
+  - name: MSMQ
+  - name: MSMQ-Services
+    include_management_tools: true
+#  - name: MSMQ-Directory
+#  - name: MSMQ-HTTP-Support
+#  - name: MSMQ-Triggers
+#  - name: MSMQ-Multicasting
+#  - name: MSMQ-Routing
+
+# Server_Access role vars
+admin_access_group_name: CORP\SRV_BEDPAUTO_Admin
+rdp_access_group_name: CORP\SRV_BEDPAUTO_RDP
+
+# create Directory
+rootpathsubs:
+  - path: C:\TFS
+  - path: C:\TFS\LogixAutomationApplication\Release\Application
+  - path: C:\TFS\LogixAutomationService\Release\LA_Service
+
+#Variable values for all IIS Website Apps
+iis_website_app_info:
+  - app_pool_name: LogixAutomation
+    website_state: started
+    host_name: ""
+    mpl_mode: Integrated
+    runtime_version: "v4.0"
+    website_name: LogixAutomation
+    root_path: C:\TFS
+
+#Variable values for all IIS SUB Applications
+sub_iis_website_app_info:
+  - app_pool_name: LogixAutomation
+    ParentSite: LogixAutomation
+    Sub_website_name: Application
+    root_path: C:\TFS\LogixAutomationApplication\Release\Application
+  - app_pool_name: LogixAutomation
+    ParentSite: LogixAutomation
+    Sub_website_name: LA_Service
+    root_path: C:\TFS\LogixAutomationService\Release\LA_Service
+
+#Create Windows service
+windows_services_app_info:
+  - service_name: Atom8MSMQListener
+    exe_path: C:\TFS\MSMQListener\MSMQListener.exe
+    display_name: Atom8MSMQListener
+    description: This windows service retrieves the logs from Automation engine and send backs to client using signalr

@@ -1,0 +1,4 @@
+steps:
+  - task: CmdLine@2
+    inputs:
+      script: 'ansible-playbook $(playbook) -i $(inventory) --extra-vars "password=$(password) username=$(username)" -vvv'

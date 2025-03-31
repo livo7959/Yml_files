@@ -1,0 +1,76 @@
+parameters:
+  - name: component
+    type: object
+# - name: environment
+#   type: object
+
+steps:
+  # - checkout: Templates
+  # - task: AzureResourceManagerTemplateDeployment@3
+  #   displayName: Deploy ${{ parameters.component.displayName }}
+  #   inputs:
+  #     deploymentScope: Resource Group
+  #     azureResourceManagerConnection: ${{ parameters.environment.serviceConnectionName }}
+  #     action: Create Or Update Resource Group
+  #     resourceGroupName: ${{ parameters.environment.resourceGroupName }}
+  #     location: East US 2
+  #     csmFile: Bicep/${{ parameters.component.module }}.bicep
+  #     overrideParameters: ${{ parameters.component.parameters }}
+  #     deploymentMode: Incremental
+
+  - ${{if eq(parameters.component.deploymentScope, 'managementGroup')}}:
+      - task: AzureCLI@2
+        displayName: Deploy ${{ parameters.component.displayName }}
+        name: deploy_${{parameters.component.name}}
+        inputs:
+          # TODO - add looping to handle environments object iterations, then switch to this parameter
+          azureSubscription: ${{ parameters.component.serviceConnectionName }}
+          # azureSubscription: LH Tenant
+          scriptType: pscore
+          scriptLocation: inlineScript
+          # TODO - add if statements to handle deploymentScope options and variations to inlineScript for each scope level
+          inlineScript: |
+            az deployment mg create `
+            --template-file ${{ parameters.component.templateDirectory }}/${{ parameters.component.module }}.bicep `
+            --location ${{ parameters.component.location }} `
+            --management-group-id ${{ parameters.component.managementGroupId }} `
+            --name create-${{parameters.component.name}}-$(Build.BuildNumber) `
+            --no-prompt
+
+  - ${{if eq(parameters.component.deploymentScope, 'subscription')}}:
+      - task: AzureCLI@2
+        displayName: Deploy ${{ parameters.component.displayName }}
+        name: deploy_${{parameters.component.name}}
+        inputs:
+          # TODO - add looping to handle environments object iterations, then switch to this parameter
+          azureSubscription: ${{ parameters.component.serviceConnectionName }}
+          # azureSubscription: LH Tenant
+          scriptType: pscore
+          scriptLocation: inlineScript
+          # TODO - add if statements to handle deploymentScope options and variations to inlineScript for each scope level
+          inlineScript: |
+            az account set --subscription ${{ parameters.component.subscriptionId }}
+            az deployment sub create `
+            --template-file ${{ parameters.component.templateDirectory }}/${{ parameters.component.module }}.bicep `
+            --location ${{ parameters.component.location }} `
+            --name create-${{parameters.component.name}}-$(Build.BuildNumber) `
+            --no-prompt
+
+  - ${{if eq(parameters.component.deploymentScope, 'resourceGroup')}}:
+      - task: AzureCLI@2
+        displayName: Deploy ${{ parameters.component.displayName }}
+        name: deploy_${{parameters.component.name}}
+        inputs:
+          # TODO - add looping to handle environments object iterations, then switch to this parameter
+          azureSubscription: ${{ parameters.component.serviceConnectionName }}
+          # azureSubscription: LH Tenant
+          scriptType: pscore
+          scriptLocation: inlineScript
+          # TODO - add if statements to handle deploymentScope options and variations to inlineScript for each scope level
+          inlineScript: |
+            az deployment group create `
+            --template-file ${{ parameters.component.templateDirectory }}/${{ parameters.component.module }}.bicep `
+            --location ${{ parameters.component.location }} `
+            --resource-group ${{ parameters.component.resourceGroupName }}
+            --name create-${{parameters.component.name}}-$(Build.BuildNumber) `
+            --no-prompt

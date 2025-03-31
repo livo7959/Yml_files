@@ -1,0 +1,9 @@
+steps:
+  - task: PowerShell@2
+    displayName: Delete Build Files
+    inputs:
+      targetType: inline
+      pwsh: true
+      script: |
+        Remove-Item $(Build.SourcesDirectory)\* -Recurse -Force
+        Remove-Item $(Build.ArtifactStagingDirectory)\* -Recurse -Force

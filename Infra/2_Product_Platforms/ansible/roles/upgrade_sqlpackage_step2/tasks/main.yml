@@ -1,0 +1,4 @@
+- name: Download SqlPackage .zip file
+  win_get_url:
+    url: "https://aka.ms/sqlpackage-windows"
+    dest: "M:\\Install\\SqlPackage\\sqlpackage.zip"

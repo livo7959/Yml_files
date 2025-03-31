@@ -1,0 +1,5 @@
+- name: Install PDQ Connect Agent from \\Corp\LH-ITInfra\Software
+  win_package:
+    path: \\bedpsurvstor001\Software\PDQconnectAgent\PDQConnectAgent-5.6.11.msi
+    state: present
+    arguments: ALLUSERS=1 /qn /norestart

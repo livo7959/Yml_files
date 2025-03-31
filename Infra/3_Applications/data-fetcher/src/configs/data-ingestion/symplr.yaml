@@ -1,0 +1,370 @@
+envs:
+  sbox:
+    base_url: https://logixhealth.payer.symplr.com/testngservices/api/
+  stg:
+    base_url: https://logixhealth.payer.symplr.com/testngservices/api/
+  prod:
+    base_url: https://logixhealth.payer.symplr.com/prodngservices/api/
+access_token_key: symplr-access-token
+auth_type: static_token
+header_key: ticket
+request_type: GET
+request_headers:
+  datasource: logixhealth
+operations:
+  practitioners_search:
+    endpoint: practitioners/search
+    request_type: POST
+    request_data:
+      pageNumber: "{page_number}"
+      pageSize: "{page_size}"
+    pagination:
+      type: next_page
+      next_page_key: page_number
+      data_check:
+        data_path: recordCount
+        op: eq
+        compare_key: pageSize
+    chained_requests:
+      - operation: practitioner_plan_search
+        for_each:
+          data_key: practitioner_id
+          data_path: practitioners[*].practitionerID
+        page_number: 1
+        page_size: 5000
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: symplr
+        filename: practitioners_search/practitioners_search_page_{page_number}
+  practitioner_licenses:
+    endpoint: practitioners/licenses/search
+    request_type: POST
+    request_data:
+      pageNumber: "{page_number}"
+      pageSize: "{page_size}"
+    pagination:
+      type: next_page
+      next_page_key: page_number
+      data_check:
+        data_path: recordCount
+        op: eq
+        compare_key: pageSize
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: symplr
+        filename: practitioner_licenses/practitioner_licenses_page_{page_number}_size_{page_size}
+  practitioner_plan_search:
+    endpoint: products/practitioner/search
+    request_type: POST
+    request_data:
+      practitionerId: "{practitioner_id}"
+      pageNumber: "{page_number}"
+      pageSize: "{page_size}"
+    pagination:
+      type: next_page
+      next_page_key: page_number
+      data_check:
+        data_path: recordCount
+        op: eq
+        compare_key: pageSize
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: symplr
+        filename: practitioner_plans/practitioner_{practitioner_id}_page_{page_number}_size_{page_size}
+  create_new_lookup_status_type:
+    endpoint: lookups
+    request_type: POST
+    request_data:
+      name: "{name}"
+      code: "{code}"
+      statusSetID: 13600
+      statusSetName: Plan
+      tableName: StatusTypes
+      archived: "N"
+      colorCode: "#FFFFFF"
+      colorName: Default
+      hasColorCode: true
+  practices_search:
+    endpoint: practices/search
+    request_type: POST
+    request_data:
+      archived: "N"
+      pageNumber: "{page_number}"
+      pageSize: "{page_size}"
+    pagination:
+      type: next_page
+      next_page_key: page_number
+      data_check:
+        data_path: recordCount
+        op: eq
+        compare_key: pageSize
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: symplr
+        filename: practices_search/practices_page_{page_number}_size_{page_size}
+  product_search:
+    endpoint: products/search
+    request_type: POST
+    request_data:
+      pageNumber: "{page_number}"
+      pageSize: "{page_size}"
+    pagination:
+      type: next_page
+      next_page_key: page_number
+      data_check:
+        data_path: recordCount
+        op: eq
+        compare_key: pageSize
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: symplr
+        filename: product_search/product_search_page_{page_number}
+  create_new_plan:
+    endpoint: products
+    request_type: POST
+    request_data:
+      productName: "{product_name}"
+      productCode: "{product_code}"
+      productTypeId: "{product_type_id}"
+      productTypeCode: "{product_type_code}"
+      productTypeName: "{product_type_name}"
+      archived: "N"
+  update_plan:
+    endpoint: products/{product_id}
+    request_type: PUT
+    request_data:
+      productID: "{product_id}"
+      productName: "{productName}"
+      productCode: "{productCode}"
+      productTypeID: "{productTypeID}"
+      productTypeCode: "{productTypeCode}"
+      productTypeName: "{productTypeName}"
+      notes: "{notes}"
+      webSite: "{webSite}"
+      archived: "{archived}"
+  update_practitioner_plan:
+    endpoint: products/practitioner?id={practitionerProductRecID}
+    request_type: PUT
+    request_json:
+      practitionerProductRecID: "{practitionerProductRecID}"
+      archived: "{archived}"
+      practitionerID: "{practitionerID}"
+      practiceName: "{practiceName}"
+      practitionerLocation:
+        archived: "{practitionerLocationArchived}"
+        practitionerLocationRecID: "{practitionerLocationRecID}"
+      productID: "{productID}"
+      productName: "{productName}"
+      productTypeID: "{productTypeID}"
+      productTypeName: "{productTypeName}"
+      productTypeCode: "{productTypeCode}"
+      dateFrom: "{dateFrom}"
+      dateTo: "{dateTo}"
+      statusTypeID: "{statusTypeID}"
+      statusTypeName: "{statusTypeName}"
+      notes: "{notes}"
+      contractID: "{contractID}"
+      contractName: "{contractName}"
+      contractReceivedDate: "{contractReceivedDate}"
+      contractSentDate: "{contractSentDate}"
+      maximumNbrPatients: "{maximumNbrPatients}"
+      minimumNbrPatients: "{minimumNbrPatients}"
+      providerNumber: "{providerNumber}"
+      representativeID: "{representativeID}"
+      representativeName: "{representativeName}"
+      terminationDate: "{terminationDate}"
+      terminationTypeID: "{terminationTypeID}"
+      terminationTypeName: "{terminationTypeName}"
+      productPanelStatusTypeCode: "{productPanelStatusTypeCode}"
+      productPanelStatusTypeID: "{productPanelStatusTypeID}"
+      productPanelStatusTypeName: "{productPanelStatusTypeName}"
+      productPopulationID: "{productPopulationID}"
+      productPopulationName: "{productPopulationName}"
+      focus: "{focus}"
+  practices_locations:
+    endpoint: practices/practices/locations?archived=N
+    request_type: POST
+    request_data:
+      archived: "N"
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: symplr
+        filename: practices_locations/practices_locations
+  practices_practitioner_locations_search:
+    endpoint: practices/practitioner/locations/search
+    request_type: POST
+    request_data:
+      archived: "{archived}"
+      pageNumber: "{page_number}"
+      pageSize: "{page_size}"
+    pagination:
+      type: next_page
+      next_page_key: page_number
+      data_check:
+        data_path: recordCount
+        op: eq
+        compare_key: pageSize
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: symplr
+        filename: practices_practitioner_locations_search/practices_practitioner_location_archived_{archived}_{page_number}_size_{page_size}
+  product_location_search:
+    endpoint: products/location/search
+    request_type: POST
+    request_data:
+      archived: "N"
+      pageNumber: "{page_number}"
+      pageSize: "{page_size}"
+    pagination:
+      type: next_page
+      next_page_key: page_number
+      data_check:
+        data_path: recordCount
+        op: eq
+        compare_key: pageSize
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: symplr
+        filename: product_location_search/product_location_search_{page_number}_size_{page_size}
+  update_product_location:
+    endpoint: products/location?id={locationProductRecID}
+    request_type: PUT
+    request_json:
+      locationID: "{locationID}"
+      locationName: "{locationName}"
+      locationProductRecID: "{locationProductRecID}"
+      productID: "{productID}"
+      productName: "{productName}"
+      productTypeID: "{productTypeID}"
+      productTypeName: "{productTypeName}"
+      productTypeCode: "{productTypeCode}"
+      practitionerTypeCode: "{practitionerTypeCode}"
+      practitionerTypeID: "{practitionerTypeID}"
+      practitionerName: "{practitionerName}"
+      statusTypeID: "{statusTypeID}"
+      statusTypeName: "{statusTypeName}"
+      practiceName: "{practiceName}"
+      archived: "{archived}"
+      practiceLocation:
+        archived: "{practiceLocation_archived}"
+        locationID: "{locationID}"
+      dateFrom: "{dateFrom}"
+      dateTo: "{dateTo}"
+      notes: "{notes}"
+      contractID: "{contractID}"
+      contractName: "{contractName}"
+      contractReceivedDate: "{contractReceivedDate}"
+      contractSentDate: "{contractSentDate}"
+      maximumNbrPatients: "{maximumNbrPatients}"
+      minimumNbrPatients: "{minimumNbrPatients}"
+      providerNumber: "{providerNumber}"
+      representativeID: "{representativeID}"
+      representativeName: "{representativeName}"
+      terminationDate: "{terminationDate}"
+      terminationTypeID: "{terminationTypeID}"
+      terminationTypeName: "{terminationTypeName}"
+      productPanelStatusTypeCode: "{productPanelStatusTypeCode}"
+      productPanelStatusTypeID: "{productPanelStatusTypeID}"
+      productPanelStatusTypeName: "{productPanelStatusTypeName}"
+      productPopulationID: "{productPopulationID}"
+      productPopulationName: "{productPopulationName}"
+      focus: "{focus}"
+  update_practices_practitioner_locations:
+    endpoint: practices/practitioner/location?id={practitionerLocationRecID}
+    request_type: PUT
+    request_json:
+      locationPhones: "{locationPhones}"
+      locationEmails: "{locationEmails}"
+      locationDetails: "{locationDetails}"
+      practitionerCoveringPhysicians: "{practitionerCoveringPhysicians}"
+      locationSpecialties: "{locationSpecialties}"
+      practitionerPhonesLocations: "{practitionerPhonesLocations}"
+      practitionerHoursLocations: "{practitionerHoursLocations}"
+      alternateIDs: "{alternateIDs}"
+      practitionerLocationFullAddress: "{practitionerLocationFullAddress}"
+      practitionerLocationRecID: "{practitionerLocationRecID}"
+      practitionerID: "{practitionerID}"
+      practitionerName: "{practitionerName}"
+      practitionerTypeCode: "{practitionerTypeCode}"
+      addressTypeID: "{addressTypeID}"
+      addressTypeName: "{addressTypeName}"
+      primaryLocation: "{primaryLocation}"
+      memberTypeID: "{memberTypeID}"
+      memberTypeName: "{memberTypeName}"
+      practiceAsID: "{practiceAsID}"
+      practiceAs: "{practiceAs}"
+      inDirectory: "{inDirectory}"
+      acceptingPatients: "{acceptingPatients}"
+      linkedImageCount: "{linkedImageCount}"
+      mailingAddress: "{mailingAddress}"
+      locationNotes: "{locationNotes}"
+      firstName: "{firstName}"
+      middleName: "{middleName}"
+      lastName: "{lastName}"
+      providerNumber: "{providerNumber}"
+      socialSecurityNumber: "{socialSecurityNumber}"
+      npiAuthorized: "{npiAuthorized}"
+      electronicBillingCapability: "{electronicBillingCapability}"
+      billingPayableToName: "{billingPayableToName}"
+      practiceNotes: "{practiceNotes}"
+      terminationTypeID: "{terminationTypeID}"
+      terminationTypeName: "{terminationTypeName}"
+      regionTypeCode: "{regionTypeCode}"
+      practiceStatus: "{practiceStatus}"
+      committeeActionName: "{committeeActionName}"
+      committeeActionCode: "{committeeActionCode}"
+      internalContacts: "{internalContacts}"
+      linkedLocations: "{linkedLocations}"
+      application: "{application}"
+      practiceID: "{practiceID}"
+      practiceName: "{practiceName}"
+      practiceCode: "{practiceCode}"
+      practiceTypeID: "{practiceTypeID}"
+      practiceTypeName: "{practiceTypeName}"
+      locationID: "{locationID}"
+      locationName: "{locationName}"
+      locationCode: "{locationCode}"
+      locationTypeID: "{locationTypeID}"
+      locationTypeName: "{locationTypeName}"
+      dateFrom: "{dateFrom}"
+      dateTo: "{dateTo}"
+      legalName: "{legalName}"
+      taxIDNumber: "{taxIDNumber}"
+      nationalProviderID: "{nationalProviderID}"
+      webSite: "{webSite}"
+      officeManagerName: "{officeManagerName}"
+      twentyFourHourCoverage: "{twentyFourHourCoverage}"
+      notes: "{notes}"
+      practiceStatusID: "{practiceStatusID}"
+      practiceStatusEffectiveDate: "{practiceStatusEffectiveDate}"
+      assignedTo: "{assignedTo}"
+      maintenanceAssignedTo: "{maintenanceAssignedTo}"
+      providerRepresentative: "{providerRepresentative}"
+      committeeActionID: "{committeeActionID}"
+      addressID: "{addressID}"
+      lineNumber1: "{lineNumber1}"
+      lineNumber2: "{lineNumber2}"
+      lineNumber3: "{lineNumber3}"
+      city: "{city}"
+      county: "{county}"
+      state: "{state}"
+      zipCodeID: "{zipCodeID}"
+      zipCode: "{zipCode}"
+      countryCode: "{countryCode}"
+      countryName: "{countryName}"
+      otherAddressDetails: "{otherAddressDetails}"
+      longitude: "{longitude}"
+      latitude: "{latitude}"
+      regionTypeID: "{regionTypeID}"
+      regionTypeName: "{regionTypeName}"
+      lineAddress: "{lineAddress}"
+      fullAddress: "{fullAddress}"
+      archived: "{archived}"

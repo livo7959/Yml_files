@@ -1,0 +1,4 @@
+variables:
+  outputFile: terraform.tfplan
+  tfVarsFile: ./environments/dev.tfvars
+  workingDirectory: 2_Product_Platforms/key_vault_standalone/legacy/dev

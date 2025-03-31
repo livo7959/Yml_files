@@ -1,0 +1,5 @@
+subscription_id      = "6491734a-d237-48c2-a8e3-7fe4cfd1205a"
+resource_group_name  = "rg-terraform-state-vmware"
+storage_account_name = "lhtfstatevmware"
+container_name       = "vmware-container-prod-infra"
+key                  = "vmware-container-prod-infra.tfstate"

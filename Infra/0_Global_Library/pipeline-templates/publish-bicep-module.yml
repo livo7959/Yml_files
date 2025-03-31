@@ -1,0 +1,107 @@
+# https://medium.com/@felix.p.lindgren/azure-devops-ci-cd-pipeline-for-bicep-with-approvals-and-checks-aedd1ef9dac7
+
+- stage: "Build and Publish"
+  jobs:
+    - job: Build
+      steps:
+        - script: |
+            az bicep build --file ${{path}}
+
+    - job: PublishDev
+      displayName: Publish Artifacts to Dev ACR
+      dependsOn: Build
+      steps:
+        - task: AzureCLI@2
+          name: PublishDevAcr
+          displayName: Publish Bicep module to Dev ACR
+          inputs:
+            azureSubscription: $(ServiceConnectionName)
+            scriptType: bash
+            scriptLocation: inlineScript
+            inlineScript: |
+              az bicep publish \
+                --file $(path) \
+                --target ${{variables.acr-dev}}
+
+- stage: Preview
+  jobs:
+    - job: Validate
+      displayName: Validate Bicep Code
+      steps:
+        - download: current
+          artifact: drop
+        - task: AzureCLI@2
+          name: RunPreflightValidation
+          displayName: Run preflight validation
+          inputs:
+            azureSubscription: $(ServiceConnectionName)
+            scriptType: bash
+            scriptLocation: inlineScript
+            inlineScript: |
+              az deployment sub validate \
+              --location ${{variables.location}} \
+              --template-file ${{path}} \
+              --parameters ${{variables.parametersFolderPath}}/main.parameters.json \
+              --name $(Build.BuildNumber)
+
+    - job: "What If"
+      displayName: Preview Azure Changes
+      dependsOn: Validate
+      steps:
+        - download: current
+          artifact: drop
+        - task: AzureCLI@2
+          name: RunWhatIf
+          displayName: Run what-if
+          inputs:
+            azureSubscription: $(ServiceConnectionName)
+            scriptType: bash
+            scriptLocation: inlineScript
+            inlineScript: |
+              az deployment sub what-if \
+              --location ${{variables.location}} \
+              --template-file $(path) \
+              --parameters ${{variables.parametersFolderPath}}/main.parameters.json \
+              --name $(Build.BuildNumber)
+
+- stage: TestDeploy
+  jobs:
+    - deployment: DeployInfrastructure
+      displayName: Deploy infrastructure to test
+      environment: test
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+              - download: current
+                artifact: drop
+              - task: AzureCLI@2
+                name: DeployBicepFile
+                displayName: Deploy bicep file
+                inputs:
+                  azureSubscription: $(ServiceConnectionName)
+                  scriptType: bash
+                  scriptLocation: inlineScript
+                  inlineScript: |
+                    az deployment sub create \
+                    --location ${{variables.location}} \
+                    --template-file $(path) \
+                    --parameters ${{variables.parametersFolderPath}}/main.parameters.json \
+                    --name $(Build.BuildNumber)
+
+- stage: PublishProd
+  jobs:
+    - job: PublishProd
+      displayName: Publish Artifacts to Prod ACR
+      steps:
+        - task: AzureCLI@2
+          name: PublishProdAcr
+          displayName: Publish Bicep module to Prod ACR
+          inputs:
+            azureSubscription: $(ServiceConnectionName)
+            scriptType: bash
+            scriptLocation: inlineScript
+            inlineScript: |
+              az bicep publish \
+                --file $(path) \
+                --target ${{variables.acr-prod}}

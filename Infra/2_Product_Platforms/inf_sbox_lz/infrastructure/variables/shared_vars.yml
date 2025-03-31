@@ -1,0 +1,6 @@
+variables:
+  workloadName: infSboxTest
+  artifactName: terraform
+  outputFile: terraform.tfplan
+  tfStateFile: inf-sbox-lz
+  tfVarsFile: ./environments/sbox.tfvars

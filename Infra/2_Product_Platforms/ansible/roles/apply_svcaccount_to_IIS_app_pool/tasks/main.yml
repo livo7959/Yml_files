@@ -1,0 +1,12 @@
+#Apply gMSA to Existing App Pool
+- name: Apply gMSA to App Pool Identity
+  community.windows.win_iis_webapppool:
+    name: "{{ item.app_pool_name }}"
+    state: "{{ item.website_state }}"
+    attributes:
+      managedPipelineMode: "{{ item.mpl_mode }}"
+      managedRuntimeVersion: "{{ item.runtime_version }}"
+      processModel.identityType: SpecificUser
+      processModel.userName: "{{ item.gMSA }}"
+      processModel.loadUserProfile: true
+  loop: "{{ iis_website_app_info }}"

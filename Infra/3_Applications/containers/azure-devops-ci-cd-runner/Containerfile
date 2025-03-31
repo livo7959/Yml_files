@@ -1,0 +1,43 @@
+FROM ubuntu:latest
+
+# Install dependencies.
+RUN DEBIAN_FRONTEND=noninteractive \
+    && apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y -qq --no-install-recommends \
+        # From the upstream file:
+        # https://github.com/Azure-Samples/container-apps-ci-cd-runner-tutorial/blob/main/Dockerfile.azure-pipelines
+        apt-transport-https \
+        apt-utils \
+        ca-certificates \
+        curl \
+        git \
+        iputils-ping \
+        jq \
+        lsb-release \
+        software-properties-common \
+        # Added software for LogixHealth.
+        dnsutils \
+        unzip \
+        vim \
+        zip \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the LogixHealth root certificate.
+COPY ./certs/BEDROOTCA001.crt /usr/local/share/ca-certificates/BEDROOTCA001.crt
+RUN update-ca-certificates
+
+# Node.js does not use the system's certificate store, so we must set a global environment variable.
+ENV NODE_EXTRA_CA_CERTS="/usr/local/share/ca-certificates/BEDROOTCA001.crt"
+
+# Install the Azure CLI.
+RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+
+# Can be 'linux-x64', 'linux-arm64', 'linux-arm', 'rhel.6-x64'.
+ENV TARGETARCH=linux-x64
+
+WORKDIR /azp
+
+COPY --chmod=700 azure-pipelines-agent/start.sh .
+ENTRYPOINT [ "./start.sh" ]

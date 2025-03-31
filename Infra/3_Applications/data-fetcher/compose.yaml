@@ -1,0 +1,9 @@
+services:
+  data-fetcher:
+    image: data-fetcher:latest
+    environment:
+      - ENVIRONMENT=sbox
+    volumes:
+      - $HOME/.azure:/home/myuser/.azure
+    deploy:
+      replicas: 3

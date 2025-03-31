@@ -1,0 +1,6 @@
+#WORKING - Create directory
+- name: Create Directory
+  win_file:
+    path: "{{ item.path }}"
+    state: directory
+  loop: "{{ rootpathsubs }}"

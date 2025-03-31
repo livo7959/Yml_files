@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Organization>
+  <Departments>
+        
+      <Department name="Analytics and Innovation">
+        <Base_User_Template>"CN=AnalyticsInnov_Base,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+        <Mgmt_User_Template>"CN=AnalyticsInnov_Mgmt,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Mgmt_User_Template>
+        <AD_Destination_OU>"OU=Analytics and Innovation,OU=Department Users,OU=Internal,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+      </Department>
+      
+      <Department name="Audit and Contracting">
+        <Base_User_Template>"CN=Audit_Contract_Base,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+        <Mgmt_User_Template>"CN=Audit_Contract_Mgmt,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Mgmt_User_Template>
+        <AD_Destination_OU>"OU=Audit and Contracting,OU=Department Users,OU=Internal,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+      </Department>
+
+      <Department name="Billing Applications">
+        <Base_User_Template>"CN=Billing_Apps_Base,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+        <Mgmt_User_Template>"CN=Billing_Apps_Mgmt,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Mgmt_User_Template>
+        <AD_Destination_OU>"OU=Billing Applications,OU=Department Users,OU=Internal,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+      </Department>
+
+      <Department name="Billing Operations">
+        <Base_User_Template>"CN=Billing_Ops_Base,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+        <Mgmt_User_Template>"CN=Billing_Ops_Mgmt,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Mgmt_User_Template>
+        <AD_Destination_OU>"OU=Billing Operations Users,OU=Department Users,OU=Internal,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+      </Department>
+
+      <Department name="Brand Identity">
+        <Base_User_Template>"CN=Brand_Identity_Base,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+        <Mgmt_User_Template>"CN=Brand_Identity_Mgmt,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Mgmt_User_Template>
+        <AD_Destination_OU>"OU=Marketing Users,OU=Department Users,OU=Internal,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+      </Department>
+
+      <Department name="Cash Management">
+        <Base_User_Template>"CN=Cash_Management_Base,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+        <Mgmt_User_Template>"CN=Cash_Management_Mgmt,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Mgmt_User_Template>
+        <AD_Destination_OU>OU=Cash Management,OU=Department Users,OU=Internal,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+      </Department>
+_
+      <Department name="Client Services">
+        <Base_User_Template>"CN=Client_Services_Department_Template,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+        <Mgmt_User_Template>""</Mgmt_User_Template>
+        <AD_Destination_OU>"OU=Client Services Users,OU=Department Users,OU=Internal,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+      </Department>
+
+      <Department name="Coding">
+        <Base_User_Template>"CN=Coding_Base,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+        <Mgmt_User_Template>"CN=Coding_Mgmt,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Mgmt_User_Template>
+        <AD_Destination_OU>"OU=Coding Operations Users,OU=Department Users,OU=Internal,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+      </Department>
+      
+      <Department name="Coding Applications">
+        <Base_User_Template>"CN=Coding_Apps_Base,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+        <Mgmt_User_Template>"CN=Coding_Apps_Mgmt,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Mgmt_User_Template>
+        <AD_Destination_OU>"OU=Coding Applications Users,OU=Department Users,OU=Internal,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+      </Department>
+
+      <Department name="Coding Quality">
+        <Base_User_Template>"CN=Coding_Quality_Base,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+        <Mgmt_User_Template>"CN=Coding_Quality_Mgmt,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Mgmt_User_Template>
+        <AD_Destination_OU>"OU=Coding Operations Users,OU=Department Users,OU=Internal,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+      </Department>
+
+    <Department name="ED Billing">
+      <Base_User_Template>"CN=ED_Billing_Base,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+      <Mgmt_User_Template>"CN=ED_Billing_Mgmt,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Mgmt_User_Template>
+      <AD_Destination_OU>"OU=ED Billing Users,OU=Department Users,OU=Internal,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+    </Department>
+
+    <Department name="EDI">
+      <Base_User_Template>"CN=EDI_Base,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+      <Mgmt_User_Template>"CN=EDI_Mgmt,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Mgmt_User_Template>
+      <AD_Destination_OU>"OU=EDI Users,OU=Department Users,OU=Internal,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+    </Department>
+
+    <Department name="Facility Charge Entry">
+      <Base_User_Template>"CN=Facility Charge Entry Department Template,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+      <Mgmt_User_Template>"CN=Finance_Base,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Mgmt_User_Template>
+      <AD_Destination_OU>"OU=Facility Charge Entry Users,OU=Department Users,OU=Internal,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+    </Department>
+
+    <Department name="Finance">
+      <Base_User_Template>"CN=Finance_Base,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+      <Mgmt_User_Template>"CN=Finance_Mgmt,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Mgmt_User_Template>
+      <AD_Destination_OU>"OU=Finance Users,OU=Department Users,OU=Internal,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+    </Department>
+
+    <Department name="Human Resources">
+      <Base_User_Template>"CN=Human_Resources_Base,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+      <Base_Human_Resources_Coordinator>"CN=Human_Resources_Coordinator,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_Human_Resources_Coordinator>
+      <Base_Human_Resources_Director>"CN=Human_Resources_Director,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_Human_Resources_Director>
+      <Base_Human_Resources_Mgmt>"CN=Human_Resources_Mgmt,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_Human_Resources_Mgmt>
+      <AD_Destination_OU>"OU=Human Resources Users,OU=Department Users,OU=Internal,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+    </Department>
+
+    <Department name="Infrastructure and Security">
+      <Base_User_Template>"CN=Infra_Support_Specialist,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+      <Base_Infra_Security_Base>"CN=Infra_Security_Base,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_Infra_Security_Base>
+      <Base_Infra_Director>"CN=Infra_Director,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_Infra_Director>
+      <Base_Infra_Sup_Manager>"CN=Infra_Support_Manager,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_Infra_Sup_Manager>
+      <Base_Infra_Systems_Administrator>"CN=Infra_Systems_Administrator,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_Infra_Systems_Administrator>
+      <Base_SecurityEng>"CN=Infra_Security_Base,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_SecurityEng>
+      <AD_Destination_OU>"OU=Technology Users,OU=Department Users,OU=Internal,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+    </Department>
+
+    <Department name="Integration Services">
+      <Base_User_Template>"CN=Int_Services_Base,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+      <Mgmt_User_Template>"CN=Int_Services_Base,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Mgmt_User_Template>
+      <AD_Destination_OU>"OU=Integration Services,OU=Department Users,OU=Internal,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+    </Department>
+
+    <Department name="Medical Records Administration">
+      <Base_User_Template>"CN=MRA Processing Specialist Template,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+      <Mgmt_User_Template>"CN=MRA_Mgmt,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Mgmt_User_Template>
+      <AD_Destination_OU>"OU=Medical Records Users,OU=Department Users,OU=Internal,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+    </Department>
+
+    <Department name="Patient Call Center">
+      <Base_User_Template>"CN=Patient_CC_Base,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+      <Mgmt_User_Template>"CN=Patient_CC_Mgmt,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Mgmt_User_Template>
+      <AD_Destination_OU>OU=Patient Call Center Users,OU=Department Users,OU=Internal,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL</AD_Destination_OU>
+    </Department>
+
+    <Department name="Professional Charge Entry">
+      <Base_User_Template>"CN=Professional Charge Entry Department Template,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+      <Mgmt_User_Template>"CN=Professional Charge Entry Department Template,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Mgmt_User_Template>
+      <AD_Destination_OU>"OU=Professional Charge Entry Users,OU=Department Users,OU=Internal,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+    </Department>
+
+    <Department name="Provider Education">
+      <Base_User_Template>"CN=Provider Education and Audit Template,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+      <Mgmt_User_Template>"CN=Provider Education and Audit Template,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Mgmt_User_Template>
+      <AD_Destination_OU>"OU=Client Services Users,OU=Department Users,OU=Internal,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+    </Department>
+
+    <Department name="Provider Enrollment">
+      <Base_User_Template>"CN=Provider_Enroll_Base,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+      <Mgmt_User_Template>"CN=Provider_Enroll_Mgmt,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Mgmt_User_Template>
+      <AD_Destination_OU>"OU=Provider Enrollment Users,OU=Department Users,OU=Internal,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+    </Department>
+
+    <Department name="Reimbursement">
+      <Base_User_Template>"CN=Reimbursement_Base,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+      <Mgmt_User_Template>"CN=Reimbursement_Mgmt,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Mgmt_User_Template>
+      <AD_Destination_OU>"OU=Reimbursement,OU=Department Users,OU=Internal,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+    </Department>
+
+    <Department name="Software Development">
+      <Base_Soft_Dev_Base>"CN=Soft_Dev_Base,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_Soft_Dev_Base>
+      <Base_Soft_Dev_BA>"CN=Soft_Dev_BA,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_Soft_Dev_BA>
+      <Base_Soft_Dev_QA>"CN=Soft_Dev_QA,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_Soft_Dev_QA>
+      <Mgmt_User_Template>"CN=Soft_Dev_Mgmt,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Mgmt_User_Template>
+      <AD_Destination_OU>"OU=Software Development,OU=Department Users,OU=Internal,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+    </Department>
+
+    <Department name="Specialty Billing">
+      <Base_User_Template>"CN=Specialty_Bill_Base,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+      <Mgmt_User_Template>"CN=Specialty_Bill_Mgmt,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Mgmt_User_Template>
+      <AD_Destination_OU>"OU=Specialty Billing Users,OU=Department Users,OU=Internal,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+    </Department>
+
+    <Department name="Technology Lab">
+      <Base_User_Template>"CN=Technology_Lab_Base,OU=Template Accounts,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</Base_User_Template>
+      <AD_Destination_OU>"OU=Technology Users,OU=Department Users,OU=Internal,OU=Bedford,DC=CORP,DC=LOGIXHEALTH,DC=LOCAL"</AD_Destination_OU>
+    </Department>
+      
+      </Departments>
+</Organization>

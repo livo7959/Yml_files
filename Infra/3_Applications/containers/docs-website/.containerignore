@@ -1,0 +1,5 @@
+.env
+docusaurus/build
+docusaurus/node_modules
+webhook-listener/dist
+webhook-listener/node_modules

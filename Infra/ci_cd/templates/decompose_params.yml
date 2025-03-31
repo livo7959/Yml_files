@@ -1,0 +1,13 @@
+steps:
+  - task: PythonScript@0
+    displayName: Generate prepared_params.json file
+    inputs:
+      scriptSource: filePath
+      scriptPath: $(Build.SourcesDirectory)\ci_cd\templates\decompose_params.py
+      pythonInterpreter: C:\Users\svc_tfsbuild\AppData\Local\Programs\Python\Python311\python.exe
+  - task: PythonScript@0
+    displayName: Prepare Terraform Vars File
+    inputs:
+      scriptSource: filePath
+      scriptPath: $(Build.SourcesDirectory)\ci_cd\templates\prepare_terraform_vars.py
+      pythonInterpreter: C:\Users\svc_tfsbuild\AppData\Local\Programs\Python\Python311\python.exe

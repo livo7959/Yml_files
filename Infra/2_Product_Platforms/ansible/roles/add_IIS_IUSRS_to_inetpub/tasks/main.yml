@@ -1,0 +1,6 @@
+- name: Set ACL for IIS_IUSRS to have Read/Write to C:\inetpub
+  win_acl:
+    user: IIS_IUSRS
+    path: C:\inetpub
+    type: allow
+    rights: Read,Write

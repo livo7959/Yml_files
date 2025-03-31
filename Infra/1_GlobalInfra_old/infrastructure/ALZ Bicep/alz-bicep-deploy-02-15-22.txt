@@ -1,0 +1,13 @@
+az deployment mg create --name deemoSandbox1 --location eastus --management-group-id mg-lh-decommissioned --template-file LH-LandingZones\inf-as-code\Subscriptions\subscriptionCreate.bicep --parameters subscriptionAliasName='LH-Decommissioned-Demo' workloadType='DevTest' billingScope='/providers/Microsoft.Billing/billingAccounts/500c2dab-e8af-5608-636f-2255ea5bff6f:75db6618-5564-4b1c-9a73-42085960f210_2019-05-31/billingProfiles/5MN2-ODQT-BG7-PGB/invoiceSections/2LWA-HHQH-PJA-PGB'
+
+az deployment mg create --name policyDefinitions1 --location eastus --management-group-id 'mg-logixhealth' --template-file .\infra-as-code\bicep\modules\policy\definitions\customPolicyDefinitions.bicep --parameters .\infra-as-code\bicep\modules\policy\definitions\parameters\customPolicyDefinitions.parameters.all.json
+
+
+az deployment group create -c --name loggingdeploy001 --resource-group rg-lh-logging-001 --template-file .\infra-as-code\bicep\modules\logging\logging.bicep --parameters .\infra-as-code\bicep\modules\logging\parameters\logging.parameters.all.json
+
+az group create --name rg-net-hub-001 --location eastus
+
+az deployment group create --name hubNetDeploy1 --resource-group rg-net-hub-001 --template-file .\infra-as-code\bicep\modules\hubNetworking\hubNetworking.bicep --parameters .\infra-as-code\bicep\modules\hubNetworking\parameters\hubNetworking.parameters.all.json
+
+
+az deployment mg create --name defaultAssignment001 --location eastus --management-group-id mg-logixhealth --template-file .\infra-as-code\bicep\modules\policy\assignments\alzDefaults\alzDefaultPolicyAssignments.bicep --parameters .\infra-as-code\bicep\modules\policy\assignments\alzDefaults\parameters\alzDefaultPolicyAssignments.parameters.all.json

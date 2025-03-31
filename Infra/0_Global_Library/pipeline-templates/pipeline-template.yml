@@ -1,0 +1,111 @@
+parameters:
+  - name: config
+    type: object
+  - name: buildVariableGroups
+    type: object
+    default: []
+  - name: components
+    type: object
+    default: []
+  - name: deployVariableGroups
+    type: object
+    default: []
+  - name: tests
+    type: object
+    default: []
+  - name: destroyItems
+    type: object
+    default: []
+  - name: environments
+    type: object
+    default:
+      - name: AzureGlobalInfraL1
+        azureServiceConnection: "LH Tenant"
+    # - name: AppDev
+    #   azureServiceConnection: '<Dev ServiceConnection>'
+    # - name: AppQA
+    #   azureServiceConnection: '<QA ServiceConnection>'
+    #   dependsOn:
+    #   - Dev
+    # - name: AppUAT
+    #   azureServiceConnection: '<UAT ServiceConnection>'
+    #   condition: eq(variables['Build.SourceBranchName'], 'main')
+    #   dependsOn:
+    #   - QA
+    # - name: AppProd
+    #   azureServiceConnection: '<Prod ServiceConnection>'
+    #   condition: eq(variables['Build.SourceBranchName'], 'main')
+    #   dependsOn:
+    #   - UAT
+
+stages:
+  ### BUILD STAGE ###
+  - stage: Build
+    variables:
+      - ${{ each variableGroup in parameters.buildVariableGroups }}:
+          - group: ${{ variableGroup.name }}
+    jobs:
+      - ${{ each component in parameters.components }}:
+          - job:
+            displayName: Build_${{ component.name }}
+            steps:
+              - template: ${{ component.type }}.Build.yml
+                parameters:
+                  component: ${{ component }}
+                  # environment: $${{ environment }}
+                  # environment:
+                  #   - name: "Dev"
+                  #     serviceConnectionName: 'LH Tenant'
+
+  ### TEST STAGE ###
+  # only runs when pull requests are created via branch policy > build validation rules
+  - ${{if or(eq(variables['Build.Reason'], 'PullRequest'), and(eq(variables['Build.Reason'], 'IndividualCI'), eq(variables['Build.SourceBranch'], 'refs/heads/master')))}}:
+      - stage: Test
+        variables:
+          - ${{ each variableGroup in parameters.buildVariableGroups }}:
+              - group: ${{ variableGroup.name }}
+        jobs:
+          - ${{ each component in parameters.components }}:
+              - ${{ each test in component.tests }}:
+                  - job:
+                    displayName: Run Test ${{ test.name }} for ${{ component.name }}
+                    steps:
+                      - template: ${{ test.type }}.Test.yml
+                        parameters:
+                          component: ${{ component }}
+                          config: ${{ parameters.config }}
+                          test: ${{ test }}
+
+  ### DEPLOY STAGE ###
+  # only runs when commits are merged into master branch
+  - ${{if and(eq(parameters.config.isDeploy, true), eq(variables['Build.Reason'], 'IndividualCI'), eq(variables['Build.SourceBranch'], 'refs/heads/master'))}}:
+      - stage: Deploy
+        variables:
+          - ${{ each variableGroup in parameters.deployVariableGroups }}:
+              - group: ${{ variableGroup.name }}-${{ environment.name }}
+        jobs:
+          - ${{ each component in parameters.components }}:
+              - deployment: Deploy_${{ component.name }}
+                displayName: Deploy ${{ component.name }}
+                environment: ${{ parameters.config.environment }}
+                strategy:
+                  runOnce:
+                    deploy:
+                      steps:
+                        - template: ${{ component.type }}.Deploy.yml
+                          parameters:
+                            component: ${{ component }}
+
+  ### DESTROY STAGE ###
+  # only runs when commits are merged into master branch
+  # - ${{if and(eq(parameters.config.destroyAbsentResources, true), eq(variables['Build.Reason'], 'IndividualCI'), eq(variables['Build.SourceBranch'], 'refs/heads/master'))}}:
+  #   - stage: Destroy
+  #     jobs:
+  #       - ${{ each item in parameters.destroyItems }}:
+  #         - ${{if eq(item.state, 'absent')}}:
+  #           - job:
+  #             displayName: 'Destroy_${{ item.name }}'
+  #             steps:
+  #             - template: ${{ item.type }}.Destroy.yml
+  #               parameters:
+  #                 item: ${{ item }}

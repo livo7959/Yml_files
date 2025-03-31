@@ -1,0 +1,52 @@
+[
+  {
+    "displayName": "Production Subscriptions",
+    "id": "/providers/Microsoft.Billing/billingAccounts/500c2dab-e8af-5608-636f-2255ea5bff6f:75db6618-5564-4b1c-9a73-42085960f210_2019-05-31/billingProfiles/5MN2-ODQT-BG7-PGB/invoiceSections/3FCO-NQA2-PJA-PGB",
+    "labels": null,
+    "name": "3FCO-NQA2-PJA-PGB",
+    "state": "Active",
+    "systemId": "3FCO-NQA2-PJA-PGB",
+    "targetCloud": null,
+    "type": "Microsoft.Billing/billingAccounts/billingProfiles/invoiceSections"
+  },
+  {
+    "displayName": "Platform Subscriptions",
+    "id": "/providers/Microsoft.Billing/billingAccounts/500c2dab-e8af-5608-636f-2255ea5bff6f:75db6618-5564-4b1c-9a73-42085960f210_2019-05-31/billingProfiles/5MN2-ODQT-BG7-PGB/invoiceSections/QRMB-YIRP-PJA-PGB",
+    "labels": null,
+    "name": "QRMB-YIRP-PJA-PGB",
+    "state": "Active",
+    "systemId": "QRMB-YIRP-PJA-PGB",
+    "targetCloud": null,
+    "type": "Microsoft.Billing/billingAccounts/billingProfiles/invoiceSections"
+  },
+  {
+    "displayName": "LogixHealth",
+    "id": "/providers/Microsoft.Billing/billingAccounts/500c2dab-e8af-5608-636f-2255ea5bff6f:75db6618-5564-4b1c-9a73-42085960f210_2019-05-31/billingProfiles/5MN2-ODQT-BG7-PGB/invoiceSections/6OC4-WWOA-PJA-PGB",
+    "labels": null,
+    "name": "6OC4-WWOA-PJA-PGB",
+    "state": "Active",
+    "systemId": "6OC4-WWOA-PJA-PGB",
+    "targetCloud": null,
+    "type": "Microsoft.Billing/billingAccounts/billingProfiles/invoiceSections"
+  },
+  {
+    "displayName": "Development Subscriptions",
+    "id": "/providers/Microsoft.Billing/billingAccounts/500c2dab-e8af-5608-636f-2255ea5bff6f:75db6618-5564-4b1c-9a73-42085960f210_2019-05-31/billingProfiles/5MN2-ODQT-BG7-PGB/invoiceSections/VG3G-OEEN-PJA-PGB",
+    "labels": null,
+    "name": "VG3G-OEEN-PJA-PGB",
+    "state": "Active",
+    "systemId": "VG3G-OEEN-PJA-PGB",
+    "targetCloud": null,
+    "type": "Microsoft.Billing/billingAccounts/billingProfiles/invoiceSections"
+  },
+  {
+    "displayName": "Sandbox Subscriptions",
+    "id": "/providers/Microsoft.Billing/billingAccounts/500c2dab-e8af-5608-636f-2255ea5bff6f:75db6618-5564-4b1c-9a73-42085960f210_2019-05-31/billingProfiles/5MN2-ODQT-BG7-PGB/invoiceSections/2LWA-HHQH-PJA-PGB",
+    "labels": null,
+    "name": "2LWA-HHQH-PJA-PGB",
+    "state": "Active",
+    "systemId": "2LWA-HHQH-PJA-PGB",
+    "targetCloud": null,
+    "type": "Microsoft.Billing/billingAccounts/billingProfiles/invoiceSections"
+  }
+]

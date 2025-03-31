@@ -1,0 +1,29 @@
+trigger:
+  paths:
+    include:
+      - 2_Product_Platforms/prod_inf_lz/* # Note that changes to the L0 templates won't trigger any pipeline runs.
+
+# IMPORTANT: For new pipelines, add build validation policy to master branch based on this pipeline with the above path filters.
+
+pool: Build
+
+stages:
+  - template: ../../../0_Global_Library/pipeline-templates/pipeline-template.yml
+    parameters:
+      config:
+        isDeploy: true # to prevent deployments, even if this code is merged to the master branch, set this to false
+        destroyAbsentResources: false # to prevent deletions, even if this code is merged to the master branch, set this to false
+        environment: AzureGlobalInfraL1
+      components:
+        - name: "DeployToSubScope"
+          deploymentScope: "subscription"
+          subscriptionId: "1148a73b-9055-4020-a3ad-00518ff5ed56"
+          serviceConnectionName: "LH Prod Infrastructure 001"
+          type: Bicep.V1
+          templateDirectory: "2_Product_platforms/prod_inf_lz/infrastructure"
+          module: "sub"
+          location: eastus
+          state: present
+          tests:
+            - name: Bicep Validate and What-If
+              type: Bicep.V1

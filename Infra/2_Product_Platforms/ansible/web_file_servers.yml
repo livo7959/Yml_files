@@ -1,0 +1,7 @@
+---
+- name: Apply the following tasks
+  hosts: web_file_servers
+  become: false
+  gather_facts: true
+  roles:
+    - create_directory

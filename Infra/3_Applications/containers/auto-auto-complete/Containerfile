@@ -1,0 +1,30 @@
+FROM node:lts-slim
+
+# Ensure that the image is up to date.
+RUN DEBIAN_FRONTEND=noninteractive \
+    && apt-get update \
+    && apt-get upgrade -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the LogixHealth root certificate.
+COPY --chmod=600 ./certs/BEDROOTCA001.crt /usr/local/share/ca-certificates/BEDROOTCA001.crt
+RUN update-ca-certificates
+
+# Create a non-root user for increased security.
+RUN addgroup --system --gid 1001 app \
+    && adduser --system --uid 1001 app
+
+# Create a dedicated directory for this application.
+WORKDIR /app
+COPY . .
+RUN npm install --omit=dev
+RUN chown app:app /app --recursive
+USER app
+
+# Node.js does not use the system's certificate store, so we must set a global environment variable.
+ENV NODE_EXTRA_CA_CERTS="/usr/local/share/ca-certificates/BEDROOTCA001.crt"
+
+EXPOSE 8443
+
+CMD ["node", "./dist/main.js"]

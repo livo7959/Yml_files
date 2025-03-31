@@ -1,0 +1,9 @@
+---
+- name: Apply the following tasks
+  hosts: sql_allscripts_servers
+  become: false
+  gather_facts: true
+  roles:
+    - add_server_access
+    - install_azurearc
+    - initialize_vm_disks

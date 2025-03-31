@@ -1,0 +1,14 @@
+# install_azurearc Vars
+az_arc_resource_group: rg-azure-arc-servers
+
+# install_app_lh_itinfra role vars
+software:
+  - software_install: \\bedpsurvstor001\Software\Microsoft\ODBC\V18\msodbcsql.msi
+    arguments: IACCEPTMSODBCSQLLICENSETERMS=YES
+    product_id: { 3C6CE53F-AF0C-4CC3-9A7E-4E7909FA4EF7 }
+  - software_install: \\bedpsurvstor001\Software\Notepadplus\npp.8.6.9.Installer.x64.exe
+    arguments: /S
+    product_id: Notepad++
+  - software_install: \\bedpsurvstor001\Software\Anaconda\2024.06.1\Anaconda3-2024.06-1-Windows-x86_64.exe
+    arguments: /S
+    product_id: Anaconda3 2024.06-1 (Python 3.12.4 64-bit)

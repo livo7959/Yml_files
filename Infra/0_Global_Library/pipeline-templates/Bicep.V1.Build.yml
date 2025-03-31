@@ -1,0 +1,20 @@
+parameters:
+  - name: component
+    type: object
+# - name: environment
+#   type: object
+
+steps:
+  # TODO - add logic for handling various deployment scopes as noted in https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-cli#deployment-scope
+
+  # TODO - add linting and validation steps
+
+  # TODO - include ideas, concepts and best practices from these reference sites:
+  # https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/best-practices
+  # patterns - https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/patterns-configuration-set
+  # common scenarios like secrets and others - https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/scenarios-secrets
+
+  # need to identify what Service Connections to use for each and what parameters are required for each
+
+  - pwsh: |
+      az bicep build --file ${{ parameters.component.templateDirectory }}/${{ parameters.component.module }}.bicep

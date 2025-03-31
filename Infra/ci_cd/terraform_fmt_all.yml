@@ -1,0 +1,16 @@
+# This pipeline checks to see if the entire repository contains properly formatted Terraform code.
+
+trigger: none
+
+pool: BuildLinux
+
+stages:
+  - stage: terraform_fmt
+    jobs:
+      - job: terraform_fmt
+        displayName: Terraform Auto-Format Check
+        steps:
+          - template: ../0_Global_Library/pipeline-templates/tasks/terraform_v2_install_task.yml
+
+          - bash: terraform fmt -recursive -check
+            displayName: Run terraform-fmt

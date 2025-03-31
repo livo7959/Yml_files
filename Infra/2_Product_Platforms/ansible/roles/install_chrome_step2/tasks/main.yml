@@ -1,0 +1,7 @@
+- name: Install Chrome
+  win_command: C:\temp\chrome_installer.exe /silent /install
+
+- name: Clean up installer
+  win_file:
+    path: C:\temp\chrome_installer.exe
+    state: absent

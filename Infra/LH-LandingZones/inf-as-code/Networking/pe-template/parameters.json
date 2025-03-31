@@ -1,0 +1,33 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "eastus"
+    },
+    "privateEndpointName": {
+      "value": "pep-nickocloudshell"
+    },
+    "privateLinkResource": {
+      "value": "/subscriptions/1148a73b-9055-4020-a3ad-00518ff5ed56/resourceGroups/rg-cloudshell-nicko/providers/Microsoft.Storage/storageAccounts/nickocloudshell"
+    },
+    "targetSubResource": {
+      "value": ["blob"]
+    },
+    "requestMessage": {
+      "value": ""
+    },
+    "subnet": {
+      "value": "/subscriptions/da07f21c-d54b-41ca-9f74-9e124d6c2b99/resourceGroups/rg-private-endpoint-eus-001/providers/Microsoft.Network/virtualNetworks/vnet-private-endpoint-eus-001/subnets/snet-pe-storage-blob-eus-001"
+    },
+    "virtualNetworkId": {
+      "value": "/subscriptions/da07f21c-d54b-41ca-9f74-9e124d6c2b99/resourceGroups/rg-private-endpoint-eus-001/providers/Microsoft.Network/virtualNetworks/vnet-private-endpoint-eus-001"
+    },
+    "subnetDeploymentName": {
+      "value": "UpdateSubnetDeployment-20230606145402"
+    },
+    "virtualNetworkResourceGroup": {
+      "value": "rg-private-endpoint-eus-001"
+    }
+  }
+}

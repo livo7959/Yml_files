@@ -1,0 +1,3 @@
+#Server access values
+rdp_access_group_name: CORP\SRV_METABASE_RDP
+admin_access_group_name: CORP\SRV_METABASE_Admin

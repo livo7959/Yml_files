@@ -1,0 +1,7 @@
+- name: Apply the following tasks
+  hosts: azdo_servers
+  become: false
+  gather_facts: true
+  roles:
+    - write_ps_tasks
+    - create_scheduled_task

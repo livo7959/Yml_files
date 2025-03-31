@@ -1,0 +1,10 @@
+- name: Extract SqlPackage .zip file
+  win_unzip:
+    src: "M:\\Install\\SqlPackage\\sqlpackage.zip"
+    dest: "C:\\Program Files\\Microsoft SQL Server\\160\\DAC\\bin"
+    overwrite: true
+
+- name: Cleanup temporary files
+  win_file:
+    path: "M:\\Install\\SqlPackage"
+    state: absent

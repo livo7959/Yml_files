@@ -1,0 +1,8 @@
+---
+- name: Apply the following tasks
+  hosts: web_rre_servers
+  become: false
+  gather_facts: true
+  roles:
+    - add_user_to_logon_as_a_service
+    - apply_gMSA_to_windows_service

@@ -1,0 +1,27 @@
+{
+  "name": "auto-auto-complete",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsx ./scripts/build.ts",
+    "lint": "tsx ./scripts/lint.ts",
+    "start": "tsx ./src/main.ts",
+    "update": "npm-check-updates --upgrade"
+  },
+  "dependencies": {
+    "@azure/identity": "^4.5.0",
+    "@azure/keyvault-secrets": "^4.9.0",
+    "@fastify/basic-auth": "^6.0.1",
+    "applicationinsights": "^3.4.0",
+    "azure-devops-node-api": "^14.1.0",
+    "complete-common": "^1.0.1",
+    "complete-node": "^1.7.4",
+    "fastify": "^5.1.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "complete-lint": "^1.12.0",
+    "npm-check-updates": "^17.1.11",
+    "typescript": "^5.7.2"
+  }
+}

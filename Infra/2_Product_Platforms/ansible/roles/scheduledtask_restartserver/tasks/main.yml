@@ -1,0 +1,26 @@
+- name: Create a scheduled task to restart the server every Sunday
+  community.windows.win_scheduled_task:
+    name: "{{ item.task_name }}"
+    description: "{{ item.task_descrip }}"
+    actions:
+      - path: "{{ item.task_exe }}"
+        arguments: "{{ item.arguments_statement }}"
+    triggers:
+      - type: "{{ item.task_sched_type }}"
+        start_boundary: "{{ item.task_sched_time }}"
+        weeks_interval: "{{ item.task_weeks_interval }}"
+        days_of_week:
+          - "{{ item.task_days }}"
+    username: "{{ item.task_gmsa }}"
+    run_level: "{{ item.run_level }}"
+    state: present
+  loop: "{{ sched_task_info }}"
+
+  #just added this can we deleted
+  # task_name: RestartServer
+  # task_descrip: Scheduled task to restart the server every Sunday
+  # task_exe: C:\Windows\System32\shutdown.exe
+  # arguments_statment: /r /t 0
+  # task_sched_type: weekly
+  # task_gmsa: SYSTEM
+  # task_sched_time: '2024-07-07T02:00:00'

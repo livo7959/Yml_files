@@ -1,0 +1,11 @@
+- name: Add the HTTPS binding
+  win_iis_webbinding:
+    name: "{{ item.website_name}}"
+    protocol: https
+    port: 443
+    ip: "*"
+    host_header: "{{ item.host_name}}"
+    state: present
+    certificate_hash: "{{ item.thumbprint_value}}"
+    certificate_store_name: MY
+  loop: "{{ iis_website_app_info }}"

@@ -1,0 +1,30 @@
+parameters:
+  - name: item
+    type: object
+# - name: environment
+#   type: object
+
+steps:
+  - ${{if eq(parameters.item.deploymentScope, 'subscription')}}:
+      - task: AzureCLI@2
+        displayName: Delete ${{ parameters.item.name }}
+        name: delete_${{parameters.item.name}}
+        inputs:
+          # TODO - add looping to handle environments object iterations, then switch to this parameter
+          azureSubscription: ${{ parameters.item.serviceConnectionName }}
+          # azureSubscription: LH Tenant
+          scriptType: pscore
+          scriptLocation: inlineScript
+          # TODO - add if statements to handle deploymentScope options and variations to inlineScript for each scope level
+          inlineScript: |
+            az account set --subscription ${{ parameters.item.subscriptionId }}
+            $error.clear()
+            try {
+              ${{ parameters.item.checkcommand }}
+            }
+            catch {
+              "resource does not exist or there was an error in the check command - $error"
+            }
+            if (!$error) {
+              ${{ parameters.item.deletecommand }}
+            }

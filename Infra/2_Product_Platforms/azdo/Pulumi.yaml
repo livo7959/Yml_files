@@ -1,0 +1,11 @@
+# This is the configuration file for Pulumi, the infrastructure-as-code tool:
+# https://www.pulumi.com/
+
+name: azdo
+
+runtime:
+  name: nodejs
+
+config:
+  # We do not have a development environment for Azure DevOps Services, so we always use "prod".
+  defaultStack: prod

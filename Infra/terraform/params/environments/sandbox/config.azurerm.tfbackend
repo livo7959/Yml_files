@@ -1,0 +1,5 @@
+subscription_id      = "1148a73b-9055-4020-a3ad-00518ff5ed56"
+resource_group_name  = "rg-terraform-state-shared"
+storage_account_name = "lhtfstateshared"
+container_name       = "8192a5d8-1a56-4caf-b961-0eae16cbd1d3-tfstate"
+key                  = "terraform.tfstate"

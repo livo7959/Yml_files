@@ -1,0 +1,26 @@
+# Choco Install
+
+#- name: Install .Net 4.8 for Chocolately
+#  win_package:
+#    path: \\bedpsurvstor001\Software\Microsoft\.Net 4.8\ndp48-x86-x64-allos-enu.exe
+#    state: present
+#    arguments: /install /quiet
+
+#- name: Install Chocolatey v1.4.0
+#  win_chocolatey:
+#    name: 'chocolatey'
+#    state: present
+#    version: '1.4.0'
+
+#- name: Install Microsoft .NET Framework 4.8
+#  win_chocolatey:
+#    name: 'netfx-4.8'
+#    state: present
+
+#- name: Reboot the host to complete .NET Framework 4.8 install
+#  ansible.windows.win_reboot:
+
+#- name: Install Chocolatey latest version when .NET Framework 4.8 dependency is met
+#  win_chocolatey:
+#    name: 'chocolatey'
+#    state: latest

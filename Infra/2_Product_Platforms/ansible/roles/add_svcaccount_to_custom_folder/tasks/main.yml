@@ -1,0 +1,7 @@
+- name: Set ACL for Service Account to have Full Control to Local Custom Path
+  win_acl:
+    user: "{{ item.gMSA }}"
+    path: "{{ item.custom_path }}"
+    type: allow
+    rights: Read,Write,Modify,ReadAndExecute,FullControl
+  loop: "{{ iis_website_app_info }}"

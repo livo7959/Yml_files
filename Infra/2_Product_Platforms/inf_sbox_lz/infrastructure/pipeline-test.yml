@@ -1,0 +1,76 @@
+trigger:
+  paths:
+    include:
+      - 2_Product_Platforms/inf_sbox_lz/*
+
+pool: Build
+
+variables:
+  - group: vg-inf-sandbox
+  - template: ./variables/shared_vars.yml
+
+stages:
+  - stage: BuildStage
+    jobs:
+      - job: buildJob
+        displayName: Build_$(workloadName)_$(environmentName)
+        steps:
+          - template: ../../../0_Global_Library/pipeline-templates/tasks/terraform_v1_install_task.yml
+
+          - template: ../../../0_Global_Library/pipeline-templates/tasks/terraform_v1_azcli_init_task.yml
+            parameters:
+              workloadName: $(workloadName)
+              terraformDirectory: 2_Product_Platforms/inf_sbox_lz/infrastructure
+              azureSubscriptionServiceConnectionName: $(azureSubscriptionServiceConnectionName)
+              terraformStateStorageAccountResourceGroupName: $(tfStateStorageAccountResourceGroupName)
+              terraformStateStorageAccountName: $(tfStateStorageAccountName)
+              terraformStateStorageAccountContainerName: $(tfStateStorageAccountContainerName)
+              terraformStateKey: $(workloadName)_$(environmentName).tfstate
+
+          - template: ../../../0_Global_Library/pipeline-templates/tasks/terraform_v1_azcli_plan_task.yml
+            parameters:
+              terraformDirectory: 2_Product_Platforms/inf_sbox_lz/infrastructure
+              azureSubscriptionServiceConnectionName: $(azureSubscriptionServiceConnectionName)
+              tfvarsFile: .\environments\sbox.tfvars
+              outputFile: $(outputFile)
+
+          - task: PublishPipelineArtifact@1
+            inputs:
+              targetPath: $(System.DefaultWorkingDirectory)
+              artifact: $(terraform)
+              publishLocation: pipeline
+          - template: ../../templates/delete_build_files.yml
+
+  - stage: ApproveStage
+    dependsOn: BuildStage
+    jobs:
+      - job:
+        displayName: Approve_$(workloadName)_$(environmentName)
+        pool: server
+        timeoutInMinutes: 180 # 3 hours
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: ""
+
+  - stage: ApplyStage
+    dependsOn: ApproveStage
+    jobs:
+      - deployment:
+        displayName: Apply_$(workloadName)_$(environmentName)
+        environment: Infrastructure-Sandbox
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadPipelineArtifact@2
+                  inputs:
+                    buildType: current
+                    targetPath: $(System.DefaultWorkingDirectory)
+                    artifactName: $(terraform)
+                - template: ../../../0_Global_Library/pipeline-templates/tasks/terraform_v1_azcli_apply_task.yml
+                  parameters:
+                    terraformDirectory: 2_Product_Platforms/inf_sbox_lz/infrastructure
+                    azureSubscriptionServiceConnectionName: $(azureSubscriptionServiceConnectionName)
+                    workloadName: $(workloadName)
+                    outputFile: $(outputFile)

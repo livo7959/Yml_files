@@ -1,0 +1,8 @@
+---
+#AzDO Agent Info
+azdo_agent_service_name: vstsagent.azuredevops.UAT.BED_UCV002
+azdo_agent_service_account: CORP\svc_azdo_uat
+azdo_agent_service_password: $(uat_azdo_agent_service_password)
+
+#Application Insights
+app_insights_connection_string: "InstrumentationKey=901f2c7f-2ea3-477f-b034-4dcea17746bc;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=9250fd32-95ee-46a3-a44c-b7ceba367596"

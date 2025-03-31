@@ -1,0 +1,34 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "storageAccountName": {
+      "value": "lhappstrsbox001"
+    },
+    "env": {
+      "value": "sbox"
+    },
+    "storageAccountSku": {
+      "value": "Standard_LRS"
+    },
+    "storageAccountKind": {
+      "value": "StorageV2"
+    },
+    "accessTier": {
+      "value": "Hot"
+    },
+    "allowPublicBlobAccess": {
+      "value": false
+    },
+    "allowPublicNetworkAccess": {
+      "value": "Enabled"
+    },
+    "blobContainers": {
+      "value": [
+        {
+          "name": "logixcms"
+        }
+      ]
+    }
+  }
+}

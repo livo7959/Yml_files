@@ -1,0 +1,5 @@
+subscription_id      = "59161e1f-62f6-456e-93d6-162d6f3c6d91"
+resource_group_name  = "rg-tfstate"
+storage_account_name = "lhtfstateinfsbox"
+container_name       = "key-vault-module-sbox"
+key                  = "key-vault-module-loop-example-sbox.tfstate"

@@ -1,0 +1,23 @@
+- name: Create a New Scheduled Task
+  community.windows.win_scheduled_task:
+    name: "{{ item.task_name }}"
+    description: "{{ item.task_descrip }}"
+    actions:
+      - path: "{{ item.task_exe }}"
+        arguments: "{{ item.task_argument }}"
+    triggers:
+      - type: "{{ item.task_sched_type }}"
+        start_boundary: "{{ item.task_sched_time }}"
+        days_of_week: "{{ omit if item.task_days_of_week is not defined else item.task_days_of_week }}"
+        repetition: #Need to figure out via a separate when condition
+          interval: "{{ omit if item.task_interval is not defined else item.task_interval }}"
+          duration: "{{ omit if item.task_duration is not defined else item.task_duration }}"
+          stop_at_duration_end: true
+    username: "{{ item.task_gmsa }}"
+    logon_type: "{{ item.logon_type }}"
+    run_level: "{{ item.run_level }}"
+    multiple_instances: "{{ item.task_mult_instances }}"
+    state: present
+    enabled: yes
+  loop: "{{ sched_task_info | default([]) }}"
+  # when: task_interval is defined and task_duration is defined

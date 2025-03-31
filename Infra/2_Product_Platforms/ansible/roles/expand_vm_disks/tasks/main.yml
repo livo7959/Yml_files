@@ -1,0 +1,7 @@
+- name: Resize previously created partition to it's maximum size
+  community.windows.win_partition:
+    drive_letter: "{{ item.drive_letter}}"
+    partition_size: "{{ item.partition_size}}"
+    partition_number: "{{ item.partition_number}}"
+    disk_number: "{{ item.disk_number}}"
+  loop: "{{ exisiting_disk_expand | default([]) }}"

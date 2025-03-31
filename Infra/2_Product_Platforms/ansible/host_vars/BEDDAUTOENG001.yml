@@ -1,0 +1,16 @@
+---
+#AzDO Agent Info
+azdo_agent_service_name: vstsagent.azuredevops.DEV.BED_DAUTOENG001
+azdo_agent_service_account: CORP\svc_azdo_dev
+azdo_agent_service_password: $(dev_azdo_agent_service_password)
+
+#Application Insights
+app_insights_connection_string: "InstrumentationKey=487b1365-701f-4535-970e-14a115815aeb;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=e7536976-5fbb-42bb-a2eb-32636f4ccb9c"
+
+#Variable values for all Windows Services Apps
+windows_service_app_info:
+  - service_name: LogixAutomation - Execution Engine
+    gMSA: CORP\gmsa_dautoeng$
+
+#AD Group used to manage service accounts needed to run Windows Services Apps
+logon_as_a_service_AD_group: CORP\DEV_ICER_Windows_Services

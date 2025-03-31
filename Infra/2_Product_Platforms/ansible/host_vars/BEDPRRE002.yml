@@ -1,0 +1,16 @@
+---
+#AzDO Agent Info
+azdo_agent_service_name: vstsagent.azuredevops.PROD.BED_PRRE002
+azdo_agent_service_account: CORP\svc_azdo_prod
+azdo_agent_service_password: $(prod_azdo_agent_service_password)
+
+#Application Insights
+app_insights_connection_string: "InstrumentationKey=0e999f5e-129c-44ce-8505-84a742e462c8;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=e3d17ee0-6b3e-4c89-acff-5d17509da44a"
+
+#Variable values for all Windows Services Apps
+windows_service_app_info:
+  - service_name: ReconcilerService
+    gMSA: CORP\gmsa_rre$
+
+#AD Group used to manage service accounts needed to run Windows Services Apps
+logon_as_a_service_AD_group: CORP\PROD_RRE_Windows_Services

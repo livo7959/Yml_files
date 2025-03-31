@@ -1,0 +1,114 @@
+{
+  "securityRules": [
+    {
+      "name": "HTTP-Inbound-Allow",
+      "properties": {
+        "protocol": "Tcp",
+        "sourcePortRange": "*",
+        "destinationPortRange": "",
+        "sourceAddressPrefix": "",
+        "destinationAddressPrefix": "VirtualNetwork",
+        "access": "Allow",
+        "priority": 1000,
+        "direction": "Inbound",
+        "sourcePortRanges": [],
+        "destinationPortRanges": ["80", "443"],
+        "sourceAddressPrefixes": ["10.0.0.0/8", "192.168.160.0/24"],
+        "destinationAddressPrefixes": []
+      }
+    },
+    {
+      "name": "Defender-for-Identity-NNR-TCP",
+      "properties": {
+        "protocol": "Tcp",
+        "sourcePortRange": "*",
+        "destinationPortRange": "",
+        "sourceAddressPrefix": "",
+        "destinationAddressPrefix": "VirtualNetwork",
+        "access": "Allow",
+        "priority": 1010,
+        "direction": "Inbound",
+        "sourcePortRanges": [],
+        "destinationPortRanges": ["3389", "135"],
+        "sourceAddressPrefixes": ["10.120.24.0/27"],
+        "destinationAddressPrefixes": []
+      }
+    },
+    {
+      "name": "Defender-for-Identity-NNR-UDP",
+      "properties": {
+        "protocol": "Tcp",
+        "sourcePortRange": "*",
+        "destinationPortRange": "",
+        "sourceAddressPrefix": "",
+        "destinationAddressPrefix": "VirtualNetwork",
+        "access": "Allow",
+        "priority": 1020,
+        "direction": "Inbound",
+        "sourcePortRanges": [],
+        "destinationPortRanges": ["137"],
+        "sourceAddressPrefixes": ["10.120.24.0/27"],
+        "destinationAddressPrefixes": []
+      }
+    },
+    {
+      "name": "ICMP-Inbound-Allow",
+      "properties": {
+        "protocol": "Icmp",
+        "sourcePortRange": "*",
+        "destinationPortRange": "*",
+        "sourceAddressPrefix": "",
+        "destinationAddressPrefix": "VirtualNetwork",
+        "access": "Allow",
+        "priority": 1030,
+        "direction": "Inbound",
+        "sourcePortRanges": [],
+        "destinationPortRanges": [],
+        "sourceAddressPrefixes": ["10.10.0.0/16"],
+        "destinationAddressPrefixes": []
+      }
+    },
+    {
+      "name": "RDP-Mgmt-Inbound-Allow",
+      "properties": {
+        "protocol": "Tcp",
+        "sourcePortRange": "*",
+        "destinationPortRange": "3389",
+        "sourceAddressPrefix": "",
+        "destinationAddressPrefix": "VirtualNetwork",
+        "access": "Allow",
+        "priority": 1040,
+        "direction": "Inbound",
+        "sourcePortRanges": [],
+        "destinationPortRanges": [],
+        "sourceAddressPrefixes": ["10.10.32.0/23", "10.120.0.128/26"],
+        "destinationAddressPrefixes": []
+      }
+    },
+    {
+      "name": "MS-SQL-TCP-1433-Inbound-Allow",
+      "properties": {
+        "protocol": "Tcp",
+        "sourcePortRange": "*",
+        "destinationPortRange": "1433",
+        "sourceAddressPrefix": "",
+        "destinationAddressPrefix": "VirtualNetwork",
+        "access": "Allow",
+        "priority": 1050,
+        "direction": "Inbound",
+        "sourcePortRanges": [],
+        "destinationPortRanges": [],
+        "sourceAddressPrefixes": [
+          "10.10.32.0/23",
+          "10.0.24.0/23",
+          "10.20.204.0/24",
+          "10.120.28.0/24",
+          "10.20.64.0/24",
+          "10.20.32.0/24",
+          "192.168.160.0/24"
+        ],
+        "destinationAddressPrefixes": []
+      }
+    }
+  ]
+}

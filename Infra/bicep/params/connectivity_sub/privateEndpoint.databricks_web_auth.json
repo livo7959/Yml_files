@@ -1,0 +1,33 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "env": {
+      "value": "shared"
+    },
+    "privateEndpointName": {
+      "value": "pep-web-auth-eus-shared"
+    },
+    "privateEndpointGroupIds": {
+      "value": "browser_authentication"
+    },
+    "virtualNetworkName": {
+      "value": "vnet-private-endpoint-eus-001"
+    },
+    "subnetName": {
+      "value": "snet-pe-shared-https-eus-001"
+    },
+    "privateDnsZoneName": {
+      "value": "privatelink.azuredatabricks.net"
+    },
+    "privateDnsZoneResourceGroupName": {
+      "value": "rg-net-hub-001"
+    },
+    "privateEndpointTargetResourceId": {
+      "value": "/subscriptions/4cd6ebc5-58d1-40fc-98dc-8645df2ffcc4/resourceGroups/rg-databricks-shared/providers/Microsoft.Databricks/workspaces/web-auth-eus-shared"
+    },
+    "privateEndpointResourceGroupName": {
+      "value": "rg-private-endpoint-eus-001"
+    }
+  }
+}

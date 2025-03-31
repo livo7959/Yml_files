@@ -1,0 +1,52 @@
+---
+#AzDO Agent Info
+azdo_agent_service_name: vstsagent.azuredevops.PROD.BED_PAPPICER002
+azdo_agent_service_account: CORP\svc_azdo_prod
+app_insights_connection_string: "InstrumentationKey=0e999f5e-129c-44ce-8505-84a742e462c8;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=e3d17ee0-6b3e-4c89-acff-5d17509da44a"
+
+#Variable values for all IIS Website Apps
+iis_website_app_info:
+  # - app_pool_name: LogixCodify
+  #   website_state: started
+  #   gMSA: CORP\gmsa_codify$
+  #   mpl_mode: Integrated
+  #   runtime_version: "v4.0"
+  #   ParentSite: #Need to Update
+  #   Sub_website_name: #Need to Update
+  #   host_name: #Need to Update
+  #   root_path: #Need to Update
+  #   thumbprint_value: #Need to Update
+  # - app_pool_name: LogixExpress
+  #   website_state: started
+  #   gMSA: CORP\gmsa_express$
+  #   mpl_mode: Integrated
+  #   runtime_version: "v4.0"
+  #   ParentSite: #Need to Update
+  #   Sub_website_name: #Need to Update
+  #   host_name: #Need to Update
+  #   root_path: #Need to Update
+  #   thumbprint_value: #Need to Update
+  # - app_pool_name: LogixRequest
+  #   website_state: started
+  #   gMSA: CORP\gmsa_request$
+  #   mpl_mode: Integrated
+  #   runtime_version: ""
+  #   website_name: LogixRequest
+  #   host_name: "requestsvc.logixhealth.com"
+  #   root_path: D:\TFS\Release\LogixRequest\LogixRequestApp
+  #   thumbprint_value: 3956ec00361bd857590fdfcab4b94d6a2b5bc12b
+  #   # ParentSite: #Need to Update
+  #   # Sub_website_name: #Need to Update
+  #   # host_name: #Need to Update
+  #   # root_path: #Need to Update
+  #   # thumbprint_value: #Need to Update
+  - app_pool_name: LogixCommonDataservice
+    website_state: started
+    gMSA: CORP\gmsa_comdata$
+    mpl_mode: Integrated
+    runtime_version: "v4.0"
+    ParentSite: #Need to Update
+    Sub_website_name: #Need to Update
+    host_name: #Need to Update
+    root_path: #Need to Update
+    thumbprint_value: #Need to Update

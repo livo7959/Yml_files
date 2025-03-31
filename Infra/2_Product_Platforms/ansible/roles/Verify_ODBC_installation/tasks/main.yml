@@ -1,0 +1,13 @@
+- name: Verify ODBC installation
+  win_shell: 'Get-OdbcDriver | Where-Object { $_.Name -eq "ODBC Driver 18 for SQL Server" }'
+  register: odbc_driver_list
+  ignore_errors: yes # Continue even if the command fails or doesn't find the driver
+
+- name: Output installed ODBC Drivers
+  debug:
+    msg: >
+      {% if odbc_driver_list is defined and odbc_driver_list.stdout is defined %}
+      Installed ODBC Driver: {{ odbc_driver_list.stdout }}
+      {% else %}
+      ODBC Driver 18 for SQL Server is not installed or command did not return output.
+      {% endif %}

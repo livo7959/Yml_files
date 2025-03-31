@@ -1,0 +1,5 @@
+subscription_id      = "d9b0157d-2792-4663-a4bf-61ae611adc45"
+resource_group_name  = "rg-terraform-state"
+storage_account_name = "lhtfstatekvsaprod"
+container_name       = "tfstate-kv-standalone-prod"
+key                  = "kv-standalone-prod.tfstate"

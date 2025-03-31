@@ -1,0 +1,9 @@
+- name: Ensure temp directory exists
+  win_file:
+    path: C:\temp
+    state: directory
+
+- name: Download Chrome installer
+  win_get_url:
+    url: https://dl.google.com/chrome/install/latest/chrome_installer.exe
+    dest: C:\temp\chrome_installer.exe

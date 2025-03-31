@@ -1,0 +1,33 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "parTopLevelManagementGroupPrefix": {
+      "value": "mg-lh"
+    },
+    "parLogAnalyticsWorkSpaceAndAutomationAccountLocation": {
+      "value": "eastus"
+    },
+    "parLogAnalyticsWorkspaceResourceId": {
+      "value": "/subscriptions/fa5c2028-2067-4378-a45a-e3cc445f532b/resourcegroups/rg-lh-logging-001/providers/microsoft.operationalinsights/workspaces/lh-log-analytics"
+    },
+    "parLogAnalyticsWorkspaceLogRetentionInDays": {
+      "value": "395"
+    },
+    "parAutomationAccountName": {
+      "value": "lh-automation-account"
+    },
+    "parMsDefenderForCloudEmailSecurityContact": {
+      "value": "AzureATP_Alerts@logixhealth.com"
+    },
+    "parDdosProtectionPlanId": {
+      "value": ""
+    },
+    "parPrivateDnsResourceGroupId": {
+      "value": "/subscriptions/da07f21c-d54b-41ca-9f74-9e124d6c2b99/resourceGroups/rg-net-hub-001"
+    },
+    "parTelemetryOptOut": {
+      "value": true
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "built_in_role_assignments": [
+    {
+      "description": "LogixHealth Storage Account Data User",
+      "principal_id": "3b0e0055-41f7-4a61-b944-052651aeef1a",
+      "principal_type": "Group",
+      "role_definition_id": "c12c1c16-33a1-487b-954d-41c89c60f349"
+    }
+  ]
+}

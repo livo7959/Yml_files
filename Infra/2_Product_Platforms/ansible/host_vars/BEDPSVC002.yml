@@ -1,0 +1,19 @@
+---
+#AzDO Agent Info
+azdo_agent_service_name: vstsagent.azuredevops.PROD.BED_PSVC002
+azdo_agent_service_account: CORP\svc_azdo_prod
+azdo_agent_service_password: $(prod_azdo_agent_service_password)
+
+#Application Insights
+app_insights_connection_string: "InstrumentationKey=79086e48-f35f-4af1-8491-08cda98abe44;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=40512c13-b124-4ad4-89a5-fa25fd6a8e53"
+
+iis_website_app_info:
+  - app_pool_name: mobilepay.microsvc.logixhealth.com
+    website_state: started
+    gMSA: CORP\gmsa_mobpayapi$
+    mpl_mode: Integrated
+    runtime_version: ""
+    root_path: D:\TFS\MicroServices\Atomic\MobilePay\Release\MobilePayAPI
+    website_name: mobilepay.microsvuc.logixhealth.com
+    host_name: mobilepay.microsvuc.logixhealth.com
+    thumbprint_value: be9a088bba11bde4361d5fa844f4e2fd161a8723

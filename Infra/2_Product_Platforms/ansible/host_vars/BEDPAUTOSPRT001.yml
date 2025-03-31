@@ -1,0 +1,27 @@
+#Server access values
+rdp_access_group_name: CORP\SRV_BEDPAUTOSPRT_RDP
+admin_access_group_name: CORP\SRV_BEDPAUTOSPRT_Admin
+
+#Data Disk
+data_disks:
+  - disk_number: 1
+    drive_letter: D
+    disk_label: Data
+    allocation_unit_size: 4096
+
+#Scheduled Task Master Library
+sched_task_info:
+  - task_name: AZDO_Group_Sync
+    task_descrip: User sync from AD > Group for DevOPs. Check the script location for more info.
+    task_exe: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    task_argument: -noprofile -nologo -executionpolicy bypass -file D:\Scripts\Dynamic_Syncs_Groups\DynamicGroup_Sync.ps1
+    task_sched_type: daily
+    task_days_of_week: sunday, monday, tuesday, wednesday, thursday, friday, saturday
+    task_sched_time: "2024-10-28T23:30:00"
+    task_interval: PT24H
+    task_duration: P1D
+    task_gmsa: CORP\gmsa_group_syc$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true

@@ -1,0 +1,7 @@
+- name: Add gMSA to IIS_USRS security group
+  win_group_membership:
+    name: IIS_IUSRS
+    members:
+      - "{{ item.gMSA }}"
+    state: present
+  loop: "{{ iis_website_app_info }}"

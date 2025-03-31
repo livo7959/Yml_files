@@ -1,0 +1,4 @@
+variables:
+  outputFile: terraform.tfplan
+  tfVarsFile: ../environments/dev-tenant-qa/qa.tfvars
+  workingDirectory: 1_GlobalInfra/entra_id_lob_apps/modules

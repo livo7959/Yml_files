@@ -1,0 +1,6 @@
+- name: Add gMSA to "Log on as a batch" local security policy
+  ansible.windows.win_user_right:
+    name: SeBatchLogonRight
+    users:
+      - IIS_IUSRS
+    action: add

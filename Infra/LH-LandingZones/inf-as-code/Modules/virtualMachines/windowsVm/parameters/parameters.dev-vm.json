@@ -1,0 +1,78 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "component": {
+      "value": "shared"
+    },
+    "product": {
+      "value": "sql"
+    },
+    "env": {
+      "value": "dev"
+    },
+    "locationList": {
+      "value": {
+        "eastus": "eus"
+      }
+    },
+    "vmName": {
+      "value": "testvm001"
+    },
+    "computerName": {
+      "value": "testvm001"
+    },
+    "OSVersion": {
+      "value": "2019-Datacenter"
+    },
+    "vmSize": {
+      "value": "Standard_B2ms"
+    },
+    "osDiskSizeGB": {
+      "value": 128
+    },
+    "existingVnetResourceGroupName": {
+      "value": "rg-iaas-shared-dev-eus-001"
+    },
+    "vnetName": {
+      "value": "vnet-iaas-shared-dev-eus-001"
+    },
+    "snetName": {
+      "value": "snet-sql-dev-eus-001"
+    },
+    "adminUsername": {
+      "value": "lhadmin"
+    },
+    "adminPassword": {
+      "value": "Not@verygoodsecret77"
+    },
+    "encryptionAtHost": {
+      "value": true
+    },
+    "dataDisks": {
+      "value": [
+        {
+          "createOption": "Empty",
+          "lun": 0,
+          "diskSizeGB": 128,
+          "caching": "ReadOnly",
+          "storageAccountType": "StandardSSD_LRS"
+        },
+        {
+          "createOption": "Empty",
+          "lun": 1,
+          "diskSizeGB": 128,
+          "caching": "None",
+          "storageAccountType": "StandardSSD_LRS"
+        },
+        {
+          "createOption": "Empty",
+          "lun": 2,
+          "diskSizeGB": 128,
+          "caching": "None",
+          "storageAccountType": "StandardSSD_LRS"
+        }
+      ]
+    }
+  }
+}

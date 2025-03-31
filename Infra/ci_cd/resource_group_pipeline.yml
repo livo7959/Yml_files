@@ -1,0 +1,126 @@
+trigger: none
+
+pool: Build
+
+variables:
+  az_cli_command: --mode Complete --template-file ./bicep/main.bicep --parameters ./bicep/params/prepared_params.json environment_name=
+  resource_group: rg-data
+
+stages:
+  - stage: setup
+    jobs:
+      - job: setup
+        displayName: Prepare Params
+        steps:
+          - template: templates/decompose_params.yml
+  - stage: sandbox
+    variables:
+      environment_name: sbox
+      full_command: ${{ variables.az_cli_command }}${{ variables.environment_name }} --resource-group ${{ variables.resource_group }}-${{ variables.environment_name }}
+    jobs:
+      - job: sandbox_what_if
+        displayName: Azure Sandbox What If
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: LH Sandbox Subscription
+              scriptType: ps
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment group what-if ${{ variables.full_command }}
+      - job: sandbox_approve
+        displayName: Azure Sandbox Approve
+        dependsOn: sandbox_what_if
+        pool: server
+        timeoutInMinutes: 4320 # 3 days
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: |
+                iberg@logixhealth.com
+      - job: sandbox_create
+        displayName: Azure Sandbox Create
+        dependsOn: sandbox_approve
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: LH Sandbox Subscription
+              scriptType: ps
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment group create ${{ variables.full_command }}
+  - stage: dev
+    dependsOn: sandbox
+    variables:
+      environment_name: dev
+      full_command: ${{ variables.az_cli_command }}${{ variables.environment_name }} --resource-group ${{ variables.resource_group }}-${{ variables.environment_name }}
+    jobs:
+      - job: dev_what_if
+        displayName: Azure Dev What If
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: LH Dev Subscription
+              scriptType: ps
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment group what-if ${{ variables.full_command }}
+      - job: dev_approve
+        displayName: Azure Dev Approve
+        dependsOn: dev_what_if
+        pool: server
+        timeoutInMinutes: 4320 # 3 days
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: |
+                iberg@logixhealth.com
+      - job: dev_create
+        displayName: Azure Dev Create
+        dependsOn: dev_approve
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: LH Dev Subscription
+              scriptType: ps
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment group create ${{ variables.full_command }}
+  - stage: prod
+    dependsOn: dev
+    condition: contains(variables['build.sourceBranch'], 'refs/heads/master')
+    variables:
+      environment_name: prod
+      full_command: ${{ variables.az_cli_command }}${{ variables.environment_name }} --resource-group ${{ variables.resource_group }}-${{ variables.environment_name }}
+    jobs:
+      - job: prod_what_if
+        displayName: Azure Prod What If
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: LH Prod Subscription
+              scriptType: ps
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment group what-if ${{ variables.full_command }}
+      - job: prod_approve
+        displayName: Azure Prod Approve
+        dependsOn: prod_what_if
+        pool: server
+        timeoutInMinutes: 4320 # 3 days
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: |
+                iberg@logixhealth.com
+      - job: prod_create
+        displayName: Azure Prod Create
+        dependsOn: prod_approve
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: LH Prod Subscription
+              scriptType: ps
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment group create ${{ variables.full_command }}

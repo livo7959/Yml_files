@@ -1,0 +1,4 @@
+---
+#AzDO Agent Info
+azdo_agent_service_name: vstsagent.bedtfsapp003.PROD.BEDPAUTO018
+azdo_agent_service_account: CORP\svc_azdo_prod

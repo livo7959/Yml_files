@@ -1,0 +1,8 @@
+---
+- name: Apply the following tasks
+  hosts: web_intsvcs_servers
+  become: false
+  gather_facts: true
+  roles:
+    - add_user_to_logon_as_a_batch_for_sched_task
+    - create_scheduled_task

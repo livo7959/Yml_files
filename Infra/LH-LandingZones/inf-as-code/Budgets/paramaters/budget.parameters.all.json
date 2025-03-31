@@ -1,0 +1,36 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "budgetName": {
+      "value": "myBudget"
+    },
+    "amount": {
+      "value": 1000
+    },
+    "timeGrain": {
+      "value": "Monthly"
+    },
+    "startDate": {
+      "value": "YYYY-MM-DD"
+    },
+    "endDate": {
+      "value": "YYYY-MM-DD"
+    },
+    "firstThreshold": {
+      "value": 80
+    },
+    "secondThreshold": {
+      "value": 100
+    },
+    "contactRoles": {
+      "value": "Owner"
+    },
+    "contactEmails": {
+      "value": "Azure_Sandbox_Budget_Alerts@logixhealth.com"
+    },
+    "contactGroups": {
+      "value": "ActionGroup1"
+    }
+  }
+}

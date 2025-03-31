@@ -1,0 +1,19 @@
+---
+#AzDO Agent Info
+azdo_agent_service_name: vstsagent.azuredevops.DEV.BEDD_WEBICER001
+azdo_agent_service_account: CORP\svc_azdo_dev
+azdo_agent_service_password: $(dev_azdo_agent_service_password)
+app_insights_connection_string: "InstrumentationKey=8540194e-7057-4541-9521-611906f78c88;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=b79fb60f-c364-4672-8a6a-ab74d961054c"
+
+#Variable values for all IIS Website Apps
+iis_website_app_info:
+  - app_pool_name: LogixCCV
+    website_state: started
+    gMSA: CORP\gmsa_dcodify$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+    website_name: LogixCCV
+    host_name: dchartview.logixhealth.com
+    root_path: D:\TFS\Release\LogixCCV
+    thumbprint_value: ea16f5db225b5c39e975f516b57ed6347bfa5388
+    sni: 1

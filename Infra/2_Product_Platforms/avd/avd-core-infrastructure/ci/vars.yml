@@ -1,0 +1,3 @@
+variables:
+  outputFile: terraform.tfplan
+  workingDirectory: 2_Product_Platforms/avd/avd-core-infrastructure/modules

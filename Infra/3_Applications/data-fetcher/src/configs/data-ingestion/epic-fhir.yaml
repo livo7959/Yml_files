@@ -1,0 +1,128 @@
+envs:
+  sbox:
+    sandbox:
+      base_url: https://vendorservices.epic.com/interconnect-amcurprd-oauth/api/
+      access_token_key: epic-fhir-sandbox-access-token
+  stg:
+    wakemed-poc:
+      base_url: https://epicx-soap.wakemed.org/FHIR-POC/api/
+      access_token_key: epic-fhir-wakemed-poc-access-token
+    wakemed-tst:
+      base_url: https://epicx-soap.wakemed.org/FHIR-TST/api/
+      access_token_key: epic-fhir-wakemed-tst-access-token
+  prod:
+    wakemed:
+      base_url: https://epic-soap.wakemed.org/FHIR/api/
+      access_token_key: epic-fhir-wakemed-access-token
+
+auth_type: bearer_token
+request_type: GET
+request_headers:
+  Accept: application/json
+operations:
+  patient_mrn:
+    endpoint: FHIR/R4/Patient?identifier=MRN|{mrn}
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: raw-fhir
+        filename: patient_mrn/{mrn}
+    data_parsing:
+      patient_id: entry[0].resource.id
+    chained_requests:
+      - operation: patient
+      - operation: encounter
+      - operation: medication_request
+      - operation: procedure
+      - operation: condition
+      - operation: document_reference
+      - operation: diagnostic_report
+      - operation: allergy_intolerance
+      - operation: coverage
+      - operation: family_member_history
+      - operation: flag
+      - operation: service_request
+  patient:
+    endpoint: FHIR/R4/Patient/{patient_id}
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: raw-fhir
+        filename: patient/{patient_id}
+  encounter:
+    endpoint: FHIR/R4/Encounter?patient={patient_id}
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: raw-fhir
+        filename: encounter/{patient_id}
+  medication_request:
+    endpoint: FHIR/R4/MedicationRequest?patient={patient_id}
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: raw-fhir
+        filename: medication_request/{patient_id}
+  procedure:
+    endpoint: FHIR/R4/Procedure?patient={patient_id}
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: raw-fhir
+        filename: procedure/{patient_id}
+  condition:
+    endpoint: FHIR/R4/Condition?patient={patient_id}
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: raw-fhir
+        filename: condition/{patient_id}
+  document_reference:
+    endpoint: FHIR/R4/DocumentReference?patient={patient_id}
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: raw-fhir
+        filename: document_reference/{patient_id}
+  diagnostic_report:
+    endpoint: FHIR/R4/DiagnosticReport?patient={patient_id}
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: raw-fhir
+        filename: diagnostic_report/{patient_id}
+  allergy_intolerance:
+    endpoint: FHIR/R4/AllergyIntolerance?patient={patient_id}
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: raw-fhir
+        filename: allergy_intolerance/{patient_id}
+  coverage:
+    endpoint: FHIR/R4/Coverage?patient={patient_id}
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: raw-fhir
+        filename: coverage/{patient_id}
+  family_member_history:
+    endpoint: FHIR/R4/FamilyMemberHistory?patient={patient_id}
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: raw-fhir
+        filename: family_member_history/{patient_id}
+  flag:
+    endpoint: FHIR/R4/Flag?patient={patient_id}
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: raw-fhir
+        filename: flag/{patient_id}
+  service_request:
+    endpoint: FHIR/R4/ServiceRequest?patient={patient_id}
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: raw-fhir
+        filename: service_request/{patient_id}

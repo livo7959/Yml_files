@@ -1,0 +1,19 @@
+- name: Locate existing SqlPackage installation
+  win_shell: |
+    try {
+      $path = (Get-Command SqlPackage -ErrorAction Stop).Source
+      Split-Path $path
+    } catch {
+      Write-Output "NOT_FOUND"
+    }
+  register: sqlpackage_path
+
+- name: Display detected SqlPackage path
+  debug:
+    msg: "{{ sqlpackage_path.stdout | default('No output') }}"
+
+- name: Remove existing SqlPackage installation
+  win_file:
+    path: "{{ sqlpackage_path.stdout | default('NOT_FOUND') | trim }}"
+    state: absent
+  when: sqlpackage_path.stdout is defined and sqlpackage_path.stdout | trim != "NOT_FOUND"

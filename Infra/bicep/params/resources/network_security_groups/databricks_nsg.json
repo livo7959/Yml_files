@@ -1,0 +1,74 @@
+[
+  {
+    "name": "Microsoft.Databricks-workspaces_UseOnly_databricks-worker-to-worker-inbound",
+    "access": "Allow",
+    "description": "Required for worker nodes communication within a cluster.",
+    "destinationAddressPrefix": "VirtualNetwork",
+    "destinationPortRange": "*",
+    "direction": "Inbound",
+    "priority": 100,
+    "protocol": "*",
+    "sourceAddressPrefix": "VirtualNetwork",
+    "sourcePortRange": "*"
+  },
+  {
+    "name": "Microsoft.Databricks-workspaces_UseOnly_databricks-worker-to-databricks-webapp",
+    "access": "Allow",
+    "description": "Required for workers communication with Databricks Webapp.",
+    "destinationAddressPrefix": "AzureDatabricks",
+    "destinationPortRange": "443",
+    "direction": "Outbound",
+    "priority": 100,
+    "protocol": "Tcp",
+    "sourceAddressPrefix": "VirtualNetwork",
+    "sourcePortRange": "*"
+  },
+  {
+    "name": "Microsoft.Databricks-workspaces_UseOnly_databricks-worker-to-sql",
+    "access": "Allow",
+    "description": "Required for workers communication with Azure SQL services.",
+    "destinationAddressPrefix": "Sql",
+    "destinationPortRange": "3306",
+    "direction": "Outbound",
+    "priority": 101,
+    "protocol": "Tcp",
+    "sourceAddressPrefix": "VirtualNetwork",
+    "sourcePortRange": "*"
+  },
+  {
+    "name": "Microsoft.Databricks-workspaces_UseOnly_databricks-worker-to-storage",
+    "access": "Allow",
+    "description": "Required for workers communication with Azure Storage services.",
+    "destinationAddressPrefix": "Storage",
+    "destinationPortRange": "443",
+    "direction": "Outbound",
+    "priority": 102,
+    "protocol": "Tcp",
+    "sourceAddressPrefix": "VirtualNetwork",
+    "sourcePortRange": "*"
+  },
+  {
+    "name": "Microsoft.Databricks-workspaces_UseOnly_databricks-worker-to-worker-outbound",
+    "access": "Allow",
+    "description": "Required for worker nodes communication within a cluster.",
+    "destinationAddressPrefix": "VirtualNetwork",
+    "destinationPortRange": "*",
+    "direction": "Outbound",
+    "priority": 103,
+    "protocol": "*",
+    "sourceAddressPrefix": "VirtualNetwork",
+    "sourcePortRange": "*"
+  },
+  {
+    "name": "Microsoft.Databricks-workspaces_UseOnly_databricks-worker-to-eventhub",
+    "access": "Allow",
+    "description": "Required for worker communication with Azure Eventhub services.",
+    "destinationAddressPrefix": "EventHub",
+    "destinationPortRange": "9093",
+    "direction": "Outbound",
+    "priority": 104,
+    "protocol": "Tcp",
+    "sourceAddressPrefix": "VirtualNetwork",
+    "sourcePortRange": "*"
+  }
+]

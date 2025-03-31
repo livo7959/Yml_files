@@ -1,0 +1,18 @@
+---
+- name: Apply the following tasks
+  hosts: web_bi_servers
+  become: false
+  gather_facts: true
+  roles:
+    - add_server_access
+    - install_pdqconnect_agent
+    - install_azurearc
+    - expand_vm_disks
+
+    # TODO: uncommenting this can potentially be dangerous because it could downgrade the version of
+    # Python and the ODBC driver, need to find out if this is safe to keep on, Tommy is working on
+    # this.
+    #- install_app_lh_itinfra
+    #- install_python_step1
+    #- install_python_step2
+    #- Install_ODBC_Driver_SQL_step2

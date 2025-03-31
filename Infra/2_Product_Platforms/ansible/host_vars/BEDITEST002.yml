@@ -1,0 +1,129 @@
+---
+# Server_Access role vars
+rdp_access_group_name: CORP\SRV_BEDITEST_RDP
+admin_access_group_name: CORP\SRV_BEDITEST_Admin
+# Install_app_lh_itinfra role vars
+software:
+  - software_install: \\bedpsurvstor001\Software\Notepadplus\npp.8.6.9.Installer.x64.exe
+    arguments: /S
+    product_id: Notepad++
+  - software_install: \\bedpsurvstor001\Software\7Zip\24.07\7z2407-x64.exe
+    arguments: /S
+    product_id: 7-Zip
+  - software_install: \\bedpsurvstor001\Software\PDQconnectAgent\PDQConnectAgent-5.6.11.msi
+    arguments: ALLUSERS=1 /qn /norestart
+
+# Initialize_VM_Disks role vars
+data_disks_added: true
+data_disks:
+  - disk_number: 1
+    drive_letter: D
+    disk_label: Data
+    allocation_unit_size: 4096 #4k
+  - disk_number: 2
+    drive_letter: E
+    disk_label: Data2
+    allocation_unit_size: 4096
+  - disk_number: 3
+    drive_letter: F
+    disk_label: Data3
+    allocation_unit_size: 4096
+
+# Regedit role vars
+# Testing https://techcommunity.microsoft.com/blog/iis-support-blog/iis-short-name-enumeration/3951320
+registry_settings:
+  - path: HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem
+    name: NtfsDisable8dot3NameCreation
+    data: 1
+    type: dword
+
+#Scheduled Task Master Library
+sched_task_info:
+  #Valley Emergency Chart Conversion
+  - task_name: Valley Emergency Room CNRRAI
+    task_descrip: Chart Conversion for Valley Emergency
+    task_exe: D:\Integration_Services\HL7toPDF\HL7ToPDF\HL7ToPDF.exe
+    task_argument: ValleyEmergencyRoom_CNRRAI
+    task_sched_type: daily
+    task_sched_time: "2024-11-21T09:00:00"
+    task_gmsa: CORP\gmsa_dhl7topdf$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+    #Valley Emergency Demo Conversion
+  - task_name: Valley Emergency Room HL7 Demo Conversion
+    task_descrip: Demo Conversion for Valley Emergency
+    task_exe: D:\Integration_Services\HL7DemoConversion\HL7DemoConversion\HL7DemoConversion.exe
+    task_argument: ValleyEmergencyRoom
+    task_sched_type: daily
+    task_sched_time: "2024-11-21T07:00:00"
+    task_gmsa: CORP\gmsa_dhl7demo$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+    #Tahoe Emergency Chart Conversion
+  - task_name: Tahoe Emergency PDF to TIF Chart Conversion
+    task_descrip: Chart Conversion for Tahoe Emergency
+    task_exe: D:\Integration_Services\HL7toPDF\HL7ToPDF\HL7ToPDF.exe
+    task_argument: TahoeEmergency
+    task_sched_type: daily
+    task_sched_time: "2024-12-13T09:45:00"
+    task_gmsa: CORP\gmsa_dhl7topdf$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+    #Tahoe Emergency EDLog Conversion
+  - task_name: Tahoe Emergency Excel file conversion
+    task_descrip: EDLog Conversion for Tahoe Emergency
+    task_exe: D:\Integration_Services\HL7FilesToExcel\HL7FilesToExcel\HL7FilesToExcel.exe
+    task_argument: TahoeEmergency
+    task_sched_type: daily
+    task_sched_time: "2024-12-13T06:00:00"
+    task_gmsa: CORP\gmsa_dhl7toxlsx$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+    #Tahoe Emergency Demo Conversion
+  - task_name: Tahoe Emergency HL7 Demo Conversion
+    task_descrip: Demo Conversion for Tahoe Emergency
+    task_exe: D:\Integration_Services\HL7DemoConversion\HL7DemoConversion\HL7DemoConversion.exe
+    task_argument: TahoeEmergency
+    task_sched_type: daily
+    task_sched_time: "2024-12-13T08:00:00"
+    task_gmsa: CORP\gmsa_dhl7demo$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+    #Kent Memorial Chart Conversion
+  - task_name: Kent PDF to TIFF Chart Conversion
+    task_descrip: Chart Conversion for Kent Memorial
+    task_exe: D:\Integration_Services\HL7toPDF\HL7ToPDF\HL7ToPDF.exe
+    task_argument: TahoeEmergency
+    task_sched_type: daily
+    task_sched_time: "2024-12-13T05:00:00"
+    task_gmsa: CORP\gmsa_dhl7topdf$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+    task_interval: PT30M
+    task_duration: PT16H
+
+# TODO: this is a temporary block used for troubleshooting Ansible redoing this config idempotently
+iis_website_app_info:
+  - app_pool_name: LogixServices-ApiIVR
+    website_state: started
+    gMSA: CORP\gmsa_dservices$
+    mpl_mode: Integrated
+    runtime_version: ""
+    website_name: LogixServices
+    ParentSite: LogixServices
+    Sub_website_name: ApiIVR
+    host_name: dservices.logixhealth.com
+    root_path: D:\AzureDevOps\LogixServices\ApiVR\Release\ApiIVR
+    thumbprint_value: b3ccf578f5c85020786bfa8e3fde352b9cc0f179

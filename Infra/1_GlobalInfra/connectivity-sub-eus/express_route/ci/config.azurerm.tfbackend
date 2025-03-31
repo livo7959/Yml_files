@@ -1,0 +1,5 @@
+subscription_id      = "da07f21c-d54b-41ca-9f74-9e124d6c2b99"
+resource_group_name  = "rg-tfstate-hub-eus"
+storage_account_name = "lhtfstatehubeus"
+container_name       = "terraform-state"
+key                  = "express-route-hub-eus.tfstate"

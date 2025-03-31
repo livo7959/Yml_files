@@ -1,0 +1,28 @@
+auth_type: None
+base_url: https://data.cms.gov/data-api/v1/dataset/4c6a7709-84b0-4514-9308-4a41846f5682/data?
+request_type: GET
+operations:
+  all_providers:
+    endpoint: sort=Enrollment ID&offset={offset}&size={limit}
+    pagination:
+      type: offset_limit
+      data_check:
+        data_path: "[*]"
+        op: truth
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: public-data
+        filename: cms/medicare_revalidation/all_providers_offset_{offset}
+  revalidation_providers:
+    endpoint: sort=Enrollment ID&offset={offset}&size={limit}&filter[revals][condition][path]=Revalidation Due Date&filter[revals][condition][operator]=<>&filter[revals][condition][value]=
+    pagination:
+      type: offset_limit
+      data_check:
+        data_path: "[*]"
+        op: truth
+    destination:
+      adls2:
+        storage_account: lhdatalakestorage
+        storage_container: public-data
+        filename: cms/medicare_revalidation/reval_providers_offset_{offset}

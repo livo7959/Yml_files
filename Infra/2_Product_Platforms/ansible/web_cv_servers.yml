@@ -1,0 +1,8 @@
+---
+- name: Apply the following tasks
+  hosts: web_cv_servers
+  become: false
+  gather_facts: true
+  roles:
+    # These 5 roles below will add a gMSA to an app pool with all required permissions
+    - Verify_ODBC_installation

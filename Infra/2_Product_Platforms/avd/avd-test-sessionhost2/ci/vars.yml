@@ -1,0 +1,4 @@
+variables:
+  outputFile: terraform.tfplan
+  tfVarsFile: ./avdtestsessionhost.tfvars
+  workingDirectory: 2_Product_Platforms/avd/avd-test-sessionhost2/modules

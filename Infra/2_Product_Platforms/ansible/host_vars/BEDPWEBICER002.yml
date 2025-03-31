@@ -1,0 +1,54 @@
+---
+#AzDO Agent Info
+azdo_agent_service_name: vstsagent.azuredevops.PROD.BED_PWEBICER002
+azdo_agent_service_account: CORP\svc_azdo_prod
+app_insights_connection_string: "InstrumentationKey=0e999f5e-129c-44ce-8505-84a742e462c8;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=e3d17ee0-6b3e-4c89-acff-5d17509da44a"
+
+#Variable values for all IIS Website Apps
+iis_website_app_info:
+  # - app_pool_name: LogixCodify
+  #   website_state: started
+  #   gMSA: CORP\gmsa_codify$
+  #   mpl_mode: Integrated
+  #   runtime_version: "v4.0"
+  #   ParentSite: #Need to Update
+  #   Sub_website_name: #Need to Update
+  #   host_name: #Need to Update
+  #   root_path: #Need to Update
+  #   thumbprint_value: #Need to Update
+  # - app_pool_name: LogixExpress
+  #   website_state: started
+  #   gMSA: CORP\gmsa_express$
+  #   mpl_mode: Integrated
+  #   runtime_version: "v4.0"
+  #   ParentSite: #Need to Update
+  #   Sub_website_name: #Need to Update
+  #   host_name: #Need to Update
+  #   root_path: #Need to Update
+  #   thumbprint_value: #Need to Update
+  # - app_pool_name: "RequestCCV"
+  #   sni: 1
+  #   website_state: started
+  #   gMSA: CORP\gmsa_reqccv$
+  #   mpl_mode: Integrated
+  #   runtime_version: "v4.0"
+  #   website_name: "RequestCCV"
+  #   host_name: request.logixhealth.com
+  #   root_path: D:\TFS\Release\RequestCCV
+  #   thumbprint_value: 612ef72f3098dc2cf5ee717864d945ad62918ca9
+  - app_pool_name: "LogixChartview(CCV)"
+    sni: 1
+    website_state: started
+    gMSA: CORP\gmsa_ccv$
+    mpl_mode: Integrated
+    runtime_version: "v4.0"
+    website_name: "LogixChartview(CCV)"
+    host_name: chartview.logixhealth.com
+    root_path: D:\TFS\Release\LogixCCV
+    thumbprint_value: 518d0cb1442811c544552f76308132bba7f60f6c
+# Sub_website_name: #Need to Update
+# host_name: #Need to Update
+# root_path: #Need to Update
+# thumbprint_value: #Need to Update
+rootpathsubs:
+  - path: D:\TFS\Release\RequestCCV

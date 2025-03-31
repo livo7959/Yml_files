@@ -1,0 +1,7 @@
+---
+- name: Apply the following tasks
+  hosts: web_ops_servers
+  become: false
+  gather_facts: true
+  roles:
+    - apply_svcaccount_to_IIS_app_pool

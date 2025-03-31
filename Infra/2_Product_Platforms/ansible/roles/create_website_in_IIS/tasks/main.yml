@@ -1,0 +1,18 @@
+- name: Create application pool
+  win_iis_webapppool:
+    name: "{{ item.app_pool_name }}"
+    state: present
+    managed_runtime_version: "{{ item.runtime_version }}"
+    managed_pipeline_mode: "{{ item.mpl_mode }}"
+  loop: "{{ iis_website_app_info }}"
+
+- name: Create the IIS website
+  win_iis_website:
+    name: "{{ item.website_name }}"
+    state: started
+    port: 80
+    hostname: "{{ item.host_name }}"
+    physical_path: "{{ item.root_path }}"
+    application_pool: "{{ item.app_pool_name }}"
+    register: iis_site
+  loop: "{{ iis_website_app_info }}"

@@ -1,0 +1,129 @@
+{
+  "storageAccounts": [
+    {
+      "name": "unitycatalogeus",
+      "accountType": "Premium_ZRS",
+      "kind": "BlockBlobStorage",
+      "accessTier": "Hot",
+      "allowBlobPublicAccess": false,
+      "isSftpEnabled": false,
+      "isHnsEnabled": true,
+      "containers": ["metastore"],
+      "networkAccess": {
+        "public": false,
+        "bypass": "None",
+        "resourceAccessRules": [
+          {
+            "resourceId": "/subscriptions/*/resourcegroups/*/providers/Microsoft.Databricks/accessConnectors/*"
+          }
+        ],
+        "virtualNetworkRules": [
+          {
+            "virtualNetworkName": "vnet-databricks-eus-shared",
+            "subnetName": "snet-databricks-private-eus-shared"
+          },
+          {
+            "virtualNetworkName": "vnet-databricks-eus-shared",
+            "subnetName": "snet-databricks-public-eus-shared"
+          },
+          {
+            "subscriptionId": "8192a5d8-1a56-4caf-b961-0eae16cbd1d3",
+            "resourceGroupName": "rg-databricks-sbox",
+            "virtualNetworkName": "vnet-databricks-eus-sbox",
+            "subnetName": "snet-databricks-private-eus-sbox"
+          },
+          {
+            "subscriptionId": "8192a5d8-1a56-4caf-b961-0eae16cbd1d3",
+            "resourceGroupName": "rg-databricks-sbox",
+            "virtualNetworkName": "vnet-databricks-eus-sbox",
+            "subnetName": "snet-databricks-public-eus-sbox"
+          },
+          {
+            "subscriptionId": "bf6bb924-c903-43e9-9e06-2c2d2c605d1a",
+            "resourceGroupName": "rg-data-dev",
+            "virtualNetworkName": "vnet-databricks-eus-dev",
+            "subnetName": "snet-databricks-private-eus-dev"
+          },
+          {
+            "subscriptionId": "bf6bb924-c903-43e9-9e06-2c2d2c605d1a",
+            "resourceGroupName": "rg-data-dev",
+            "virtualNetworkName": "vnet-databricks-eus-dev",
+            "subnetName": "snet-databricks-public-eus-dev"
+          },
+          {
+            "subscriptionId": "f533a95b-ce94-4023-a472-ab4c3748b37c",
+            "resourceGroupName": "rg-data-prod",
+            "virtualNetworkName": "vnet-databricks-eus-prod",
+            "subnetName": "snet-databricks-private-eus-prod"
+          },
+          {
+            "subscriptionId": "f533a95b-ce94-4023-a472-ab4c3748b37c",
+            "resourceGroupName": "rg-data-prod",
+            "virtualNetworkName": "vnet-databricks-eus-prod",
+            "subnetName": "snet-databricks-public-eus-prod"
+          }
+        ]
+      }
+    }
+  ],
+  "network_security_groups": [
+    {
+      "name": "databricks",
+      "security_rules_params": "resources/network_security_groups/databricks_nsg.json"
+    }
+  ],
+  "virtual_networks": [
+    {
+      "name": "vnet-databricks",
+      "subnets": [
+        {
+          "name": "snet-databricks-public",
+          "addressPrefix": {
+            "shared": "10.120.25.0/26"
+          },
+          "delegations": [
+            {
+              "service_name": "Microsoft.Databricks/workspaces"
+            }
+          ],
+          "privateEndpointNetworkPolicies": "Disabled",
+          "privateLinkServiceNetworkPolicies": "Disabled",
+          "networkSecurityGroup": "databricks",
+          "serviceEndpoints": ["Microsoft.Storage"]
+        },
+        {
+          "name": "snet-databricks-private",
+          "addressPrefix": {
+            "shared": "10.120.25.64/26"
+          },
+          "delegations": [
+            {
+              "service_name": "Microsoft.Databricks/workspaces"
+            }
+          ],
+          "privateEndpointNetworkPolicies": "Disabled",
+          "privateLinkServiceNetworkPolicies": "Disabled",
+          "networkSecurityGroup": "databricks",
+          "serviceEndpoints": ["Microsoft.Storage"]
+        }
+      ],
+      "addressPrefixes": {
+        "shared": ["10.120.25.0/24"]
+      },
+      "dnsServers": [],
+      "disableBgpRoutePropagation": true,
+      "deployRouteTable": false
+    }
+  ],
+  "databricks_workspaces": [
+    {
+      "workspace_name": "web-auth-eus",
+      "sku_name": "premium",
+      "network": {
+        "virtual_network": "vnet-databricks",
+        "public_subnet": "snet-databricks-public",
+        "private_subnet": "snet-databricks-private"
+      }
+    }
+  ]
+}

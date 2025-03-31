@@ -1,0 +1,104 @@
+---
+#Scheduled Task Info for Integration Services Conversions
+sched_task_info:
+  #Valley Emergency Chart Conversion
+  - task_name: Valley Emergency Room CNRRAI
+    task_descrip: Chart Conversion for Valley Emergency
+    task_exe: D:\Integration_Services\HL7toPDF\HL7ToPDF\HL7ToPDF.exe
+    task_argument: ValleyEmergencyRoom_CNRRAI
+    task_sched_type: daily
+    task_sched_time: "2024-11-21T09:00:00"
+    task_gmsa: CORP\gmsa_dhl7topdf$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+    #Valley Emergency Demo Conversion
+  - task_name: Valley Emergency Room HL7 Demo Conversion
+    task_descrip: Demo Conversion for Valley Emergency
+    task_exe: D:\Integration_Services\HL7DemoConversion\HL7DemoConversion\HL7DemoConversion.exe
+    task_argument: ValleyEmergencyRoom
+    task_sched_type: daily
+    task_sched_time: "2024-11-21T07:00:00"
+    task_gmsa: CORP\gmsa_dhl7demo$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+    #Tahoe Emergency Chart Conversion
+  - task_name: Tahoe Emergency PDF to TIF Chart Conversion
+    task_descrip: Chart Conversion for Tahoe Emergency
+    task_exe: D:\Integration_Services\HL7toPDF\HL7ToPDF\HL7ToPDF.exe
+    task_argument: TahoeEmergency
+    task_sched_type: daily
+    task_sched_time: "2024-12-13T09:45:00"
+    task_gmsa: CORP\gmsa_dhl7topdf$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+    #Tahoe Emergency EDLog Conversion
+  - task_name: Tahoe Emergency Excel file conversion
+    task_descrip: EDLog Conversion for Tahoe Emergency
+    task_exe: D:\Integration_Services\HL7FilesToExcel\HL7FilesToExcel\HL7FilesToExcel.exe
+    task_argument: TahoeEmergency
+    task_sched_type: daily
+    task_sched_time: "2024-12-13T06:00:00"
+    task_gmsa: CORP\gmsa_dhl7toxlsx$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+    #Tahoe Emergency Demo Conversion
+  - task_name: Tahoe Emergency HL7 Demo Conversion
+    task_descrip: Demo Conversion for Tahoe Emergency
+    task_exe: D:\Integration_Services\HL7DemoConversion\HL7DemoConversion\HL7DemoConversion.exe
+    task_argument: TahoeEmergency
+    task_sched_type: daily
+    task_sched_time: "2024-12-13T08:00:00"
+    task_gmsa: CORP\gmsa_dhl7demo$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+    #Kent Memorial Chart Conversion
+  - task_name: Kent PDF to TIFF Chart Conversion
+    task_descrip: Chart Conversion for Kent Memorial
+    task_exe: D:\Integration_Services\HL7toPDF\HL7ToPDF\HL7ToPDF.exe
+    task_argument: TahoeEmergency
+    task_sched_type: daily
+    task_sched_time: "2024-12-13T05:00:00"
+    task_gmsa: CORP\gmsa_dhl7topdf$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true
+    task_interval: PT30M
+    task_duration: PT16H
+
+  # #Burbank Daily Demo Conversion
+  # - task_name: Burbank Daily Demo Conversion
+  #   task_descrip: Burbank Daily Demo Conversion
+  #   task_exe: D:\Integration_Services\HL7DemoConversion\HL7DemoConversion\HL7DemoConversion.exe
+  #   task_argument: Burbank
+  #   task_sched_type: daily
+  #   task_days_of_week: sunday, monday, tuesday, wednesday, thursday, friday, saturday
+  #   task_sched_time: "2024-09-18T13:45:00"
+  #   task_gmsa: CORP\gmsa_dhl7demo$
+  #   logon_type: password
+  #   run_level: highest
+  #   task_mult_instances: 2
+  #   enabled_flag: true
+  # #Burbank Update Demo Conversion
+  # - task_name: Burbank Update Demo Conversion
+  #   task_descrip: Burbank Update Demo Conversion
+  #   task_exe: D:\Integration_Services\HL7DemoConversion\HL7DemoConversion\HL7DemoConversion.exe
+  #   task_argument: Burbank_update
+  #   task_sched_type: weekly
+  #   task_days_of_week: friday
+  #   task_sched_time: "2024-09-18T13:45:00"
+  #   task_gmsa: CORP\gmsa_dhl7demo$
+  #   logon_type: password
+  #   run_level: highest
+  #   task_mult_instances: 2
+  #   enabled_flag: true

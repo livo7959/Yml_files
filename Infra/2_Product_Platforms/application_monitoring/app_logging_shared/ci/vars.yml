@@ -1,0 +1,3 @@
+variables:
+  outputFile: terraform.tfplan
+  workingDirectory: 2_Product_Platforms/application_monitoring/app_logging_shared/modules

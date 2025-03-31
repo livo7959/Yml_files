@@ -1,0 +1,13 @@
+- name: Run PowerShell commands
+  ansible.windows.win_powershell:
+    script: |
+      {{ powershell_command | default('') }}
+  register: powershell_output
+
+- name: Debug entire PowerShell output
+  debug:
+    var: powershell_output
+
+- name: Print PowerShell Output
+  debug:
+    msg: "{{ powershell_output.output | default('No output captured') }}"

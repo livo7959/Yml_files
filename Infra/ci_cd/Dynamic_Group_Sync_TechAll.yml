@@ -1,0 +1,28 @@
+stages:
+  - stage: Checkout_Dynamic_Group_Sync
+    pool:
+      name: PROD
+      demands:
+        - Agent.Name -equals BEDPAUTOSPRT001
+    jobs:
+      - job: Checkout_Dynamic_Group_Sync
+        displayName: Checkout_Dynamic_Group_Sync
+        steps:
+          - checkout: self
+            clean: true
+          - task: DeleteFiles@1
+            inputs:
+              SourceFolder: 'D:\Scripts\Dynamic_Group_Syncs'
+              Contents: "DynamicGroup_Technology_SEC.ps1"
+          - task: CopyFiles@2
+            inputs:
+              SourceFolder: "$(Build.SourcesDirectory)/PowerShell/AD/Dynamic_TechnologyOU_UserSync/"
+              Contents: "DynamicGroup_Technology_SEC.ps1"
+              TargetFolder: 'D:\Scripts\Dynamic_Group_Syncs'
+          - task: PowerShell@1
+            displayName: Delete Build Files
+            condition: succeededOrFailed()
+            inputs:
+              scriptType: inlineScript
+              inlineScript: |
+                Remove-Item $(Build.SourcesDirectory)\* -Recurse -Force

@@ -1,0 +1,6 @@
+- name: Add gMSA to "impersonate a client after authentication" local security policy
+  ansible.windows.win_user_right:
+    name: SeImpersonatePrivilege
+    users:
+      - IIS_IUSRS
+    action: add

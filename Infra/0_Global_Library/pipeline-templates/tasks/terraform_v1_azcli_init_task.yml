@@ -1,0 +1,20 @@
+parameters:
+  - name: workloadName
+    type: string
+  - name: terraformDirectory
+    type: string
+  - name: azureSubscriptionServiceConnectionName
+    type: string
+  - name: tfbackendConfigFile
+    type: string
+
+steps:
+  - task: AzureCLI@2
+    displayName: Terraform Init
+    inputs:
+      azureSubscription: ${{ parameters.azureSubscriptionServiceConnectionName }}
+      workingDirectory: ${{ parameters.terraformDirectory }}
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        terraform init -backend-config={{ parameters.tfbackendConfigFile }}

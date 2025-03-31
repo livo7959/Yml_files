@@ -1,0 +1,338 @@
+trigger: none
+
+pool: Build
+
+parameters:
+  - name: environmentName
+    type: string
+    default: "prod"
+  - name: azureServiceConnectionName
+    type: string
+    default: "LH Connectivity Sub 001"
+  - name: templateDirectory
+    type: string
+    default: "./LH-LandingZones/inf-as-code/Networking/AzureFirewall/RuleCollections/"
+  - name: resourceGroupName
+    type: string
+    default: "rg-net-hub-001"
+  - name: serviceName
+    type: string
+    default: "azfw"
+  - name: regionAbrv
+    type: string
+    default: "eus"
+
+variables:
+  vdi_base: rcgAzureVdiBase
+  vdi_outbound_internet: rcgVdiOutboundInternet
+  vdi_outbound_bedford: rcgVdiToBedford
+  private_endpoint: rcgPrivateEndpointStorage
+  active_directory_client: rcgActiveDirectoryClient
+  active_directory_server: azfwHubIdentityRCG
+  server_to_bedford: rcgServerToBedford
+  platform_as_a_service: rcgPlatformAsAService
+
+stages:
+  - stage: "${{ parameters.serviceName }}_${{ variables.vdi_base }}_${{ parameters.regionAbrv }}_bicep_deploy"
+    variables:
+      - name: templateFileName
+        value: ${{ parameters.templateDirectory }}/${{ variables.vdi_base }}.bicep
+      - name: deploymentName
+        value: ${{ parameters.serviceName }}_${{ variables.vdi_base }}_${{ parameters.regionAbrv }}
+    jobs:
+      - job: what_if_${{ parameters.serviceName }}_${{ variables.vdi_base }}_${{ parameters.regionAbrv }}
+        steps:
+          - template: /0_Global_Library/infrastructure_templates/yaml/tasks/azcli_rg_deploy_no_params_task.yml
+            parameters:
+              azureSubscriptionName: ${{ parameters.azureServiceConnectionName}}
+              templateFileName: ${{ variables.templateFileName }}
+              command: "what-if"
+              additionalArguments: "--out yamlc"
+              deploymentName: ${{ variables.deploymentName }}
+              resourceGroupName: ${{ parameters.resourceGroupName}}
+      - job: approve_${{ parameters.serviceName }}_${{ variables.vdi_base }}_${{ parameters.regionAbrv }}
+        dependsOn: what_if_${{ parameters.serviceName }}_${{ variables.vdi_base }}_${{ parameters.regionAbrv }}
+        pool: server
+        timeoutInMinutes: 1440 # 1 day
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: |
+                nottaviano@logixhealth.com
+      - job: create_${{ parameters.serviceName }}_${{ variables.vdi_base }}_${{ parameters.regionAbrv }}
+        dependsOn: approve_${{ parameters.serviceName }}_${{ variables.vdi_base }}_${{ parameters.regionAbrv }}
+        steps:
+          - template: /0_Global_Library/infrastructure_templates/yaml/tasks/azcli_rg_deploy_no_params_task.yml
+            parameters:
+              azureSubscriptionName: ${{ parameters.azureServiceConnectionName}}
+              templateFileName: ${{ variables.templateFileName }}
+              command: "create"
+              additionalArguments: "--out yamlc"
+              deploymentName: ${{ variables.deploymentName }}
+              resourceGroupName: ${{ parameters.resourceGroupName}}
+
+  - stage: "${{ parameters.serviceName }}_${{ variables.vdi_outbound_internet }}_${{ parameters.regionAbrv }}_bicep_deploy"
+    variables:
+      - name: templateFileName
+        value: ${{ parameters.templateDirectory }}/${{ variables.vdi_outbound_internet }}.bicep
+      - name: deploymentName
+        value: ${{ parameters.serviceName }}_${{ variables.vdi_outbound_internet }}_${{ parameters.regionAbrv }}
+    jobs:
+      - job: what_if_${{ parameters.serviceName }}_${{ variables.vdi_outbound_internet }}_${{ parameters.regionAbrv }}
+        steps:
+          - template: /0_Global_Library/infrastructure_templates/yaml/tasks/azcli_rg_deploy_no_params_task.yml
+            parameters:
+              azureSubscriptionName: ${{ parameters.azureServiceConnectionName}}
+              templateFileName: ${{ variables.templateFileName }}
+              command: "what-if"
+              additionalArguments: "--out yamlc"
+              deploymentName: ${{ variables.deploymentName }}
+              resourceGroupName: ${{ parameters.resourceGroupName}}
+      - job: approve_${{ parameters.serviceName }}_${{ variables.vdi_outbound_internet }}_${{ parameters.regionAbrv }}
+        dependsOn: what_if_${{ parameters.serviceName }}_${{ variables.vdi_outbound_internet }}_${{ parameters.regionAbrv }}
+        pool: server
+        timeoutInMinutes: 1440 # 1 day
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: |
+                nottaviano@logixhealth.com
+      - job: create_${{ parameters.serviceName }}_${{ variables.vdi_outbound_internet }}_${{ parameters.regionAbrv }}
+        dependsOn: approve_${{ parameters.serviceName }}_${{ variables.vdi_outbound_internet }}_${{ parameters.regionAbrv }}
+        steps:
+          - template: /0_Global_Library/infrastructure_templates/yaml/tasks/azcli_rg_deploy_no_params_task.yml
+            parameters:
+              azureSubscriptionName: ${{ parameters.azureServiceConnectionName}}
+              templateFileName: ${{ variables.templateFileName }}
+              command: "create"
+              additionalArguments: "--out yamlc"
+              deploymentName: ${{ variables.deploymentName }}
+              resourceGroupName: ${{ parameters.resourceGroupName}}
+
+  - stage: "${{ parameters.serviceName }}_${{ variables.vdi_outbound_bedford }}_${{ parameters.regionAbrv }}_bicep_deploy"
+    variables:
+      - name: templateFileName
+        value: ${{ parameters.templateDirectory }}/${{ variables.vdi_outbound_bedford }}.bicep
+      - name: deploymentName
+        value: ${{ parameters.serviceName }}_${{ variables.vdi_outbound_bedford }}_${{ parameters.regionAbrv }}
+    jobs:
+      - job: what_if_${{ parameters.serviceName }}_${{ variables.vdi_outbound_bedford }}_${{ parameters.regionAbrv }}
+        steps:
+          - template: /0_Global_Library/infrastructure_templates/yaml/tasks/azcli_rg_deploy_no_params_task.yml
+            parameters:
+              azureSubscriptionName: ${{ parameters.azureServiceConnectionName}}
+              templateFileName: ${{ variables.templateFileName }}
+              command: "what-if"
+              additionalArguments: "--out yamlc"
+              deploymentName: ${{ variables.deploymentName }}
+              resourceGroupName: ${{ parameters.resourceGroupName}}
+      - job: approve_${{ parameters.serviceName }}_${{ variables.vdi_outbound_bedford }}_${{ parameters.regionAbrv }}
+        dependsOn: what_if_${{ parameters.serviceName }}_${{ variables.vdi_outbound_bedford }}_${{ parameters.regionAbrv }}
+        pool: server
+        timeoutInMinutes: 1440 # 1 day
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: |
+                nottaviano@logixhealth.com
+      - job: create_${{ parameters.serviceName }}_${{ variables.vdi_outbound_bedford }}_${{ parameters.regionAbrv }}
+        dependsOn: approve_${{ parameters.serviceName }}_${{ variables.vdi_outbound_bedford }}_${{ parameters.regionAbrv }}
+        steps:
+          - template: /0_Global_Library/infrastructure_templates/yaml/tasks/azcli_rg_deploy_no_params_task.yml
+            parameters:
+              azureSubscriptionName: ${{ parameters.azureServiceConnectionName}}
+              templateFileName: ${{ variables.templateFileName }}
+              command: "create"
+              additionalArguments: "--out yamlc"
+              deploymentName: ${{ variables.deploymentName }}
+              resourceGroupName: ${{ parameters.resourceGroupName}}
+
+  - stage: "${{ parameters.serviceName }}_${{ variables.private_endpoint }}_${{ parameters.regionAbrv }}_bicep_deploy"
+    variables:
+      - name: templateFileName
+        value: ${{ parameters.templateDirectory }}/${{ variables.private_endpoint }}.bicep
+      - name: deploymentName
+        value: ${{ parameters.serviceName }}_${{ variables.private_endpoint }}_${{ parameters.regionAbrv }}
+    jobs:
+      - job: what_if_${{ parameters.serviceName }}_${{ variables.private_endpoint }}_${{ parameters.regionAbrv }}
+        steps:
+          - template: /0_Global_Library/infrastructure_templates/yaml/tasks/azcli_rg_deploy_no_params_task.yml
+            parameters:
+              azureSubscriptionName: ${{ parameters.azureServiceConnectionName}}
+              templateFileName: ${{ variables.templateFileName }}
+              command: "what-if"
+              additionalArguments: "--out yamlc"
+              deploymentName: ${{ variables.deploymentName }}
+              resourceGroupName: ${{ parameters.resourceGroupName}}
+      - job: approve_${{ parameters.serviceName }}_${{ variables.private_endpoint }}_${{ parameters.regionAbrv }}
+        dependsOn: what_if_${{ parameters.serviceName }}_${{ variables.private_endpoint }}_${{ parameters.regionAbrv }}
+        pool: server
+        timeoutInMinutes: 1440 # 1 day
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: |
+                nottaviano@logixhealth.com
+      - job: create_${{ parameters.serviceName }}_${{ variables.private_endpoint }}_${{ parameters.regionAbrv }}
+        dependsOn: approve_${{ parameters.serviceName }}_${{ variables.private_endpoint }}_${{ parameters.regionAbrv }}
+        steps:
+          - template: /0_Global_Library/infrastructure_templates/yaml/tasks/azcli_rg_deploy_no_params_task.yml
+            parameters:
+              azureSubscriptionName: ${{ parameters.azureServiceConnectionName}}
+              templateFileName: ${{ variables.templateFileName }}
+              command: "create"
+              additionalArguments: "--out yamlc"
+              deploymentName: ${{ variables.deploymentName }}
+              resourceGroupName: ${{ parameters.resourceGroupName}}
+
+  - stage: "${{ parameters.serviceName }}_${{ variables.active_directory_client }}_${{ parameters.regionAbrv }}_bicep_deploy"
+    variables:
+      - name: templateFileName
+        value: ${{ parameters.templateDirectory }}/${{ variables.active_directory_client }}.bicep
+      - name: deploymentName
+        value: ${{ parameters.serviceName }}_${{ variables.active_directory_client }}_${{ parameters.regionAbrv }}
+    jobs:
+      - job: what_if_${{ parameters.serviceName }}_${{ variables.active_directory_client }}_${{ parameters.regionAbrv }}
+        steps:
+          - template: /0_Global_Library/infrastructure_templates/yaml/tasks/azcli_rg_deploy_no_params_task.yml
+            parameters:
+              azureSubscriptionName: ${{ parameters.azureServiceConnectionName}}
+              templateFileName: ${{ variables.templateFileName }}
+              command: "what-if"
+              additionalArguments: "--out yamlc"
+              deploymentName: ${{ variables.deploymentName }}
+              resourceGroupName: ${{ parameters.resourceGroupName}}
+      - job: approve_${{ parameters.serviceName }}_${{ variables.active_directory_client }}_${{ parameters.regionAbrv }}
+        dependsOn: what_if_${{ parameters.serviceName }}_${{ variables.active_directory_client }}_${{ parameters.regionAbrv }}
+        pool: server
+        timeoutInMinutes: 1440 # 1 day
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: |
+                nottaviano@logixhealth.com
+      - job: create_${{ parameters.serviceName }}_${{ variables.active_directory_client }}_${{ parameters.regionAbrv }}
+        dependsOn: approve_${{ parameters.serviceName }}_${{ variables.active_directory_client }}_${{ parameters.regionAbrv }}
+        steps:
+          - template: /0_Global_Library/infrastructure_templates/yaml/tasks/azcli_rg_deploy_no_params_task.yml
+            parameters:
+              azureSubscriptionName: ${{ parameters.azureServiceConnectionName}}
+              templateFileName: ${{ variables.templateFileName }}
+              command: "create"
+              additionalArguments: "--out yamlc"
+              deploymentName: ${{ variables.deploymentName }}
+              resourceGroupName: ${{ parameters.resourceGroupName}}
+
+  - stage: "${{ parameters.serviceName }}_${{ variables.active_directory_server }}_${{ parameters.regionAbrv }}_bicep_deploy"
+    variables:
+      - name: templateFileName
+        value: ${{ parameters.templateDirectory }}/${{ variables.active_directory_server }}.bicep
+      - name: deploymentName
+        value: ${{ parameters.serviceName }}_${{ variables.active_directory_server }}_${{ parameters.regionAbrv }}
+    jobs:
+      - job: what_if_${{ parameters.serviceName }}_${{ variables.active_directory_server }}_${{ parameters.regionAbrv }}
+        steps:
+          - template: /0_Global_Library/infrastructure_templates/yaml/tasks/azcli_rg_deploy_no_params_task.yml
+            parameters:
+              azureSubscriptionName: ${{ parameters.azureServiceConnectionName}}
+              templateFileName: ${{ variables.templateFileName }}
+              command: "what-if"
+              additionalArguments: "--out yamlc"
+              deploymentName: ${{ variables.deploymentName }}
+              resourceGroupName: ${{ parameters.resourceGroupName}}
+      - job: approve_${{ parameters.serviceName }}_${{ variables.active_directory_server }}_${{ parameters.regionAbrv }}
+        dependsOn: what_if_${{ parameters.serviceName }}_${{ variables.active_directory_server }}_${{ parameters.regionAbrv }}
+        pool: server
+        timeoutInMinutes: 1440 # 1 day
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: |
+                nottaviano@logixhealth.com
+      - job: create_${{ parameters.serviceName }}_${{ variables.active_directory_server }}_${{ parameters.regionAbrv }}
+        dependsOn: approve_${{ parameters.serviceName }}_${{ variables.active_directory_server }}_${{ parameters.regionAbrv }}
+        steps:
+          - template: /0_Global_Library/infrastructure_templates/yaml/tasks/azcli_rg_deploy_no_params_task.yml
+            parameters:
+              azureSubscriptionName: ${{ parameters.azureServiceConnectionName}}
+              templateFileName: ${{ variables.templateFileName }}
+              command: "create"
+              additionalArguments: "--out yamlc"
+              deploymentName: ${{ variables.deploymentName }}
+              resourceGroupName: ${{ parameters.resourceGroupName}}
+
+  - stage: "${{ parameters.serviceName }}_${{ variables.server_to_bedford }}_${{ parameters.regionAbrv }}_bicep_deploy"
+    variables:
+      - name: templateFileName
+        value: ${{ parameters.templateDirectory }}/${{ variables.server_to_bedford }}.bicep
+      - name: deploymentName
+        value: ${{ parameters.serviceName }}_${{ variables.server_to_bedford }}_${{ parameters.regionAbrv }}
+    jobs:
+      - job: what_if_${{ parameters.serviceName }}_${{ variables.server_to_bedford }}_${{ parameters.regionAbrv }}
+        steps:
+          - template: /0_Global_Library/infrastructure_templates/yaml/tasks/azcli_rg_deploy_no_params_task.yml
+            parameters:
+              azureSubscriptionName: ${{ parameters.azureServiceConnectionName}}
+              templateFileName: ${{ variables.templateFileName }}
+              command: "what-if"
+              additionalArguments: "--out yamlc"
+              deploymentName: ${{ variables.deploymentName }}
+              resourceGroupName: ${{ parameters.resourceGroupName}}
+      - job: approve_${{ parameters.serviceName }}_${{ variables.server_to_bedford }}_${{ parameters.regionAbrv }}
+        dependsOn: what_if_${{ parameters.serviceName }}_${{ variables.server_to_bedford }}_${{ parameters.regionAbrv }}
+        pool: server
+        timeoutInMinutes: 1440 # 1 day
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: |
+                nottaviano@logixhealth.com
+      - job: create_${{ parameters.serviceName }}_${{ variables.server_to_bedford }}_${{ parameters.regionAbrv }}
+        dependsOn: approve_${{ parameters.serviceName }}_${{ variables.server_to_bedford }}_${{ parameters.regionAbrv }}
+        steps:
+          - template: /0_Global_Library/infrastructure_templates/yaml/tasks/azcli_rg_deploy_no_params_task.yml
+            parameters:
+              azureSubscriptionName: ${{ parameters.azureServiceConnectionName}}
+              templateFileName: ${{ variables.templateFileName }}
+              command: "create"
+              additionalArguments: "--out yamlc"
+              deploymentName: ${{ variables.deploymentName }}
+              resourceGroupName: ${{ parameters.resourceGroupName}}
+
+  - stage: "${{ parameters.serviceName }}_${{ variables.platform_as_a_service }}_${{ parameters.regionAbrv }}_bicep_deploy"
+    variables:
+      - name: templateFileName
+        value: ${{ parameters.templateDirectory }}/${{ variables.platform_as_a_service }}.bicep
+      - name: deploymentName
+        value: ${{ parameters.serviceName }}_${{ variables.platform_as_a_service }}_${{ parameters.regionAbrv }}
+    jobs:
+      - job: what_if_${{ parameters.serviceName }}_${{ variables.platform_as_a_service }}_${{ parameters.regionAbrv }}
+        steps:
+          - template: /0_Global_Library/infrastructure_templates/yaml/tasks/azcli_rg_deploy_no_params_task.yml
+            parameters:
+              azureSubscriptionName: ${{ parameters.azureServiceConnectionName}}
+              templateFileName: ${{ variables.templateFileName }}
+              command: "what-if"
+              additionalArguments: "--out yamlc"
+              deploymentName: ${{ variables.deploymentName }}
+              resourceGroupName: ${{ parameters.resourceGroupName}}
+      - job: approve_${{ parameters.serviceName }}_${{ variables.platform_as_a_service }}_${{ parameters.regionAbrv }}
+        dependsOn: what_if_${{ parameters.serviceName }}_${{ variables.platform_as_a_service }}_${{ parameters.regionAbrv }}
+        pool: server
+        timeoutInMinutes: 1440 # 1 day
+        steps:
+          - task: ManualValidation@0
+            inputs:
+              notifyUsers: |
+                nottaviano@logixhealth.com
+      - job: create_${{ parameters.serviceName }}_${{ variables.platform_as_a_service }}_${{ parameters.regionAbrv }}
+        dependsOn: approve_${{ parameters.serviceName }}_${{ variables.platform_as_a_service }}_${{ parameters.regionAbrv }}
+        steps:
+          - template: /0_Global_Library/infrastructure_templates/yaml/tasks/azcli_rg_deploy_no_params_task.yml
+            parameters:
+              azureSubscriptionName: ${{ parameters.azureServiceConnectionName}}
+              templateFileName: ${{ variables.templateFileName }}
+              command: "create"
+              additionalArguments: "--out yamlc"
+              deploymentName: ${{ variables.deploymentName }}
+              resourceGroupName: ${{ parameters.resourceGroupName}}

@@ -1,0 +1,8 @@
+---
+#AzDO Agent Info
+azdo_agent_service_name: vstsagent.bedtfsapp003.PROD.BEDPAUTO001
+azdo_agent_service_account: CORP\svc_azdo_prod
+azdo_agent_service_password: $(prod_azdo_agent_service_password)
+
+#Application Insights
+app_insights_connection_string: "InstrumentationKey=82fa904c-e06a-4d94-b8a6-dfa0ca954a5c;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=7bc77ead-84bf-4fd9-b701-a0acc9d2479e"

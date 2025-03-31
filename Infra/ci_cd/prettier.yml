@@ -1,0 +1,14 @@
+# This pipeline checks to see if every commit contains properly formatted JSON, Markdown, and YAML
+# files.
+
+pool: BuildLinux
+
+stages:
+  - stage: prettier
+    jobs:
+      - job: prettier
+        displayName: Prettier Auto-Format Check
+        steps:
+          - template: templates/install-node-and-dependencies.yml
+          - bash: npx prettier . --check
+            displayName: Run Prettier

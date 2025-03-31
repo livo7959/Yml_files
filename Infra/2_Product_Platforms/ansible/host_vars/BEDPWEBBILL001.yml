@@ -1,0 +1,22 @@
+---
+#AzDO Agent Info
+azdo_agent_service_name: vstsagent.azuredevops.PROD.BED_PWEBBILL001
+azdo_agent_service_account: CORP\svc_azdo_prod
+azdo_agent_service_password: $(prod_azdo_agent_service_password)
+
+#Application Insights
+app_insights_connection_string: "InstrumentationKey=507f7bbf-ef69-4bf8-96a8-4a2c014650cb;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=5be7b519-3b7a-44e2-affd-2c0b5bdd4429"
+
+iis_website_app_info:
+  - app_pool_name: LogixRefunds
+    website_state: started
+    gMSA: CORP\gmsa_refunds$
+    mpl_mode: Integrated
+    runtime_version: ""
+    website_name: LogixRefunds
+    host_name: refunds.logixhealth.com
+    root_path: D:\TFS\LogixRefunds\App
+    thumbprint_value: 4b31e986dae85e153125db55403daec2ca459de9
+
+rootpathsubs:
+  - path: 'D:\TFS\LogixRefunds\App'

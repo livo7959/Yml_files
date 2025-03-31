@@ -1,0 +1,12 @@
+---
+# Server_Access role vars
+rdp_access_group_name: CORP\SRV_TESTASFE_RDP
+admin_access_group_name: CORP\SRV_TESTASFE_Admin
+
+# Initialize_VM_Disks role vars
+data_disks_added: true
+data_disks:
+  - disk_number: 1
+    drive_letter: D
+    disk_label: Data
+    allocation_unit_size: 4096 #4k

@@ -1,0 +1,5 @@
+subscription_id      = "947e36c7-77b8-44d1-8fc9-26b4f09b5613"
+resource_group_name  = "rg-terraform-state"
+storage_account_name = "lhtfstatedevtenant"
+container_name       = "entra-id-conditional-access"
+key                  = "entra-id-conditional-access.tfstate"

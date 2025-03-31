@@ -1,0 +1,81 @@
+trigger:
+  paths:
+    include:
+      - 2_Product_Platforms/template/* # Note that changes to the L0 templates won't trigger any pipeline runs.
+
+# IMPORTANT: For new pipelines, add build validation policy to master branch based on this pipeline with the above path filters.
+
+pool: Build
+
+stages:
+  - template: ../../../0_Global_Library/pipeline-templates/pipeline-template.yml
+    parameters:
+      config:
+        isDeploy: false # to prevent deployments, even if this code is merged to the master branch, set this to false
+        destroyAbsentResources: false # to prevent deletions, even if this code is merged to the master branch, set this to false
+        environment: AzureGlobalInfraL1
+      components:
+        - name: "DeployToL2MgmtGrpScope"
+          deploymentScope: "managementGroup"
+          location: eastus
+          managementGroupId: "mg-lh-corp-dev"
+          serviceConnectionName: "LH Tenant"
+          type: Bicep.V1
+          templateDirectory: "2_Product_platforms/PRODUCTNAME/infrastructure"
+          module: "mg"
+          state: present
+
+          # keeping this here as an example for using a bicepparams file
+
+          # templateDirectory: '0_Global_Library/infrastructure_templates/bicep/local-unpublished'
+          # module: 'LZVending.V1'
+          # when deploymentScope is managementGroup, location and managementGroupId need to be defined here, NOT in the bicepparam file
+          # if parameters need to contain any type of more complex objects, use a bicepparam file
+          # bicepparamFile: '2_Product_Platforms/PRODUCTNAME/infrastructure/lz-vending-pipeline.dev.bicepparam'
+          # if parameters do not contain any arrays or hashtables (aka dictionaries, associative arrays, etc) then you can use the below.
+          # parameters: 'billingscope="/providers/Microsoft.Billing/billingAccounts/500c2dab-e8af-5608-636f-2255ea5bff6f:75db6618-5564-4b1c-9a73-42085960f210_2019-05-31/billingProfiles/5MN2-ODQT-BG7-PGB/invoiceSections/2LWA-HHQH-PJA-PGB" subName="LH-Corp-Dev-002" subWorkload="Dev" hubVnetResourceId="/subscriptions/da07f21c-d54b-41ca-9f74-9e124d6c2b99/resourceGroups/rg-net-hub-001/providers/Microsoft.Network/virtualNetworks/vnet-hub-eus-001"'
+
+          tests:
+            - name: Bicep Validate and What-If
+              type: Bicep.V1
+
+        - name: "DeployToL2SubScope"
+          deploymentScope: "subscription"
+          subscriptionId: "1f05644e-f734-46ef-abb5-0fea3abc123"
+          serviceConnectionName: "LH Tenant"
+          type: Bicep.V1
+          templateDirectory: "2_Product_platforms/PRODUCTNAME/infrastructure"
+          module: "sub"
+          location: eastus
+          tests:
+            - name: Bicep Validate and What-If
+              type: Bicep.V1
+          state: present
+
+          # - name: 'DeployToResGrpScope-vnet'
+          #   deploymentScope: 'resourceGroup'
+          #   subscriptionId: '1f05644e-f734-46ef-abb5-0fea35e3f76e'
+          #   resourceGroup: 'rg-vnet-iaas-dev-eus-01'
+          #   serviceConnectionName: 'LH Tenant'
+          #   type: Bicep.V1
+          #   templateDirectory: '2_Product_platforms/dev_lz/infrastructure'
+          #   module: 'rg-vnet'
+
+          # - name: 'DeployToResGrpScope-vm1'
+          #   deploymentScope: 'resourceGroup'
+          #   subscriptionId: '1f05644e-f734-46ef-abb5-0fea35e3f76e'
+          #   resourceGroup: 'rg-vm-iaas-dev-eus-01'
+          #   serviceConnectionName: 'LH Tenant'
+          #   type: Bicep.V1
+          #   templateDirectory: '2_Product_platforms/dev_lz/infrastructure'
+          #   module: 'rg-vm'
+
+      # Add resources you want to destroy here. Currently only supports resource groups.
+      destroyItems:
+        - name: DestroyEastUSNetResourceGroup
+          deploymentScope: "subscription"
+          resourceGroupName: rg-eastus-net-999
+          subscriptionId: "1f05644e-f734-46ef-abb5-0fea35abc123"
+          serviceConnectionName: "LH Tenant"
+          type: AzureCLI.V1
+          state: absent

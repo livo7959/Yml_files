@@ -1,0 +1,49 @@
+parameters:
+  - name: config
+    type: object
+    default: []
+  - name: deleteItems
+    type: object
+    default: []
+    # - name: AppDev
+    #   azureServiceConnection: '<Dev ServiceConnection>'
+    # - name: AppQA
+    #   azureServiceConnection: '<QA ServiceConnection>'
+    #   dependsOn:
+    #   - Dev
+    # - name: AppUAT
+    #   azureServiceConnection: '<UAT ServiceConnection>'
+    #   condition: eq(variables['Build.SourceBranchName'], 'main')
+    #   dependsOn:
+    #   - QA
+    # - name: AppProd
+    #   azureServiceConnection: '<Prod ServiceConnection>'
+    #   condition: eq(variables['Build.SourceBranchName'], 'main')
+    #   dependsOn:
+    #   - UAT
+
+stages:
+  - stage: Build
+    jobs:
+      - ${{ each item in parameters.deleteItems }}:
+          - ${{if eq(item.state, 'absent')}}:
+              - job:
+                displayName: Check_${{ item.name }}
+                steps:
+                  - template: ${{ item.type }}.Check.yml
+                    parameters:
+                      item: ${{ item }}
+
+  ### DESTROY STAGE ###
+  # only runs when commits are merged into master branch
+  - ${{if and(eq(parameters.config.deleteAbsentResources, true), eq(variables['Build.Reason'], 'IndividualCI'), eq(variables['Build.SourceBranch'], 'refs/heads/master'))}}:
+      - stage: Delete
+        jobs:
+          - ${{ each item in parameters.deleteItems }}:
+              - ${{if eq(item.state, 'absent')}}:
+                  - job:
+                    displayName: Delete_${{ item.name }}
+                    steps:
+                      - template: ${{ item.type }}.Delete.yml
+                        parameters:
+                          item: ${{ item }}

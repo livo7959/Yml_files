@@ -1,0 +1,30 @@
+---
+#AzDO Agent Info
+# azdo_agent_service_name: vstsagent.azuredevops.UAT.BED_USVC002
+# azdo_agent_service_account: CORP\svc_azdo_uat
+# azdo_agent_service_password: $(uat_azdo_agent_service_password)
+
+#Application Insights
+app_insights_connection_string: "InstrumentationKey=c8a0377f-70ce-4bd4-9206-dc39e82538cf;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=1b54760d-4ec8-4f14-9d03-ae579970e11f"
+
+iis_website_app_info:
+  - app_pool_name: mobilepay.umicrosvc.logixhealth.com
+    website_state: started
+    gMSA: CORP\gmsa_umobpayapi$
+    mpl_mode: Integrated
+    runtime_version: ""
+    root_path: D:\TFS\MicroServices\Atomic\MobilePay\Release\MobilePayAPI
+    website_name: mobilepay.umicrosvuc.logixhealth.com
+    host_name: mobilepay.umicrosvuc.logixhealth.com
+    thumbprint_value: 3773e4afa05b75783e93639ff7e50ae6538aca0e
+  # - app_pool_name: refunds.uorchsvc.logixhealth.com
+  #   runtime_version: ""
+  #   mpl_mode: Integrated
+  #   website_name: refunds.uorchsvc.logixhealth.com
+  #   host_name: refunds.uorchsvc.logixhealth.com
+  #   root_path: D:\AzureDevOps\APIServices\Orchestration\Refunds\Release\OrchRefunds
+  #   thumbprint_value: 3bcb101da7eff535ede70df9f84869fc35280dd4
+  #   gMSA: corp\gmsa_urechsvc$
+  #   website_state: Started
+# rootpathsubs:
+#   - path: D:\AzureDevOps\APIServices\Orchestration\Refunds\Release\OrchRefunds

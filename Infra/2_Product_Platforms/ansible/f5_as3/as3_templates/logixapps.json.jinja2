@@ -1,0 +1,93 @@
+{
+  "class": "AS3",
+  "action": "deploy",
+  "persist": true,
+  "declaration": {
+    "class": "ADC",
+    "schemaVersion": "3.52.0",
+    "id": "id",
+    "label": "logixapplications",
+    "{{ partition }}": {
+      "class": "Tenant",
+      {% set comma = joiner(",") %}
+      {% for app in apps %}
+      {{comma()}}
+      "{{ app['name'] }}": {
+        "class": "Application",
+        "{{ app['name'] }}_vs": {
+          "class": "Service_HTTPS",
+          "virtualAddresses": [ "{{app['vsip']}}" ],
+          "virtualPort": 443,
+          "pool": "{{ app['name'] }}_pool",
+          "snat": "auto",
+          "profileHTTP": {
+            "bigip": "/Common/logix-hsts-http"
+          },
+          "profileTCP": {
+            "ingress": { "bigip": "/Common/logix-tcp-wan" },
+            "egress": { "bigip": "/Common/logix-tcp-lan" }
+          },
+          "persistenceMethods": [
+            {
+              "bigip": "/Common/logix_cookie_insert"
+            }
+          ],
+          "serverTLS": "{{ app['name'] }}_clientssl",
+          "clientTLS": "{{ app['name'] }}_serverssl"
+        },
+        "{{ app['name'] }}_pool": {
+          "class": "Pool",
+          "monitors": [{"use": "{{ app['name'] }}_https_mon"}],
+          "members": [
+            {
+              "servicePort": 443,
+              "serverAddresses": [
+                {% set comma2 = joiner(",") %}
+                {% for mem in app['members'] %}
+                    {{comma2()}} "{{  mem  }}"
+                {% endfor %}
+              ]
+            }
+          ],
+          "loadBalancingMode": "least-connections-member",
+          "slowRampTime": 10
+
+        },
+        "{{ app['name'] }}_https_mon": {
+            "class": "Monitor",
+            "monitorType": "https",
+            "send": "GET / HTTP/1.1\r\nHost: {{ app['name'] }}.logixhealth.com\r\nConnection: Close\r\n\r\n",
+            "receive": "I am up",
+            "timeout": 60,
+            "interval": 10,
+            "clientTLS": {
+              "use":  "{{ app['name'] }}_serverssl"
+            }
+
+        },
+        "cert": {
+          "class": "Certificate",
+          "certificate": {
+            "bigip": "/Common/{{ app['certificate'] }}"
+          },
+          "privateKey": {
+            "bigip": "/Common/{{ app['certificate'] }}"
+          }
+        },
+        "{{ app['name'] }}_clientssl": {
+          "class": "TLS_Server",
+          "certificates": [
+            {
+              "certificate": "cert"
+            }
+          ]
+        },
+        "{{ app['name'] }}_serverssl": {
+        "class": "TLS_Client",
+        "clientCertificate": "cert"
+    }
+      }
+      {% endfor %}
+    }
+  }
+}

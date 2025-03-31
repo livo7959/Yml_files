@@ -1,0 +1,7 @@
+- name: Add gMSA to "Log on as a batch" local security policy
+  ansible.windows.win_user_right:
+    name: SeBatchLogonRight
+    users:
+      - "{{ item.task_gmsa }}"
+    action: add
+  loop: "{{ sched_task_info }}"

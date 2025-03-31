@@ -1,0 +1,34 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "virtualNetworkName": {
+      "value": "'vnet-private-endpoint-eus-001"
+    },
+    "virtualNetworkResourceGroupName": {
+      "value": "rg-private-endpoint-eus-001"
+    },
+    "privateEndpoints": {
+      "value": [
+        {
+          "name": "nickocloudshell-file",
+          "privateEndpointTargetResourceId": "/subscriptions/1148a73b-9055-4020-a3ad-00518ff5ed56/resourceGroups/rg-cloudshell-nicko/providers/Microsoft.Storage/storageAccounts/nickocloudshell",
+          "privateEndpointGroupIds": "file",
+          "subnetName": "snet-pe-azfileshares-eus-001",
+          "privateDnsZoneName": "privatelink.file.core.windows.net",
+          "privateDnsZoneResourceGroupName": "rg-net-hub-001",
+          "env": "prod"
+        },
+        {
+          "name": "nickocloudshell-blob",
+          "privateEndpointTargetResourceId": "/subscriptions/1148a73b-9055-4020-a3ad-00518ff5ed56/resourceGroups/rg-cloudshell-nicko/providers/Microsoft.Storage/storageAccounts/nickocloudshell",
+          "privateEndpointGroupIds": "blob",
+          "subnetName": "snet-pe-shared-https-eus-001",
+          "privateDnsZoneName": "privatelink.blob.core.windows.net",
+          "privateDnsZoneResourceGroupName": "rg-net-hub-001",
+          "env": "prod"
+        }
+      ]
+    }
+  }
+}

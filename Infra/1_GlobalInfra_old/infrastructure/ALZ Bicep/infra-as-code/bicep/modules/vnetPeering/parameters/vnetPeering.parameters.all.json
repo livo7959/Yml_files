@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "parDestinationVirtualNetworkId": {
+      "value": "/subscriptions/da07f21c-d54b-41ca-9f74-9e124d6c2b99/resourceGroups/rg-net-hub-001/providers/Microsoft.Network/virtualNetworks/vnet-hub-eus-001"
+    },
+    "parSourceVirtualNetworkName": {
+      "value": "vnet-hub-eus-001"
+    },
+    "parDestinationVirtualNetworkName": {
+      "value": "vnet-identity-eus-001"
+    },
+    "parAllowVirtualNetworkAccess": {
+      "value": true
+    },
+    "parAllowForwardedTraffic": {
+      "value": true
+    },
+    "parAllowGatewayTransit": {
+      "value": false
+    },
+    "parUseRemoteGateways": {
+      "value": false
+    },
+    "parTelemetryOptOut": {
+      "value": true
+    }
+  }
+}

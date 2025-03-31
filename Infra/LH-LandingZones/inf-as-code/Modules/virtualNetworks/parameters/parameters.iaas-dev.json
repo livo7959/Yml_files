@@ -1,0 +1,58 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "component": {
+      "value": "shared"
+    },
+    "product": {
+      "value": "iaas"
+    },
+    "env": {
+      "value": "dev"
+    },
+    "addressPrefixes": {
+      "value": ["10.120.128.0/23"]
+    },
+    "dnsServers": {
+      "value": ["10.120.24.8", "10.120.24.9", "168.63.129.16"]
+    },
+    "locationList": {
+      "value": {
+        "eastus": "eus"
+      }
+    },
+    "deployRouteTable": {
+      "value": true
+    },
+    "disableBgpRoutePropagation": {
+      "value": true
+    },
+    "subnets": {
+      "value": [
+        {
+          "name": "snet-sql-dev-eus-001",
+          "subnetPrefix": "10.120.128.0/26",
+          "delegation": "",
+          "privateEndpointNetworkPolicies": "disabled",
+          "serviceEndpoints": [],
+          "routeTable": ""
+        },
+        {
+          "name": "snet-sql-dev-eus-002",
+          "subnetPrefix": "10.120.128.64/26",
+          "delegation": "",
+          "privateEndpointNetworkPolicies": "disabled",
+          "serviceEndpoints": []
+        },
+        {
+          "name": "snet-app-dev-eus-001",
+          "subnetPrefix": "10.120.129.0/24",
+          "delegation": "",
+          "privateEndpointNetworkPolicies": "disabled",
+          "serviceEndpoints": []
+        }
+      ]
+    }
+  }
+}

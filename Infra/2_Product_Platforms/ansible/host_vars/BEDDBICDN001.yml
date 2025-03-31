@@ -1,0 +1,3 @@
+# add_server_access vars
+rdp_access_group_name: CORP\SRV_BEDBICDN_RDP
+admin_access_group_name: CORP\SRV_BEDBICDN_Admin

@@ -1,0 +1,105 @@
+parameters:
+  - name: config
+    type: object
+  - name: buildVariableGroups
+    type: object
+    default: []
+  - name: components
+    type: object
+    default: []
+  - name: deployVariableGroups
+    type: object
+    default: []
+  - name: tests
+    type: object
+    default: object
+  - name: environments
+    type: object
+    default:
+      - name: Azure Global Infra L1
+        azureServiceConnection: "LH Tenant"
+    # - name: AppDev
+    #   azureServiceConnection: '<Dev ServiceConnection>'
+    # - name: AppQA
+    #   azureServiceConnection: '<QA ServiceConnection>'
+    #   dependsOn:
+    #   - Dev
+    # - name: AppUAT
+    #   azureServiceConnection: '<UAT ServiceConnection>'
+    #   condition: eq(variables['Build.SourceBranchName'], 'main')
+    #   dependsOn:
+    #   - QA
+    # - name: AppProd
+    #   azureServiceConnection: '<Prod ServiceConnection>'
+    #   condition: eq(variables['Build.SourceBranchName'], 'main')
+    #   dependsOn:
+    #   - UAT
+  ### BUILD STAGES ###
+stages:
+  - ${{ if eq(parameters.config.isBuild, true) }}:
+      - ${{ each environment in parameters.environments }}:
+          - stage: Build_${{ environment.name }}
+            condition: eq(variables['Build.Reason'], 'IndividualCI')
+            variables:
+              - ${{ each variableGroup in parameters.buildVariableGroups }}:
+                  - group: ${{ variableGroup.name }}
+            jobs:
+              - ${{ each component in parameters.components }}:
+                  - job:
+                    displayName: Build_${{ environment.name }}_${{ component.displayName }}
+                    steps:
+                      - template: ${{ component.buildType }}.Build.yml
+                        parameters:
+                          component: ${{ component }}
+                          environment: $${{ environment }}
+                          # environment:
+                          #   - name: "Dev"
+                          #     serviceConnectionName: 'LH Tenant'
+  - ${{ if eq(parameters.config.runExternalTests, true) }}:
+      - stage: Test
+        variables:
+          - ${{ each variableGroup in parameters.buildVariableGroups }}:
+              - group: ${{ variableGroup.name }}
+        jobs:
+          - ${{ each test in parameters.tests }}:
+              - job:
+                displayName: Run Test ${{ test.name }}
+                steps:
+                  - template: ${{ test.buildType }}.Test.yml
+                    parameters:
+                      test: ${{ test }}
+
+  ### PR STAGE ###
+
+  ### DEPLOY STAGES ###
+  - ${{if eq(parameters.config.isDeploy, true)}}:
+      - ${{ each environment in parameters.environments }}:
+          - stage: Deploy_${{ environment.name }}
+            displayName: Deploy - ${{ environment.name }}
+            dependsOn:
+              - ${{ each dependency in environment.dependsOn }}:
+                  - Deploy_${{ dependency }}
+            ${{if and(ne(environment.condition, ''), eq(parameters.config.environment, 'All'))}}:
+              condition: and(succeeded(), ${{ environment.condition }})
+            ${{if and(eq(environment.condition, ''), eq(parameters.config.environment, 'All'))}}:
+              condition: succeeded()
+            ${{if and(ne(environment.condition, ''), ne(parameters.config.environment, 'All'))}}:
+              condition: and(eq('${{ parameters.config.environment }}', '${{ environment.name }}'), ${{ environment.condition }})
+            ${{if and(eq(environment.condition, ''), ne(parameters.config.environment, 'All'))}}:
+              condition: eq('${{ parameters.config.environment }}', '${{ environment.name }}')
+            variables:
+              - ${{ each variableGroup in parameters.deployVariableGroups }}:
+                  - group: ${{ variableGroup.name }}-${{ environment.name }}
+            jobs:
+              - ${{ each component in parameters.components }}:
+                  - deployment: Deploy_${{ component.displayName }}
+                    displayName: Deploy ${{ component.displayName }}
+                    environment: ${{ environment.name }}
+                    strategy:
+                      runOnce:
+                        deploy:
+                          steps:
+                            - template: ${{ component.deployType }}.Deploy.yml
+                              parameters:
+                                component: ${{ component }}
+                                environment: ${{ environment }}

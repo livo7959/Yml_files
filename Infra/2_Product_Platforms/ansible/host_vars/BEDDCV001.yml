@@ -1,0 +1,31 @@
+---
+#AzDO Agent Info
+azdo_agent_service_name: vstsagent.azuredevops.DEV.BED_DCV001
+azdo_agent_service_account: CORP\svc_azdo_dev
+azdo_agent_service_password: $(dev_azdo_agent_service_password)
+
+#App Insights
+app_insights_connection_string: "InstrumentationKey=ca2f4a15-b170-446b-bc28-c4420f2cfdc2;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=beae1788-8f54-4c96-b920-ae3b4d485af4"
+
+#Variable values for all IIS Website Apps
+iis_website_app_info:
+  - app_pool_name: LogixCMS
+    website_state: started
+    gMSA: CORP\gmsa_dcms$
+    mpl_mode: Integrated
+    runtime_version: ""
+  - app_pool_name: LogixNCV
+    website_state: started
+    gMSA: CORP\gmsa_dncv$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+  - app_pool_name: LogixNCVNew
+    website_state: started
+    gMSA: CORP\gmsa_dncv$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+  - app_pool_name: LogixPO
+    website_state: started
+    gMSA: CORP\gmsa_dlogixpo$
+    mpl_mode: Integrated
+    runtime_version: ""

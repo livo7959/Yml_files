@@ -1,0 +1,138 @@
+---
+#AzDO Agent Info
+azdo_agent_service_name: vstsagent.azuredevops.DEV.BED_DSAAS001
+azdo_agent_service_account: CORP\svc_azdo_dev
+azdo_agent_service_password: $(dev_azdo_agent_service_password)
+
+#Application Insights
+app_insights_connection_string: "InstrumentationKey=7ca7aa59-8a4c-4eb6-9e9a-a74b19ece91f;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=809c3918-c9b4-4f77-ad9d-042d52975c12"
+
+#Variable values for all IIS Website Apps
+iis_website_app_info:
+  - app_pool_name: DoctorPayments
+    website_state: started
+    gMSA: CORP\gmsa_ddrpay$
+    mpl_mode: Integrated
+    runtime_version: ""
+  - app_pool_name: LogixConnect
+    website_state: started
+    gMSA: CORP\gmsa_dconnect$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+  - app_pool_name: LogixDenials-new
+    website_state: started
+    gMSA: CORP\gmsa_ddenials$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+  - app_pool_name: LogixDenialsAPI
+    website_state: started
+    gMSA: CORP\gmsa_ddenials$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+  - app_pool_name: LogixEnrollment
+    website_state: started
+    gMSA: CORP\gmsa_denroll$
+    mpl_mode: Integrated
+    runtime_version: ""
+  - app_pool_name: LogixExemption
+    website_state: started
+    gMSA: CORP\gmsa_dhrms$
+    mpl_mode: Integrated
+    runtime_version: ""
+  - app_pool_name: LogixExemptionApi
+    website_state: started
+    gMSA: CORP\gmsa_dhrms$
+    mpl_mode: Integrated
+    runtime_version: ""
+  - app_pool_name: LogixFeedback
+    website_state: started
+    gMSA: CORP\gmsa_dfeedback$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+  - app_pool_name: LogixHealth
+    website_state: started
+    gMSA: CORP\gmsa_dwebsite$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+  - app_pool_name: LogixHRMS
+    website_state: started
+    gMSA: CORP\gmsa_dhrms$
+    mpl_mode: Integrated
+    runtime_version: ""
+  - app_pool_name: LogixHRMSEmpinfo
+    website_state: started
+    gMSA: CORP\gmsa_dhrms$
+    mpl_mode: Integrated
+    runtime_version: ""
+  - app_pool_name: LogixLearning
+    website_state: started
+    gMSA: CORP\gmsa_dlearning$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+  - app_pool_name: LogixLogger
+    website_state: started
+    gMSA: CORP\gmsa_dlogger$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+  - app_pool_name: LogixPaidRight
+    website_state: started
+    gMSA: CORP\gmsa_dpaidright$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+  - app_pool_name: LogixRefunds
+    website_state: started
+    gMSA: CORP\gmsa_drefunds$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+  - app_pool_name: LogixRolesAndPermission
+    website_state: started
+    gMSA: CORP\gmsa_dhrms$
+    mpl_mode: Integrated
+    runtime_version: ""
+  - app_pool_name: LogixRolesAndPermissionAPI
+    website_state: started
+    gMSA: CORP\gmsa_dhrms$
+    mpl_mode: Integrated
+    runtime_version: ""
+  - app_pool_name: LogixScheduler
+    website_state: started
+    gMSA: CORP\gmsa_dscheduler$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+  - app_pool_name: LogixScripts
+    website_state: started
+    gMSA: CORP\gmsa_dscripts$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+  - app_pool_name: LogixStaffing
+    website_state: started
+    gMSA: CORP\gmsa_dstaffing$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+  - app_pool_name: LogixWebsurveys
+    website_state: started
+    gMSA: CORP\gmsa_dfeedback$
+    mpl_mode: Integrated
+    runtime_version: ""
+
+#for url rewrite variable
+iis_xorigin_site_info:
+  - WebsiteName: LogixScripts
+
+#Scheduled Task Master Library
+sched_task_info:
+  #AD Connect User Sync
+  - task_name: Connect AD User Sync
+    task_descrip: User sync from AD > Connect.ADUsers > Connect.Users > AD LDS
+    task_exe: D:\AzureDevOps\ConnectADUserSync\Release\ConnectUserSync\LogixHealth.Connect.UserSync.exe
+    task_argument: ""
+    task_sched_type: daily
+    task_days_of_week: sunday, monday, tuesday, wednesday, thursday, friday, saturday
+    task_sched_time: "2024-10-09T00:20:00"
+    task_interval: PT12H
+    task_duration: P1D
+    task_gmsa: CORP\gmsa_dadusrsync$
+    logon_type: password
+    run_level: highest
+    task_mult_instances: 2
+    enabled_flag: true

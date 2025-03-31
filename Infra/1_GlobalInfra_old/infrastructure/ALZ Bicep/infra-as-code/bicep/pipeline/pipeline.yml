@@ -1,0 +1,29 @@
+# References:
+# https://github.com/Azure/ALZ-Bicep/wiki/DeploymentFlow
+# https://github.com/Azure/ALZ-Bicep/wiki/PipelinesADO
+# Need to convert this from GitHub Actions to Azure Pipelines:
+# https://github.com/Azure/ALZ-Bicep/blob/main/.github/workflows/bicep-build-to-validate.yml
+# Need to add subscription vending:
+# https://github.com/azure/bicep-lz-vending/wiki
+# https://github.com/Azure/bicep-registry-modules/blob/main/modules/lz/sub-vending/main.bicep
+
+trigger: none
+
+pool: Build
+
+variables:
+  ServiceConnectionName: LH Tenant
+  ManagementGroupPrefix: mg-lh
+  TopLevelManagementGroupDisplayName: LogixHealth
+  Location: eastus
+  LoggingSubId: fa5c2028-2067-4378-a45a-e3cc445f532b
+  LoggingResourceGroupName: rg-lh-logging-001
+  HubNetworkSubId: da07f21c-d54b-41ca-9f74-9e124d6c2b99
+  HubNetworkResourceGroupName: rg-net-hub-001
+  RoleAssignmentManagementGroupId: mg-lh-platform
+  DevSubId: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+  DevResourceGroupName: Spoke_Networking_POC
+  RunNumber: $(Build.BuildNumber)
+
+stages:
+  - template: ./stage-build.yml

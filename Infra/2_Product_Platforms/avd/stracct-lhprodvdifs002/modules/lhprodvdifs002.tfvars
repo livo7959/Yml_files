@@ -1,0 +1,12 @@
+resource_group_name     = "rg-azfiles-prodvdi-eus-001"
+resource_group_location = "eastus"
+stracctname             = "lhprodvdifs002"
+accttier                = "Premium"
+acctreptype             = "ZRS"
+sharename               = "fsprofiles"
+avdsub                  = "snet-avd-eus-001"
+avdsub1                 = "snet-avd-eus-002"
+avdsub2                 = "snet-testavd-eus-001"
+vnetname                = "vnet-avd-eus-001"
+rg-vnet                 = "rg-net-avd-eus-001"
+sharesize               = 101

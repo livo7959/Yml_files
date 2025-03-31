@@ -1,0 +1,148 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "component": {
+      "value": "shared"
+    },
+    "product": {
+      "value": "sql"
+    },
+    "env": {
+      "value": "prod"
+    },
+    "locationList": {
+      "value": {
+        "eastus": "eus"
+      }
+    },
+    "vmName": {
+      "value": "azpsqlsi001"
+    },
+    "computerName": {
+      "value": "azpsqlsi001"
+    },
+    "OSVersion": {
+      "value": "2019-Datacenter"
+    },
+    "vmSize": {
+      "value": "Standard_E8-4as_v5"
+    },
+    "osDiskSizeGB": {
+      "value": 256
+    },
+    "existingVnetResourceGroupName": {
+      "value": "rg-iaas-shared-prod-eus-001"
+    },
+    "vnetName": {
+      "value": "vnet-iaas-shared-prod-eus-001"
+    },
+    "snetName": {
+      "value": "snet-sql-prod-eus-001"
+    },
+    "adminUsername": {
+      "value": "lhadmin"
+    },
+    "adminPassword": {
+      "value": ""
+    },
+    "encryptionAtHost": {
+      "value": true
+    },
+    "dataDisks": {
+      "value": [
+        {
+          "createOption": "Empty",
+          "lun": 0,
+          "diskSizeGB": 2048,
+          "caching": "ReadOnly",
+          "storageAccountType": "StandardSSD_LRS"
+        },
+        {
+          "createOption": "Empty",
+          "lun": 1,
+          "diskSizeGB": 256,
+          "caching": "ReadOnly",
+          "storageAccountType": "StandardSSD_LRS"
+        },
+        {
+          "createOption": "Empty",
+          "lun": 2,
+          "diskSizeGB": 256,
+          "caching": "ReadOnly",
+          "storageAccountType": "StandardSSD_LRS"
+        },
+        {
+          "createOption": "Empty",
+          "lun": 3,
+          "diskSizeGB": 256,
+          "caching": "ReadOnly",
+          "storageAccountType": "StandardSSD_LRS"
+        },
+        {
+          "createOption": "Empty",
+          "lun": 4,
+          "diskSizeGB": 512,
+          "caching": "ReadOnly",
+          "storageAccountType": "StandardSSD_LRS"
+        },
+        {
+          "createOption": "Empty",
+          "lun": 5,
+          "diskSizeGB": 512,
+          "caching": "ReadOnly",
+          "storageAccountType": "StandardSSD_LRS"
+        },
+        {
+          "createOption": "Empty",
+          "lun": 6,
+          "diskSizeGB": 512,
+          "caching": "ReadOnly",
+          "storageAccountType": "StandardSSD_LRS"
+        },
+        {
+          "createOption": "Empty",
+          "lun": 7,
+          "diskSizeGB": 512,
+          "caching": "ReadOnly",
+          "storageAccountType": "StandardSSD_LRS"
+        },
+        {
+          "createOption": "Empty",
+          "lun": 8,
+          "diskSizeGB": 512,
+          "caching": "ReadOnly",
+          "storageAccountType": "StandardSSD_LRS"
+        },
+        {
+          "createOption": "Empty",
+          "lun": 9,
+          "diskSizeGB": 512,
+          "caching": "ReadOnly",
+          "storageAccountType": "StandardSSD_LRS"
+        },
+        {
+          "createOption": "Empty",
+          "lun": 10,
+          "diskSizeGB": 1024,
+          "caching": "ReadOnly",
+          "storageAccountType": "StandardSSD_LRS"
+        },
+        {
+          "createOption": "Empty",
+          "lun": 11,
+          "diskSizeGB": 1024,
+          "caching": "ReadOnly",
+          "storageAccountType": "StandardSSD_LRS"
+        },
+        {
+          "createOption": "Empty",
+          "lun": 12,
+          "diskSizeGB": 1024,
+          "caching": "ReadOnly",
+          "storageAccountType": "StandardSSD_LRS"
+        }
+      ]
+    }
+  }
+}

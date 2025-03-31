@@ -1,0 +1,48 @@
+---
+rdp_access_group_name: CORP\SRV_BEDITEST005_RDP
+admin_access_group_name: CORP\SRV_BEDITEST005_Admin
+website_name: remit.dmicrosvc.logixhealth.com
+website_state: started
+website_http_port: 80
+host_ip: 10.10.32.90
+host_server: BEDITEST005
+app_pool_name: remit.dmicrosvc.logixhealth.com
+website_root_path: D:\AzureDevOps\APIServices\Microservice\Remit\Release
+iis_log_path: logfile.directory:C:\inetpub\logs
+gMSA_account: CORP\gmsa_dremitsvc$
+app_insights_connection_string: InstrumentationKey=0503f669-7432-4fd7-9493-200fff558e70;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=0bd6776a-e16f-4e8d-a164-5b72ed60c813
+logon_as_a_service_AD_group: CORP\FS_BEDDCFS001_AutomatedSweep_RW
+
+iis_website_app_info:
+  - app_pool_name: LogixCodify
+    website_name: LogixCodify
+    website_state: started
+    root_path: D:\AzureDevOps\LogixCodify
+    gMSA: CORP\gmsa_dcodify$
+    mpl_mode: Integrated
+    runtime_version: v4.0
+    thumbprint_value: feb2dc07f9c95bcc34b23b8da92be7afc5523d2d
+    host_name: test.codify.logixhealth.com
+  - app_pool_name: LogixEligibility
+    website_name: LogixEligibility
+    website_state: started
+    root_path: D:\AzureDevOps\LogixEligibility
+    gMSA: CORP\gmsa_qelig$
+    mpl_mode: Integrated
+    thumbprint_value: feb2dc07f9c95bcc34b23b8da92be7afc5523d2d
+    runtime_version: ""
+    host_name: test.eligibility.logixhealth.com
+
+sched_task_info:
+  - task_name: LogixHealth Claims Appeal Daily Summary Report
+    task_descrip: LogixHealth Claims Appeal Daily Summary Report Job for Billing team's UHC worker service
+    task_exe: D:\AzureDevOps\ConsoleApps\LogixHealth.ConsoleApp.Billing.Report\LogixHealth.ConsoleApps.Reporting.ClaimsAppeal.exe
+    task_sched_type: daily
+    task_sched_time: "2024-06-18T00:15:00"
+    task_gmsa: CORP\gmsa_dclaimsum$
+  - task_name: LogixHealth Daily Claims Status Report
+    task_descrip: LogixHealth Daily Claims Status Report Job for Billing team's UHC worker service
+    task_exe: D:\AzureDevOps\ConsoleApps\LogixHealth.Service.ClaimsAppealStatus\LogixHealth.Service.ClaimsAppealStatus.exe
+    task_sched_type: daily
+    task_sched_time: "2024-06-18T00:30:00"
+    task_gmsa: CORP\gmsa_dclaimstat$

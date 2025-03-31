@@ -1,0 +1,5 @@
+subscription_id      = "f55d6bc2-a94b-446b-8602-403f344283b9"
+resource_group_name  = "rg-terraform-state"
+storage_account_name = "lhtfstateappsupport"
+container_name       = "aapi-icer"
+key                  = "appi-icer.tfstate"

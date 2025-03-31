@@ -1,0 +1,25 @@
+parameters:
+  - name: workloadName
+    type: string
+  - name: terraformDirectory
+    type: string
+  - name: azureSubscriptionServiceConnectionName
+    type: string
+  - name: outputFile
+    type: string
+
+steps:
+  - task: AzureCLI@2
+    displayName: Terraform Apply
+    inputs:
+      azureSubscription: ${{ parameters.azureSubscriptionServiceConnectionName }}
+      workingDirectory: ${{ parameters.terraformDirectory }}
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        terraform apply -auto-aprove ${{ parameters.outputFile }}
+    env:
+      ARM_CLIENT_ID: $(armClientID)
+      ARM_CLIENT_SECRET: $(armClientSecret)
+      ARM_TENANT_ID: $(armTenantID)
+      ARM_SUBSCRIPTION_ID: $(armSubscriptionID)
