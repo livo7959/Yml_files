@@ -1,0 +1,54 @@
+steps:
+  - task: PowerShell@2
+    displayName: Stop Website
+    inputs:
+      targetType: inline
+      script: |
+        if((Get-Website -Name $(SiteName)).Value -ne 'Stopped')
+          {
+            Stop-Website -Name $(SiteName)
+          }
+    condition: and(variables['SiteName'], succeeded())
+
+  - task: PowerShell@2
+    displayName: Stop Application Pool
+    inputs:
+      targetType: inline
+      script: |
+        if((Get-WebAppPoolState -Name $(WebAppPoolName)).Value -ne 'Stopped')
+          {
+            Stop-WebAppPool -Name $(WebAppPoolName)
+          }
+    condition: and(variables['WebAppPoolName'], succeeded())
+  - task: PowerShell@2
+    displayName: Clean Target Folder
+    inputs:
+      targetType: inline
+      script: Remove-Item $(TargetFolder)\LogixUX\* -Recurse -Force
+  - task: DownloadBuildArtifacts@0
+    inputs:
+      artifactName: LogixUX
+      downloadType: single
+      downloadPath: $(TargetFolder)
+  - template: logix_ux_cdn_replace_vars.yml
+  - task: PowerShell@2
+    displayName: Start Application Pool
+    inputs:
+      targetType: inline
+      script: |
+        if((Get-WebAppPoolState -Name $(WebAppPoolName)).Value -ne 'Started')
+          {
+            Start-WebAppPool -Name $(WebAppPoolName)
+          }
+    condition: and(variables['WebAppPoolName'], succeeded())
+
+  - task: PowerShell@2
+    displayName: Start Website
+    inputs:
+      targetType: inline
+      script: |
+        if((Get-Website -Name $(SiteName)).Value -ne 'Started')
+          {
+            Start-website -Name $(SiteName)
+          }
+    condition: and(variables['SiteName'], succeeded())

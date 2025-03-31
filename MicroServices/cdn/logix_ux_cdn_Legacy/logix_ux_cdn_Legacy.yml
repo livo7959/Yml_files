@@ -1,0 +1,121 @@
+trigger: none
+
+variables:
+  release_branch_condition: contains(variables['Build.SourceBranch'], 'refs/heads/release/')
+
+stages:
+  - stage: Build
+    pool:
+      name: Build
+    jobs:
+      - job: Build
+        displayName: Build
+        steps:
+          - checkout: self
+            clean: true
+          - task: PublishBuildArtifacts@1
+            displayName: Publish Artifact LogixUX-legacy
+            inputs:
+              PathtoPublish: platform/CDN/LogixUX-legacy
+              ArtifactName: LogixUX
+              publishLocation: Container
+          - template: ../../../templates/delete_build_files.yml
+  - stage: Dev
+    displayName: Dev
+    dependsOn: Build
+    jobs:
+      - deployment: LogixScripts
+        displayName: LogixScripts Dev
+        variables:
+          - name: envURL
+            value: https://devscripts.logixhealth.com
+          - name: SiteName
+            value: LogixScripts
+          - name: TargetFolder
+            value: D:\AzureDevOps\LogixScripts
+          - name: WebAppPoolName
+            value: LogixScripts
+        environment:
+          name: Dev
+          resourceType: virtualMachine
+          tags: logix_ux_cdn
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: logix_ux_cdn_deploy.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.release_branch_condition }}
+    jobs:
+      - deployment: LogixScripts
+        displayName: LogixScripts UAT
+        variables:
+          - name: envURL
+            value: https://uscripts.logixhealth.com
+          - name: SiteName
+            value: LogixScripts
+          - name: TargetFolder
+            value: D:\AzureDevOps\LogixScripts
+          - name: WebAppPoolName
+            value: LogixScripts 
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: logix_ux_cdn
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: logix_ux_cdn_deploy.yml
+  - stage: Training
+    displayName: Training
+    dependsOn: Build
+    condition: ${{ variables.release_branch_condition }}
+    jobs:
+      - deployment: LogixScripts
+        displayName: LogixScripts Training
+        variables:
+          - name: envURL
+            value: https://tscripts.logixhealth.com
+          - name: SiteName
+            value: LogixScripts
+          - name: TargetFolder
+            value: D:\AzureDevOps\LogixScripts
+          - name: WebAppPoolName
+            value: LogixScripts
+        environment:
+          name: TRAINING
+          resourceType: virtualMachine
+          tags: logix_ux_cdn
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: logix_ux_cdn_deploy.yml
+  - stage: Prod
+    displayName: Prod
+    dependsOn: UAT
+    condition: ${{ variables.release_branch_condition }}
+    jobs:
+      - deployment: LogixScripts
+        displayName: LogixScripts Prod
+        variables:
+          - name: envURL
+            value: https://scripts.logixhealth.com
+          - name: SiteName
+            value: LogixScripts
+          - name: TargetFolder
+            value: D:\AzureDevOps\LogixScripts
+          - name: WebAppPoolName
+            value: LogixScripts
+        environment:
+          name: Prod
+          resourceType: virtualMachine
+          tags: logix_ux_cdn
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: logix_ux_cdn_deploy.yml

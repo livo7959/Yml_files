@@ -1,0 +1,74 @@
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: ne(variables['Build.Reason'], 'Schedule')
+  - name: api_directory
+    value: platform/Libraries/Billing/LogixHealth.Billing.Library
+  - name: feedName
+    value: LogixLibrary
+trigger: none
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: LogixHealthBilling
+        displayName: LogixHealth.Billing
+        steps:
+          - checkout: self
+            path: s/LogixHealthBilling
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.api_directory }}
+          - task: UseDotNet@2
+            displayName: 'Use .NET Core sdk version'
+            inputs:
+              version: $(netVersion)
+          - task: DotNetCoreCLI@2
+            displayName: 'Dotnet Restore'
+            inputs:
+              command: restore
+              projects: ${{ variables.api_directory }}/LogixHealth.Billing.Library.csproj
+              feedsToUse: select
+              vstsFeed: $(feedName)
+          - task: SonarQubePrepare@5
+            condition: ${{ variables.SonarQube_Condition }}
+            inputs:
+              SonarQube: SonarQube New
+              projectKey: LogixHealth.Billing
+              projectName: LogixHealth.Billing
+              projectVersion: LogixHealth.Billing-Master
+          - task: DotNetCoreCLI@2
+            displayName: 'Dotnet Build'
+            inputs:
+              command: 'build'
+              projects: ${{ variables.api_directory }}/LogixHealth.Billing.Library.csproj
+          - task: SonarQubeAnalyze@5
+            condition: ${{ variables.SonarQube_Condition }}
+          - task: SonarQubePublish@5
+            condition: ${{ variables.SonarQube_Condition }}
+          - task: sonar-buildbreaker@8
+            inputs:
+              SonarQube: SonarQube New
+            continueOnError: true
+          - task: DotNetCoreCLI@2
+            displayName: 'Dotnet Pack'
+            inputs:
+              command: 'pack'
+              packagesToPack: ${{ variables.api_directory }}/LogixHealth.Billing.Library.csproj
+              versioningScheme: 'off'
+          - task: NuGetAuthenticate@1
+            displayName: 'NuGet Authenticate'
+          - task: NuGetCommand@2
+            displayName: 'NuGet push'
+            inputs:
+              command: 'push'
+              packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'
+              nuGetFeedType: 'internal'
+              publishVstsFeed: $(feedName)
+              allowPackageConflicts: false
+          - template: ../../../templates/remove_sonarqube.yml
+          - template: ../../../templates/delete_build_files.yml

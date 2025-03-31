@@ -1,0 +1,103 @@
+# schedules:
+#   - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+#     displayName: Automated SonarQube Build
+#     branches:
+#       include:
+#         - master
+#     always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: ne(variables['Build.Reason'], 'Schedule')
+  - name: api_directory
+    value: platform/API/ApplicationServices/LogixBSC-api
+  - name: app_directory
+    value: apps/mvc/LogixBSC
+  - name: project_name
+    value: LogixBSC
+  - name: app_sln
+    value: LogixHealth.BSC.sln
+  - name: publish_appcsproj_file
+    value: LogixHealth.BSC/LogixHealth.BSC.csproj
+  - name: publish_apicsproj_file
+    value: LogixHealth.BSCApi/LogixHealth.BSCApi.csproj
+  - name: publish_path_api
+    value: API
+  - name: publish_path_app
+    value: APP
+  - name: artifactname_app
+    value: LogixBSC
+  - name: artifactname_service
+    value: LogixBSCApi
+  - name: artifactname_app
+    value: LogixBSC
+  - name: artifactname_service
+    value: LogixBSCApi
+  - name: container_path_app
+    value: APP/LogixHealth.BSC
+  - name: container_path_service
+    value: Api/LogixHealth.BSCApi
+  - name: lib_directory
+    value: platform/Libraries/netCore22 #need to updated Net core version
+stages:
+  - stage: Build
+    displayName: Build
+    jobs:
+      - job: BSC
+        displayName: BSC
+        pool:
+          name: Build
+        steps:
+          - checkout: self
+            clean: true
+            path: s/LogixBSC
+          - template: ../templates/dotnetframework_48_build.yml
+  - stage: DEV
+    displayName: DEV
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        variables:
+          - name: SiteName
+            value: LogixHRMS
+          - name: WebAppPoolName
+            value:
+          - name: TargetFolder
+            value:
+          - name: ArtifactName
+            value:
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        variables:
+          - name: SiteName
+            value: LogixHRMS
+          - name: WebAppPoolName
+            value:
+          - name: TargetFolder
+            value:
+          - name: ArtifactName
+            value:
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

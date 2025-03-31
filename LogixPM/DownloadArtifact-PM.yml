@@ -1,0 +1,66 @@
+steps:
+  - task: PowerShell@2
+    displayName: 'Stop website'
+    inputs:
+      targetType: inline
+      script: |
+        'stop-website -Name $(SiteName)'
+  - task: PowerShell@2
+    displayName: 'Stop AppPool'
+    inputs:
+      targetType: inline
+      script: |
+        'Stop-WebAppPool -Name $(SiteName)'
+  - task: DownloadBuildArtifacts@0
+    inputs:
+      artifactName: '$(webapp)'
+      buildType: 'current'
+      downloadPath: '$(TargetFolder)'
+  - task: DownloadBuildArtifacts@0
+    inputs:
+      artifactName: '$(webapi)'
+      buildType: 'current'
+      downloadPath: '$(TargetFolder)'
+  - task: ReplaceVariables@2
+    displayName: 'Replace Variables'
+    inputs:
+      PathToFolder: |
+        $(ReplaceFolderPaths)
+        $(ReplaceFolderPaths_Api)
+      FilePattern: |
+        $(FilePattern_1)
+        $(FilePattern)
+        $(FilePattern_2)
+      ReplaceUndefined: false
+      RegexPattern: |
+        __(\w+[\.\w+]*)__
+        __(\w+)__
+    continueOnError: true
+  - task: PowerShell@2
+    displayName: 'Delete Config file(s)'
+    inputs:
+      targetType: inline
+      script: |
+        Remove-Item –path "$(TargetFolder)\$(webapp)\appSettings.json"
+        Remove-Item –path "$(TargetFolder)\$(webapi)\appSettings.json"
+    continueOnError: true
+  - task: PowerShell@2
+    displayName: 'Rename Config file(s)'
+    inputs:
+      targetType: inline
+      script: |
+        Rename-Item -Path "$(TargetFolder)$(webapp)\appSettings.json.ADFS.token" -NewName "appSettings.json"
+        Rename-Item -Path "$(TargetFolder)$(webapi)\appSettings.json.token"-NewName "appSettings.json"
+  - task: PowerShell@2
+    displayName: 'Start AppPool'
+    inputs:
+      targetType: inline
+      script: |
+        'Start-WebAppPool -Name $(SiteName)'
+  - task: PowerShell@2
+    displayName: 'Start website'
+    inputs:
+      targetType: inline
+      script: |
+        'start-website -Name $(SiteName)'
+    continueOnError: true

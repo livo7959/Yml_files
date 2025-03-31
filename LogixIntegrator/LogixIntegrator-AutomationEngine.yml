@@ -1,0 +1,108 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: app_directory
+    value: apps/wpf/Integrator/LogixAutomationEngine/Engine/AAE
+  - name: app_sln
+    value: AAE.sln
+  - name: project_name
+    value: LogixIntegrator-AAE
+  - name: artifactname_app
+    value: Release
+  - name: app_test_csproj
+    value: ../../Libraries/MSTest/IntegratorTestProject/IntegratorTestProject.csproj
+  - name: App_Test_dll_path
+    value: IntegratorTestProject.dll
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: LogixAutoation
+        steps:
+          - checkout: self
+            clean: true
+            path: s/LogixIntegrator
+          - template: ../templates/dotnetframework_48_build.yml
+  - stage: Dev
+    displayName: Dev
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    variables:
+      - name: ArtifactName
+        value: Release
+      - name: ServiceName
+        value: LogixAutomation - Execution Engine
+      - name: TargetFolder
+        value: D:\TFS\LogixIntegrator_AutoEngine
+      - name: Environment_WPF
+        value: Dev
+    jobs:
+      - deployment: Dev
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: ICER-AUTOENG-DEV
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    variables:
+      - name: ArtifactName
+        value: Release
+      - name: ServiceName
+        value: LogixAutomation - Execution Engine
+      - name: TargetFolder
+        value: D:\TFS\LogixIntegrator_AutoEngine
+      - name: Environment_WPF
+        value: UAT
+    jobs:
+      - deployment: UAT
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: ICER-AUTOENG-UAT
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD
+    displayName: PROD
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    variables:
+      - name: ArtifactName
+        value: Release
+      - name: ServiceName
+        value: LogixAutomation - Execution Engine
+      - name: TargetFolder
+        value: D:\TFS\AutoEngine
+      - name: Environment_WPF
+        value: Production
+    jobs:
+      - deployment: PROD
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: AUTOENG-PROD #use this tag to BEDPAUTOENG01 resource
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

@@ -1,0 +1,35 @@
+# This is a pipeline that ensures that pull requests do not contain common errors, such using a
+# branch name that does not conform to the company's convention.
+
+trigger: none
+
+pool: BuildLinux
+
+variables:
+  workingDirectory: ci_cd/common/typescript
+
+stages:
+  - stage: check_pull_request
+    jobs:
+      - job: check_pull_request
+        displayName: Check the pull request
+        steps:
+          - bash: |
+              if [ -z "$(System.PullRequest.PullRequestId)" ]; then
+                echo "##vso[task.logissue type=error]This pipeline is designed for pull requests. \"System.PullRequest.PullRequestId\" is not set."
+                exit 1
+              fi
+              echo "Running pipeline for pull request: $(System.PullRequest.PullRequestId)"
+            displayName: Check pipeline context
+
+          - template: templates/install-node-and-dependencies.yml
+            parameters:
+              workingDirectory: $(workingDirectory)
+
+          # We pass some pipeline variables to the script.
+          - bash: npm run check-pull-request "$(System.AccessToken)" "$(System.CollectionUri)" "$(System.TeamProjectId)" "$(Build.Repository.ID)" "$(System.PullRequest.PullRequestId)"
+            displayName: Check the pull request
+            workingDirectory: $(workingDirectory)
+            env:
+              # See the documentation in the "install-node-and-dependencies.yml" template.
+              NODE_EXTRA_CA_CERTS: /usr/local/share/ca-certificates/BEDROOTCA001.crt

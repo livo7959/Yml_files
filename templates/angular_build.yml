@@ -1,0 +1,72 @@
+steps:
+  - task: UseNode@1
+    displayName: Node $(angular_version)
+    inputs:
+      version: '$(angular_version)'
+    condition: and(variables['angular_version'], succeeded())
+  - script: |
+      npm install
+    displayName: 'Installing NPM packages'
+  - task: Npm@1
+    displayName: 'Install Angular CLI'
+    inputs:
+      command: 'custom'
+      workingDir: '$(cli_working_directory)'
+      customCommand: 'install -g @angular/cli'
+    condition: and(variables['cli_working_directory'], succeeded())
+  - task: Npm@1
+    displayName: 'Install Npm Packages'
+    inputs:
+      command: 'install'
+      workingDir: '$(package_working_directory)'
+    condition: and(variables['package_working_directory'], succeeded())
+  - task: Npm@1
+    displayName: 'Prebuild validation for Angular project'
+    inputs:
+      command: 'custom'
+      workingDir: '$(package_working_directory)'
+      customCommand: 'run $(Prebuild_Validation)'
+    condition: and(variables['package_working_directory'], succeeded())
+  - task: SonarQubePrepare@5
+    inputs:
+      SonarQube: SonarQube New
+      scannerMode: 'CLI'
+      configMode: 'manual'
+      cliProjectKey: '$(sonar_project_name)'
+      cliProjectName: '$(sonar_project_name)'
+      cliProjectVersion: '$(sonar_project_name)'
+      cliSources: '$(sonar_working_directory)'
+      extraProperties: |
+        sonar.typescript.lcov.reportPaths=$(code_coverage_path)/coverage/lcov.info
+        sonar.coverage.exclusions=**\*spec.ts
+    condition: and(contains(variables['Build.SourceBranch'], 'refs/heads/master'), succeeded())
+  - task: Npm@1
+    displayName: 'Npm Build '
+    inputs:
+      command: 'custom'
+      workingDir: '$(package_working_directory)'
+      customCommand: 'run build-$(build_project_name)-${{ parameters.Build_env }} --strict'
+    condition: and(variables['build_project_name'], succeeded())
+  - task: Npm@1
+    displayName: 'Npm test '
+    inputs:
+      command: 'custom'
+      workingDir: '$(package_working_directory)'
+      customCommand: 'run testCC-$(build_testproject_name)'
+    condition: and(variables['build_testproject_name'], succeeded())
+  - task: SonarQubeAnalyze@5
+    condition: and(contains(variables['Build.SourceBranch'], 'refs/heads/master'), succeeded())
+  - task: SonarQubePublish@5
+    condition: and(contains(variables['Build.SourceBranch'], 'refs/heads/master'), succeeded())
+  - task: sonar-buildbreaker@8
+    inputs:
+      SonarQube: SonarQube New
+    continueOnError: true
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Artifact: drop'
+    inputs:
+      PathtoPublish: '$(pubilsh_path)'
+      ArtifactName: '$(artifactname)'
+      publishLocation: 'Container'
+  - template: ../templates/remove_sonarqube.yml
+  - template: ../templates/delete_build_files.yml

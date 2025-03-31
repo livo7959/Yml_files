@@ -1,0 +1,66 @@
+# This is a pipeline launches SQLFluff to lint SQL files.
+
+trigger: none
+
+pool: BuildLinux
+
+variables:
+  workingDirectory: ci_cd/common/typescript
+
+stages:
+  - stage: check_pull_request
+    jobs:
+      - job: check_pull_request
+        displayName: Check the pull request
+        steps:
+          # In order to install Python, we have to symlink the tools directory as explained in this
+          # GitHub issue: https://github.com/microsoft/azure-pipelines-tasks/issues/19255
+          # We do must do this before installing Node.js and Python, because they are installed to
+          # this directory.
+          - bash: |
+              AZP_TOOL_DIR="/azp/_work/_tool"
+              rm -rf "$AZP_TOOL_DIR"
+              mkdir --parents "$AZP_TOOL_DIR"
+              ln --symbolic "$AZP_TOOL_DIR" /opt/hostedtoolcache
+            displayName: Pre-Install Python (symlink tools directory)
+
+          - template: templates/install-node-and-dependencies.yml
+            parameters:
+              workingDirectory: $(workingDirectory)
+
+          - task: UsePythonVersion@0
+            displayName: Install Python
+
+          - bash: pip install sqlfluff
+            displayName: Install SQLFluff
+
+          - script: |
+              CONFIG_PATH="/azp/_work/_tool/Python/3.13.2/x64/lib/python3.13/site-packages/sqlfluff/core/default_config.cfg" # Adjust this if paths are different
+              if [ ! -f "$CONFIG_PATH" ]; then
+                  echo "SQLFluff default_config not found at $CONFIG_PATH"
+                  exit 1
+              fi
+
+              # Update dialect to tsql
+              sed -i 's/^dialect =.*/dialect = tsql/' "$CONFIG_PATH"
+
+              # Include CV09 in rules
+              sed -i 's/^rules =.*/rules = CV09/' "$CONFIG_PATH"
+
+              # Add blocked_words configuration
+              if grep -q '\[sqlfluff:rules:convention.blocked_words\]' "$CONFIG_PATH"; then
+                  # Replace existing blocked_words line
+                  sed -i '/^\[sqlfluff:rules:convention.blocked_words\]/,/\[.*\]/s/^blocked_words =.*/blocked_words = Nolock/' "$CONFIG_PATH"
+              else
+                  # Append the section if it doesn't exist
+                  echo -e '\n[sqlfluff:rules:convention.blocked_words]\nblocked_words = Nolock' >> "$CONFIG_PATH"
+              fi
+            displayName: 'Modify SQLFluff default_config for adding CV09 rule'
+
+          # We pass some pipeline variables to the script.
+          - bash: npm run sqlfluff "$(System.AccessToken)" "$(System.CollectionUri)" "$(System.TeamProjectId)" "$(Build.Repository.ID)" "$(System.PullRequest.PullRequestId)"
+            displayName: Check sqlfluff
+            workingDirectory: $(workingDirectory)
+            env:
+              # See the documentation in the "install-node-and-dependencies.yml" template.
+              NODE_EXTRA_CA_CERTS: /usr/local/share/ca-certificates/BEDROOTCA001.crt

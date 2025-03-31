@@ -1,0 +1,117 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: api_directory
+    value: platform/API/CompositeServices/Notify
+  - name: api_csproj_file
+    value: LogixHealth.Composite.Notify/LogixHealth.Composite.Notify.csproj
+  - name: project_name
+    value: Comp_Notify
+  - name: publish_apicsproj_file
+    value: LogixHealth.Composite.Notify/LogixHealth.Composite.Notify.csproj
+  - name: artifactname_api
+    value: CompNotify
+  - name: dotnet_version
+    value: 8.x
+  - name: test_csproj_file
+    value: LogixHealth.Composite.Notify.Test/LogixHealth.Composite.Notify.Test.csproj
+  - name: container_path_api
+    value: LogixHealth.Composite.Notify
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: Comp_Notify
+        displayName: Comp_Notify
+        steps:
+          - checkout: self
+            clean: true
+            path: s/Comp_Notify
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.api_directory }}
+          - template: ../templates/dotnetframework_8_build.yml
+  - stage: DEV
+    displayName: DEV
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        variables:
+          - name: ArtifactName
+            value: CompNotify
+          - name: SiteName
+            value: notify.dcompsvc.logixhealth.com
+          - name: TargetFolder
+            value: D:\TFS\MicroServices\Composite\Notify\Release
+          - name: WebAppPoolName
+            value: notify.dcompsvc.logixhealth.com
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        variables:
+          - name: ArtifactName
+            value: CompNotify
+          - name: SiteName
+            value: notify.ucompsvc.logixhealth.com
+          - name: TargetFolder
+            value: D:\TFS\MicroServices\Composite\Notify\Release\
+          - name: WebAppPoolName
+            value: notify.ucompsvc.logixhealth.com
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD
+    displayName: PROD
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        variables:
+          - name: ArtifactName
+            value: CompNotify
+          - name: SiteName
+            value: notify.compsvc.logixhealth.com
+          - name: TargetFolder
+            value: D:\TFS\MicroServices\Composite\Notify\Release\
+          - name: WebAppPoolName
+            value: notify.compsvc.logixhealth.com
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

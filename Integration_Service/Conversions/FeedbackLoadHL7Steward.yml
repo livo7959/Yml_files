@@ -1,0 +1,57 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: ne(variables['Build.Reason'], 'Schedule')
+  - name: api_directory
+    value: apps/desktop_apps/integration_services/Conversions/FeedbackLoad_HL7_Steward
+  - name: api_sln
+    value: FeedbackLoad_HL7_Steward/FeedbackLoad_HL7_Steward.csproj
+  - name: project_name
+    value: FeedbackLoadHL7Steward
+  - name: artifactname_service
+    value: FeedbackLoadHL7Steward
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: Build
+        displayName: Build
+        steps:
+          - checkout: self
+            clean: true
+            path: s/FeedbackLoad_HL7_Steward
+          - template: ../../templates/Integration_Service_Build.yml
+  - stage: DEV
+    displayName: DEV
+    dependsOn: Build
+    jobs:
+      - deployment: DEV
+        displayName: DEV
+        variables:
+          - name: ArtifactName
+            value: FeedbackLoadHL7Steward
+          - name: TargetFolder
+            value: 'D:\Integration_Services\FeedbackLoadHL7Steward\Release'
+          - name: Environment
+            value: Dev
+          - name: Conversion
+            value: FeedbackLoadHL7Steward
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags:  int_svcs # only deploy to virtual machines with "int_svcs" tags
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                  - template: ../../templates/IntegrationService_DownloadArtifact.yml

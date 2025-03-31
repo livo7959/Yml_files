@@ -1,0 +1,220 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: ne(variables['Build.Reason'], 'Schedule')
+  - name: dotnet_version
+    value: 8.x
+stages:
+  - stage: Build_APP
+    displayName: Build_APP
+    pool:
+      name: Build
+    variables:
+      - name: app_directory
+        value: apps/mvc/LogixHRMS/LogixRolesAndPermissions
+      - name: publish_appcsproj_file
+        value: LogixHealth.RolesAndPermission/LogixHealth.RolesAndPermission.csproj
+      - name: app_csproj_file
+        value: LogixHealth.RolesAndPermission.sln
+      - name: publish_path_app
+        value: APP
+      - name: project_name
+        value: LogixRolesAndPermissionsApp
+      - name: artifactname_app
+        value: RolesAndPermissions
+      - name: container_path_app
+        value: APP/LogixHealth.RolesAndPermission
+    jobs:
+      - job: RolesAndPermissionApp
+        displayName: RolesAndPermissionApp
+        steps:
+          - checkout: self
+            clean: true
+            path: s/LogixRolesAndPermissionsApp
+          - template: ../templates/dotnetframework_8_build.yml
+  - stage: Build_API
+    displayName: Build_API
+    dependsOn: [] # Run this stage immediately (instead of being dependant upon the previous step).
+    pool:
+      name: Build
+    variables:
+      - name: api_directory
+        value: platform/API/ApplicationServices/LogixHRMS/LogixRolesAndPermissionApi
+      - name: publish_apicsproj_file
+        value: LogixHealth.RolesAndPermission.Api/LogixHealth.RolesAndPermission.Api.csproj
+      - name: api_csproj_file
+        value: LogixHealth.RolesAndPermission.Api/LogixHealth.RolesAndPermission.Api.csproj
+      - name: project_name
+        value: LogixRolesAndPermissionsApi
+      - name: publish_path_api
+        value: API
+      - name: artifactname_api
+        value: RolesAndPermissionsApi
+      - name: container_path_api
+        value: Api/LogixHealth.RolesAndPermission.Api
+    jobs:
+      - job: RolesAndPermissionApi
+        displayName: RolesAndPermissionApi
+        steps:
+          - checkout: self
+            clean: true
+            path: s/LogixRolesAndPermissionsApi
+          - template: ../templates/dotnetframework_8_build.yml
+  - stage: DEV_APP
+    displayName: DEV_APP
+    dependsOn: Build_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        displayName: DEV
+        variables:
+          - name: ArtifactName
+            value: RolesAndPermissions
+          - name: SiteName
+            value: LogixHRMS
+          - name: TargetFolder
+            value: D:\TFS\LogixHRMS\LogixRolesAndPermission\Release
+          - name: WebAppPoolName
+            value: LogixHRMS
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: DEV_API
+    displayName: DEV_API
+    dependsOn: Build_API
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        displayName: DEV
+        variables:
+          - name: ArtifactName
+            value: RolesAndPermissionsApi
+          - name: SiteName
+            value: LogixHRMS
+          - name: TargetFolder
+            value: D:\TFS\LogixHRMS\LogixRolesAndPermission\Release
+          - name: WebAppPoolName
+            value: LogixHRMS
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT_APP
+    displayName: UAT_APP
+    dependsOn: Build_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        displayName: UAT
+        variables:
+          - name: ArtifactName
+            value: RolesAndPermissions
+          - name: SiteName
+            value: LogixHRMS
+          - name: TargetFolder
+            value: D:\TFS\LogixHRMS\LogixRolesAndPermission\Release
+          - name: WebAppPoolName
+            value: LogixHRMS
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT_API
+    displayName: UAT_API
+    dependsOn: Build_API
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        displayName: UAT
+        variables:
+          - name: ArtifactName
+            value: RolesAndPermissionsApi
+          - name: SiteName
+            value: LogixHRMS
+          - name: TargetFolder
+            value: D:\TFS\LogixHRMS\LogixRolesAndPermission\Release
+          - name: WebAppPoolName
+            value: LogixHRMS
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD_APP
+    displayName: PROD_APP
+    dependsOn: UAT_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        displayName: PROD
+        variables:
+          - name: ArtifactName
+            value: RolesAndPermissions
+          - name: SiteName
+            value: LogixHRMS
+          - name: TargetFolder
+            value: D:\TFS\LogixHRMS\LogixRolesAndPermission\Release
+          - name: WebAppPoolName
+            value: LogixHRMS
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: WebLC004
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD_API
+    displayName: PROD_API
+    dependsOn: UAT_API
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        displayName: PROD
+        variables:
+          - name: ArtifactName
+            value: RolesAndPermissionsApi
+          - name: SiteName
+            value: LogixHRMS
+          - name: TargetFolder
+            value: D:\TFS\LogixHRMS\LogixRolesAndPermission\Release
+          - name: WebAppPoolName
+            value: LogixHRMS
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: WebLC004
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

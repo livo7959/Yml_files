@@ -1,0 +1,160 @@
+trigger: none
+stages:
+  - stage: DEV_Code_Copy
+    jobs:
+      - deployment: DEV_Source
+        displayName: DEV001
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: CopyFiles@2
+                  inputs:
+                    SourceFolder: 'D:\TFS\LogixPMCore'
+                    Contents: '**'
+                    targetFolder: $(Build.ArtifactStagingDirectory)
+                - task: PublishBuildArtifacts@1
+                  inputs:
+                    pathToPublish: $(Build.ArtifactStagingDirectory)
+                    artifactName: Release
+                    publishLocation: 'Container'
+      - deployment: DEV_Target
+        dependsOn: DEV_Source
+        displayName: DEV002
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: DEV_Web
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadBuildArtifacts@0
+                  displayName: 'Download Artifact'
+                  inputs:
+                    artifactName: 'Release'
+                    buildType: 'current'
+                    downloadPath: 'D:\TFS\LogixPMCore'
+  - stage: DEV_VirtualDirectory_Copy
+    dependsOn: DEV_Code_Copy
+    jobs:
+      - deployment: DEV_Source
+        displayName: DEV001
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: CopyFiles@2
+                  inputs:
+                    SourceFolder: 'D:\LogixPMTemp'
+                    Contents: '**'
+                    targetFolder: $(Build.ArtifactStagingDirectory)
+                - task: PublishBuildArtifacts@1
+                  inputs:
+                    pathToPublish: $(Build.ArtifactStagingDirectory)
+                    artifactName: LogixPMTemp
+                    publishLocation: 'Container'
+      - deployment: DEV_Target
+        dependsOn: DEV_Source
+        displayName: DEV002
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: DEV_Web
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadBuildArtifacts@0
+                  displayName: 'Download Artifact'
+                  inputs:
+                    artifactName: 'LogixPMTemp'
+                    buildType: 'current'
+                    downloadPath: 'D:\'
+  - stage: PROD_Code_Copy
+    jobs:
+      - deployment: PROD_Source
+        displayName: PROD001
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: ops001
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: CopyFiles@2
+                  inputs:
+                    SourceFolder: 'D:\TFS\LogixPMCore\Release'
+                    Contents: '**'
+                    targetFolder: $(Build.ArtifactStagingDirectory)
+                - task: PublishBuildArtifacts@1
+                  inputs:
+                    pathToPublish: $(Build.ArtifactStagingDirectory)
+                    artifactName: Release
+                    publishLocation: 'Container'
+      - deployment: PROD_Target
+        dependsOn: PROD_Source
+        displayName: PROD002
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: ops002
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadBuildArtifacts@0
+                  displayName: 'Download Artifact'
+                  inputs:
+                    artifactName: 'Release'
+                    buildType: 'current'
+                    downloadPath: 'D:\TFS\LogixPMCore'
+  - stage: PROD_VirtualDirectory_Copy
+    dependsOn: PROD_Code_Copy
+    jobs:
+      - deployment: PROD_Source
+        displayName: PROD001
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: ops001
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: CopyFiles@2
+                  inputs:
+                    SourceFolder: 'D:\LogixPMTemp'
+                    Contents: '**'
+                    targetFolder: $(Build.ArtifactStagingDirectory)
+                - task: PublishBuildArtifacts@1
+                  inputs:
+                    pathToPublish: $(Build.ArtifactStagingDirectory)
+                    artifactName: LogixPMTemp
+                    publishLocation: 'Container'
+      - deployment: PROD_Target
+        dependsOn: PROD_Source
+        displayName: PROD002
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: ops002
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadBuildArtifacts@0
+                  displayName: 'Download Artifact'
+                  inputs:
+                    artifactName: 'LogixPMTemp'
+                    buildType: 'current'
+                    downloadPath: 'D:\'

@@ -1,0 +1,26 @@
+steps:
+  - task: ReplaceVariables@2
+    displayName: 'Replace connect-login.min.css'
+    inputs:
+      PathToFolder: '$(TargetFolder)/LogixUX/css'
+      FilePattern: 'connect-login.min.css'
+  - task: ReplaceVariables@2
+    displayName: 'Replace header.css'
+    inputs:
+      PathToFolder: '$(TargetFolder)/LogixUX/css'
+      FilePattern: 'header.css'
+  - task: ReplaceVariables@2
+    displayName: 'Replace newheader.css'
+    inputs:
+      PathToFolder: '$(TargetFolder)/LogixUX/css'
+      FilePattern: 'newheader.css'
+  - task: ReplaceVariables@2
+    displayName: 'Replace commonHeader.js'
+    inputs:
+      PathToFolder: '$(TargetFolder)/LogixUX/js'
+      FilePattern: 'commonHeader.js'
+  - task: ReplaceVariables@2
+    displayName: 'Replace main.min.js'
+    inputs:
+      PathToFolder: '$(TargetFolder)/LogixUX/js'
+      FilePattern: 'main.min.js'

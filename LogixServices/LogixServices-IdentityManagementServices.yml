@@ -1,0 +1,114 @@
+# schedules:
+#   - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+#     displayName: Automated SonarQube Build
+#     branches:
+#       include:
+#         - master
+#     always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: api_directory
+    value: platform/API/ApplicationServices/LogixConnect-IDPServices
+  - name: api_sln
+    value: LogixHealth.IDP.sln
+  - name: project_name
+    value: LogixServices-IMS
+  - name: container_path_service
+    value: _PublishedWebsites\LogixHealth.IdentityManagementServices
+  - name: artifactname_service
+    value: IMS
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: Build
+        displayName: Build
+        steps:
+          - checkout: self
+            path: s/LogixConnect
+          - template: ../templates/dotnetframework_48_build.yml
+  - stage: DEV
+    displayName: Development
+    dependsOn: Build
+    jobs:
+      - deployment: DEV_IMS
+        displayName: DEV_IMS
+        variables:
+          - name: ArtifactName
+            value: IMS
+          - name: Environment
+            value: DEV
+          - name: SiteName
+            value: LogixServices
+          - name: TargetFolder
+            value: D:\AzureDevOps\LogixServices\IdentityManagement\Release
+          - name: WebAppPoolName
+            value: LogixServices
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT_IMS
+        displayName: UAT_IMS
+        variables:
+          - name: ArtifactName
+            value: IMS
+          - name: Environment
+            value: UAT
+          - name: SiteName
+            value: LogixServices
+          - name: TargetFolder
+            value: D:\AzureDevOps\LogixServices\IdentityManagement\Release
+          - name: WebAppPoolName
+            value: LogixServices
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD
+    displayName: PROD
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD_IMS
+        displayName: PROD_IMS
+        variables:
+          - name: ArtifactName
+            value: IMS
+          - name: Environment
+            value: PROD
+          - name: SiteName
+            value: LogixServices
+          - name: TargetFolder
+            value: D:\AzureDevOps\LogixServices\IdentityManagement\Release
+          - name: WebAppPoolName
+            value: LogixServices
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: ops
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

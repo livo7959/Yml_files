@@ -1,0 +1,101 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: api_directory
+    value: platform/API/ApplicationServices/AutomatedSweepProcess
+  - name: api_csproj_file
+    value: LogixHealth.AutomatedSweepProcess.sln
+  - name: project_name
+    value: LogixAutomatedSweepProcess
+  - name: artifactname_api
+    value: LogixAutomatedSweepProcess
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+pool:
+  name: Build
+stages:
+  - stage: Build
+    jobs:
+      - job: Build
+        displayName: Build
+        steps:
+          - checkout: self
+            clean: true
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.api_directory }}
+          - template: ../templates/dotnetframework_8_build.yml
+  - stage: Dev
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: LogixAutoSweep
+        displayName: LogixAutoSweep
+        variables:
+          - name: ArtifactName
+            value: LogixAutomatedSweepProcess
+          - name: ServiceName
+            value: LogixSweepAutomatedService
+          - name: TargetFolder
+            value: D:\AzureDevOps\LogixSweepAutomatedService\Release
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: billing-api
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: LogixAutoSweep
+        displayName: LogixAutoSweep
+        variables:
+          - name: ArtifactName
+            value: LogixAutomatedSweepProcess
+          - name: ServiceName
+            value: LogixSweepAutomatedService
+          - name: TargetFolder
+            value: D:\AzureDevOps\LogixSweepAutomatedService\Release
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: billing-api
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: LogixAutoSweep
+        displayName: LogixAutoSweep
+        variables:
+          - name: ArtifactName
+            value: LogixAutomatedSweepProcess
+          - name: ServiceName
+            value: LogixSweepAutomatedService
+          - name: TargetFolder
+            value: D:\AzureDevOps\LogixSweepAutomatedService\Release
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: billing-api
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

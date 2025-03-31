@@ -1,0 +1,194 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+parameters:
+  - name: Environment
+    type: string
+    default: development
+    values:
+      - development
+      - uat
+      - prod
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: api_directory
+    value: platform/ApiGateway/net8/LogixHealth.Enterprise.External.APIGateway
+  - name: api_csproj_file
+    value: LogixHealth.Enterprise.External.APIGateway.csproj
+  - name: project_name
+    value: LogixServices-Gateway
+  - name: artifactname_api
+    value: ExternalGateway
+  - name: test_csproj_file
+    value: ../LogixHealth.Enterprise.APIGateway.ExternalTest/LogixHealth.Enterprise.APIGateway.ExternalTest.csproj
+  - name: ArtifactName
+    value: ExternalGateway
+  - name: EF_sln
+    value: yes
+  - name: buildEnvironment
+    value: ${{ parameters.Environment }}
+stages:
+  - stage: Build
+    displayName: Build
+    jobs:
+      - job: Build
+        displayName: Build
+        pool:
+          name: Build
+        variables:
+          buildPlatform: 'Any CPU'
+          buildConfiguration: 'Release'
+        steps:
+          - checkout: self
+            clean: true
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.api_directory }}
+          - template: ../templates/dotnetframework_8_build.yml
+  - stage: EFDeployment
+    displayName: EF-Deploy-Dev
+    dependsOn: Build
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDSQLBK001
+    jobs:
+      - deployment: DEV
+        environment: DEV
+        variables:
+          - name: databaseName
+            value: logixExternalgateway
+          - name: scriptPaths
+            value: E:\DB-solutions\Dev\Efbundle\script.sql
+          - name: servers
+            value: BEDDSQL001
+          - name: Download_Path
+            value: E:\DB-solutions\Dev
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/EF_SQl_Script_Execution.yml
+  - stage: Dev
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        variables:
+          - name: ArtifactName
+            value: ExternalGateway
+          - name: SiteName
+            value: LogixServices
+          - name: TargetFolder
+            value: D:\AzureDevOps\LogixServices\Gateway\Release\
+          - name: WebAppPoolName
+            value: gateway
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: LogixSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: EFUATDeployment
+    displayName: EF-Deploy-Uat
+    dependsOn: Build
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDSQLBK001
+    jobs:
+      - deployment: UAT
+        environment: UAT
+        variables:
+          - name: databaseName
+            value: logixExternalgateway
+          - name: scriptPaths
+            value: E:\DB-solutions\Uat\Efbundle\script.sql
+          - name: servers
+            value: BEDUSQL001
+          - name: Download_Path
+            value: E:\DB-solutions\Uat
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/EF_SQl_Script_Execution.yml
+  - stage: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        variables:
+          - name: ArtifactName
+            value: ExternalGateway
+          - name: SiteName
+            value: LogixServices
+          - name: TargetFolder
+            value: D:\AzureDevOps\LogixServices\Gateway\Release\
+          - name: WebAppPoolName
+            value: GatewayAppPool
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: LogixSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: EFProdDeployment
+    displayName: EF-Deploy-Prod
+    dependsOn: Build
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDSQLBK001
+    jobs:
+      - deployment: PROD
+        environment: PROD
+        variables:
+          - name: databaseName
+            value: logixExternalgateway
+          - name: scriptPaths
+            value: E:\DB-solutions\Prod\Efbundle\script.sql
+          - name: servers
+            value: BEDSQLLC02
+          - name: Download_Path
+            value: E:\DB-solutions\Prod
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/EF_SQl_Script_Execution.yml
+  - stage: PROD
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        variables:
+          - name: ArtifactName
+            value: ExternalGateway
+          - name: TargetFolder
+            value: D:\AzureDevOps\LogixServices\Gateway\Release
+          - name: WebAppPoolName
+            value: gateway
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: LogixSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

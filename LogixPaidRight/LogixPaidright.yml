@@ -1,0 +1,255 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: app_directory
+    value: apps/mvc/LogixPaidRightApplication
+  - name: app_sln
+    value: LogixPaidRight.sln
+  - name: project_name
+    value: LogixPaidRight
+  - name: appTest_dll_path
+    value: LogixHealth.PaidRight.MSUnitTest.dll
+  - name: api_directory
+    value: platform/API/ApplicationServices/LogixPaidRightServices
+  - name: test_csproj
+    value: LogixHealth.PaidRight.Api.MSUnitTest/LogixHealth.PaidRight.Api.MSUnitTest.csproj
+  - name: Test_dll_path
+    value: LogixHealth.PaidRight.Api.MSUnitTest.dll
+  - name: container_path_app
+    value: _PublishedWebsites\LogixHealth.LogixPaidRightApplication
+  - name: artifactname_app
+    value: Application
+  - name: container_path_service
+    value: _PublishedWebsites\LogixHealth.LogixPaidRight.DataServices
+  - name: artifactname_service
+    value: Services
+  - name: autoproject
+    value: PaidrightPlaywright
+  - name: dtesturl
+    value: 'https://dlogixpaidright.logixhealth.com/Application/Client/ClientList'
+  - name: qtesturl
+    value: 'https://qlogixpaidright.logixhealth.com/Application/Client/ClientList'
+  - name: utesturl
+    value: 'https://ulogixpaidright.logixhealth.com/Application/Client/ClientList'
+  - name: ptesturl
+    value: 'https://logixpaidright.logixhealth.com/Application/Client/ClientList'
+  - name: RegressionSuite
+    value: 'regression.xml'
+  - name: SanitySuite
+    value: 'sanity.xml'
+  - name: checkout_path
+    value: LogixPaidRight
+  - name: dacpac_sqlproj_filepath
+    value: db_scripts/LogixPaidRight/PRDB/PRDB.sqlproj
+  - name: Dacpack_ArtifactName
+    value: PaidRight_Dacpac
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: Job_1
+        displayName: Agent job 1
+        steps:
+          - checkout: self
+            path: s/LogixPaidRight
+            clean: true
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.app_directory }}
+          - template: ../templates/dotnetframework_48_build.yml
+  - stage: Build_DAC_PACK
+    displayName: Build-DAC-PACK
+    dependsOn: [] # Run this stage immediately (instead of being dependant upon the previous step).
+    pool:
+      name: Build
+    jobs:
+      - job: Build_DAC_PACK
+        displayName: Build-DAC-PACK
+        steps:
+          - template: ../templates/Dacpac_build_template.yml
+  - stage: DACPKDeployment
+    displayName: DEV-DAC-PACK
+    dependsOn: Build_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDDSQL001
+    jobs:
+      - deployment: DEV
+        environment: DEV
+        variables:
+          - name: DBServer
+            value: BEDDSQL001
+          - name: TargetFolder
+            value: M:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: PaidRight_Dacpac
+          - name: Dacpac_file
+            value: PRDB.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: PRDB.publish.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml
+  - stage: DEV
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV_WEB
+        displayName: Dev-Web
+        variables:
+          - name: ArtifactName
+            value: Application
+          - name: Environment
+            value: DEV
+          - name: SiteName
+            value: LogixPaidRight
+          - name: TargetFolder
+            value: D:\TFS\LogixPaidRight\Release
+          - name: WebAppPoolName
+            value: LogixPaidRight
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+      - deployment: DEV_APP
+        displayName: Dev-App
+        dependsOn: DEV_WEB
+        variables:
+          - name: ArtifactName
+            value: Services
+          - name: Environment
+            value: DEV
+          - name: SiteName
+            value: LogixPaidRight
+          - name: TargetFolder
+            value: D:\TFS\LogixPaidRight\Release
+          - name: WebAppPoolName
+            value: LogixPaidRight
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT_WEB
+        displayName: UAT-Web
+
+        variables:
+          - name: ArtifactName
+            value: Application
+          - name: Environment
+            value: UAT
+          - name: SiteName
+            value: LogixPaidRight
+          - name: TargetFolder
+            value: D:\TFS\LogixPaidRight\Release
+          - name: WebAppPoolName
+            value: LogixPaidRight
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+      - deployment: UAT_APP
+        displayName: UAT-App
+        dependsOn: UAT_WEB
+        variables:
+          - name: ArtifactName
+            value: Services
+          - name: Environment
+            value: UAT
+          - name: SiteName
+            value: LogixPaidRight
+          - name: TargetFolder
+            value: D:\TFS\LogixPaidRight\Release
+          - name: WebAppPoolName
+            value: LogixPaidRight
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD_WEB
+        displayName: PROD-Web
+        variables:
+          - name: ArtifactName
+            value: Application
+          - name: Environment
+            value: Production
+          - name: SiteName
+            value: LogixPaidRight
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixPaidRight
+          - name: WebAppPoolName
+            value: LogixPaidRight
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: billing
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+      - deployment: PROD_APP
+        displayName: PROD-App
+        dependsOn: PROD_WEB
+        variables:
+          - name: ArtifactName
+            value: Services
+          - name: Environment
+            value: Production
+          - name: SiteName
+            value: LogixPaidRight
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixPaidRight
+          - name: WebAppPoolName
+            value: LogixPaidRight
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: billing
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

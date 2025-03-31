@@ -1,0 +1,84 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+trigger: none
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: LogixCMS
+        displayName: LogixCMS
+        steps:
+          - checkout: self
+            path: s/LogixCMS
+            clean: true
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Artifact CMS-PHP'
+            inputs:
+              PathtoPublish: 'apps/php/LogixCMS'
+              ArtifactName: 'Release'
+              publishLocation: 'Container'
+          - template: ../templates/remove_sonarqube.yml
+          - template: ../templates/delete_build_files.yml
+  - stage: DEV
+    displayName: DEV
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        variables:
+          - group: CMS-DEV
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: php
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: DownloadArtifact_CMS.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        variables:
+          - group: CMS-UAT
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: php
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: DownloadArtifact_CMS.yml
+  - stage: PROD
+    displayName: PROD
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        variables:
+          - group: CMS-PROD
+        environment:
+          name: Prod
+          resourceType: virtualMachine
+          tags: php
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: DownloadArtifact_CMS.yml

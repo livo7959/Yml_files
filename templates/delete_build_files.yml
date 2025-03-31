@@ -1,0 +1,122 @@
+parameters:
+  - name: repositoryPath
+    displayName: The path into which the repository was cloned
+    type: string
+    default: '$(Build.SourcesDirectory)'
+
+  - name: cleanOption
+    displayName: 'The clean option to use'
+    type: string
+    default: all
+    values:
+      - all
+
+  - name: checkoutSubmodules
+    displayName: 'Set to true if submodules are checked out, otherwise false'
+    type: boolean
+    default: false
+
+steps:
+  - pwsh: |
+      function Remove-AllContent {
+        param (
+          [string]$path,
+          [bool]$keepDirs,
+          [string[]]$exclusions
+        )
+        Write-Host "Removing all content from $path"
+        if (Test-Path -Path $path) {
+          Get-ChildItem -Path $path | Where-Object { $exclusions -notcontains $_.Name } | ForEach-Object {
+            if ($_.PSIsContainer) {
+              if ($keepDirs) {
+                Remove-Item -Path "$($_.FullName)\*" -Recurse -Force
+              } else {
+                Remove-Item -Path $_.FullName -Recurse -Force
+              }
+            } else {
+              Remove-Item -Path $_.FullName -Force
+            }
+          }
+        } else {
+          Write-Host "Path $path does not exist."
+        }
+      }
+
+      function Clean-GitRepo {
+        param (
+          [string]$repoPath,
+          [bool]$checkoutSubmodules
+        )
+        Write-Host "Cleaning git repository at $repoPath"
+        Set-Location -Path $repoPath
+        git clean -fdx
+        if ($LASTEXITCODE -eq 0) {
+          git reset --hard HEAD
+        } else {
+          Write-Host "git clean failed. Deleting all content from $repoPath"
+          Remove-AllContent -path $repoPath -keepDirs $false -exclusions @('.git')
+        }
+        if ($checkoutSubmodules) {
+          git submodule foreach --recursive git clean -fdx
+          git submodule foreach --recursive git reset --hard HEAD
+        }
+        Set-Location -Path (Get-Location -PSProvider FileSystem).ProviderPath
+      }
+
+      function Try-Remove-AllContent {
+        param (
+          [scriptblock]$scriptBlock,
+          [int]$retries
+        )
+        $attempt = 0
+        $success = $false
+        while (-not $success -and $attempt -lt $retries) {
+          try {
+            & $scriptBlock
+            $success = $true
+          } catch {
+            Write-Host "Error: $_"
+            $attempt++
+            if ($attempt -lt $retries) {
+              Write-Host "Attempt $attempt failed. Retrying..."
+              Start-Sleep -Seconds 2
+            } else {
+              Write-Error "All $retries attempts failed."
+            }
+          }
+        }
+      }
+
+      $repoPath = "${{ parameters.repositoryPath }}"
+      $cleanOption = "${{ parameters.cleanOption }}"
+
+      # Convert string parameter to boolean
+      if ("${{ parameters.checkoutSubmodules }}" -eq "true") {
+        $checkoutSubmodules = $true
+      } else {
+        $checkoutSubmodules = $false
+      }
+
+      Write-Host "Clean option: $cleanOption"
+      Write-Host "Repository path: $repoPath"
+      Write-Host "Checkout submodules: $checkoutSubmodules"
+
+      $cleanupScript = {
+        if ($cleanOption -eq "all") {
+          $exclusions = @(
+            (Get-Item "$(Build.BinariesDirectory)").BaseName,
+            (Get-Item "$(Build.SourcesDirectory)").BaseName,
+            (Get-Item "$(Build.StagingDirectory)").BaseName,
+            (Get-Item "$(Common.TestResultsDirectory)").BaseName
+          )
+          Remove-AllContent -path "$(Pipeline.Workspace)" -keepDirs $false -exclusions $exclusions
+          Remove-AllContent -path "$(Pipeline.Workspace)" -keepDirs $true -exclusions @()
+          # Ensure .sonarqube is deleted
+          Remove-AllContent -path "$(Pipeline.Workspace)\.sonarqube" -keepDirs $false -exclusions @()
+        }
+      }
+
+      Try-Remove-AllContent -scriptBlock $cleanupScript -retries 3
+    displayName: 'Clean path ${{ parameters.repositoryPath }} with option ${{ parameters.cleanOption }}'
+    condition: succeededOrFailed()
+    workingDirectory: $(Pipeline.Workspace)

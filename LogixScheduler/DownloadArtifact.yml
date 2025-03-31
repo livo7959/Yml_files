@@ -1,0 +1,44 @@
+steps:
+  - task: PowerShell@2
+    displayName: 'Stop_Website'
+    inputs:
+      targetType: inline
+      script: |
+        'stop-website -Name $(SiteName)'
+  - task: PowerShell@2
+    displayName: 'Stop-AppPool'
+    inputs:
+      targetType: inline
+      script: |
+        'Stop-WebAppPool -Name $(AppPool)'
+  - task: DownloadBuildArtifacts@0
+    inputs:
+      artifactName: app
+      downloadType: single
+      downloadPath: $(TargetFolder)
+  - task: baskarlingamdevops.build-task.Replace Variables.ReplaceVariables@2
+    displayName: 'Replace Variables'
+    inputs:
+      PathToFolder: '$(TargetFolder)'
+      FilePattern: |
+        *.js
+      ReplaceUndefined: false
+  - task: baskarlingamdevops.build-task.Replace Variables.ReplaceVariables@2
+    displayName: 'Replace Config Variables'
+    inputs:
+      PathToFolder: '$(TargetFolder)'
+      FilePattern: |
+        web.config
+      ReplaceUndefined: false
+  - task: PowerShell@2
+    displayName: 'Start-WebAppPool'
+    inputs:
+      targetType: inline
+      script: |
+        'Start-WebAppPool -Name $(AppPool)'
+  - task: PowerShell@2
+    displayName: 'START-WEBSITE'
+    inputs:
+      targetType: inline
+      script: |
+        'start-website -Name $(SiteName)'

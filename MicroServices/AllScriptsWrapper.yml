@@ -1,0 +1,41 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: api_directory
+    value: platform/API/WrapperServices/AllScripts
+  - name: api_csproj_file
+    value: LogixHealth.Wrapper.Allscripts/LogixHealth.Wrapper.Allscripts.csproj
+  - name: project_name
+    value: AllScriptWrapper
+  - name: artifactname_api
+    value: AllScriptWrapper
+  # - name: container_path_api
+  #   value:
+  - name: publish_apicsproj_file
+    value: LogixHealth.Wrapper.Allscripts/LogixHealth.Wrapper.Allscripts.csproj
+  - name: dotnet_version
+    value: 8.x
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: Build
+        steps:
+          - checkout: self
+            clean: true
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.api_directory }}
+          - template: ../templates/dotnetframework_8_build.yml

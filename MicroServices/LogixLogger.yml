@@ -1,0 +1,93 @@
+# schedules:
+#   - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+#     displayName: Automated SonarQube Build
+#     branches:
+#       include:
+#         - master
+#     always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: ne(variables['Build.Reason'], 'Schedule')
+  - name: api_directory
+    value: platform/API/ApplicationServices/LogixLogger-api
+  - name: api_sln
+    value: LogixHealth.Logger.Services.sln
+  - name: project_name
+    value: LogixLogger
+  - name: container_path_service
+    value: _PublishedWebsites\LogixHealth.Logger.Services
+  - name: artifactname_service
+    value: EnterpriseLogger
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: Job_1
+        displayName: Agent job 1
+        steps:
+          - checkout: self
+            path: s/LogixLogger
+            clean: true
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.api_directory }}
+          - template: ../templates/dotnetframework_48_build.yml
+
+  - stage: DEV
+    displayName: DEV
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        displayName: DEV
+        variables:
+          - group: Logix_Logger-Dev
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: DownloadArtifact_Logger.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        displayName: UAT
+        variables:
+          - group: Logix_Logger-UAT
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: DownloadArtifact_Logger.yml
+  - stage: PROD
+    displayName: PROD_new
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD_Web
+        variables:
+          - group: Logix_Logger-PROD
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: ops
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: DownloadArtifact_Logger.yml

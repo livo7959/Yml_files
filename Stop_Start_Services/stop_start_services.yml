@@ -1,0 +1,107 @@
+parameters:
+  - name: server
+    type: string
+    default: DEV
+    values:
+      - DEV
+      - UAT
+      - PROD
+  - name: service_name
+    type: string
+    default: LogixEDI835Parser
+    values:
+      - "LogixAutomation - Execution Engine"
+      - "LogixEDI835Parser"
+      - "LogixMobilePay"
+      - "LogixSweepAutomatedService"
+      - "LogixHealth Claim Appeal Services"
+      - "LogixAvailityFileWatcher"
+      - "LogixCoordinator"
+      - "ReconcilerService"
+  - name: tags
+    type: string
+    default: EDI835Parser_SVC
+    values:
+      - EDI835Parser_SVC
+      - MobilePay_SVC
+      - SweepedAutomated_SVC
+      - claimAppeal_SVC
+      - Filewatcher_SVC
+      - RRE_SVC
+      - Coord_SVC
+      - AUTOENG_SVC
+stages:
+  - stage: Stop_start_services
+    jobs:
+      - job: Approve_Stopping_Of_Service
+        pool: server
+        steps:
+          - ${{ if eq(parameters.server, 'PROD') }}:
+            - task: ManualValidation@0
+              inputs:
+                notifyUsers: '[Software Engineering]\\Devops Team'
+          - ${{ if or(eq(parameters.server, 'DEV'),eq(parameters.server, 'UAT')) }}:
+            - task: ManualValidation@0
+              timeoutInMinutes: 180
+              inputs:
+                notifyUsers: '[Software Engineering]\\TL team'
+                instructions: 'Please approve'
+      - deployment: Stop_service
+        displayName: Stop ${{ parameters.service_name }}
+        dependsOn: Approve_Stopping_Of_Service
+        environment:
+          name: ${{ parameters.server }}
+          resourceType: virtualMachine
+          tags: ${{ parameters.tags }}
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                  - task: PowerShell@2
+                    displayName: Stop service ${{ parameters.service_name }}
+                    inputs:
+                      targetType: inline
+                      script: |
+                        if((Get-Service -Name "${{ parameters.service_name }}").Value -ne 'Started')
+                          {
+                            Stop-Service -Name "${{ parameters.service_name }}"
+                          }
+                    condition: succeeded()
+      - job: Approve_Starting_Of_Service
+        dependsOn: Stop_service
+        pool: server
+        steps:
+          - ${{ if eq(parameters.server, 'PROD') }}:
+            - task: ManualValidation@0
+              timeoutInMinutes: 180
+              inputs:
+                notifyUsers: '[Software Engineering]\\Devops Team'
+                instructions: 'Please approve'
+          - ${{ if or(eq(parameters.server, 'DEV'),eq(parameters.server, 'UAT')) }}:
+            - task: ManualValidation@0
+              timeoutInMinutes: 180
+              inputs:
+                notifyUsers: '[Software Engineering]\\TL team'
+                instructions: 'Please approve'
+      - deployment: Start_service
+        displayName: Start ${{ parameters.service_name }}
+        dependsOn: Approve_Starting_Of_Service
+        environment:
+          name: ${{ parameters.server }}
+          resourceType: virtualMachine
+          tags: ${{ parameters.tags }}
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                  - task: PowerShell@2
+                    displayName: Start service ${{ parameters.service_name }}
+                    inputs:
+                      targetType: inline
+                      script: |
+                        if((Get-Service -Name "${{ parameters.service_name }}").Value -ne 'Started')
+                          {
+                            Start-Service -Name "${{ parameters.service_name }}"
+                          }
+                    condition: succeeded()
+

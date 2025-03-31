@@ -1,0 +1,13 @@
+steps:
+  - download: none
+  - task: PowerShell@2
+    displayName: Clean Target Folder
+    inputs:
+      targetType: inline
+      script: Remove-Item $(TargetFolder)\LogixUX\* -Recurse -Force
+  - task: DownloadBuildArtifacts@0
+    inputs:
+      artifactName: LogixUX
+      downloadType: single
+      downloadPath: $(TargetFolder)
+  - template: logix_ux_cdn_replace_vars.yml

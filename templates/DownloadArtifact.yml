@@ -1,0 +1,97 @@
+steps:
+  - task: PowerShell@2
+    displayName: Stop-Service $(ServiceName)
+    inputs:
+      targetType: inline
+      script: |
+        Stop-Service -Name "$(ServiceName)"
+    condition: and(variables['ServiceName'], succeeded())
+
+  - task: PowerShell@2
+    displayName: Stop Website $(SiteName)
+    inputs:
+      targetType: inline
+      script: |
+        if((Get-Website -Name $(SiteName)).Value -ne 'Stopped')
+          {
+            Stop-Website -Name $(SiteName)
+          }
+    condition: and(variables['SiteName'], succeeded())
+
+  - task: PowerShell@2
+    displayName: Stop Application Pool
+    inputs:
+      targetType: inline
+      script: |
+        if((Get-WebAppPoolState -Name $(WebAppPoolName)).Value -ne 'Stopped')
+          {
+            Stop-WebAppPool -Name $(WebAppPoolName)
+          }
+    condition: and(variables['WebAppPoolName'], succeeded())
+
+  - task: PowerShell@2
+    displayName: Pause
+    inputs:
+      targetType: inline
+      script: |
+        Start-Sleep -Seconds 10
+
+  - task: DeleteFiles@1
+    displayName: Clean Destination Folder
+    inputs:
+      SourceFolder: '$(TargetFolder)\$(ArtifactName)'
+      Contents: '/**'
+
+  - task: DownloadBuildArtifacts@0
+    env:
+      # Necessary in order to get around the following error:
+      # Failed in getBuildApi with error: Error: self signed certificate in certificate chain
+      NODE_EXTRA_CA_CERTS: C:\_IT\BEDROOTCA001.cer
+    inputs:
+      artifactName: $(ArtifactName)
+      downloadType: single
+      downloadPath: $(TargetFolder)
+    condition: and(variables['ArtifactName'], succeeded())
+
+  - task: FileTransform@1
+    inputs:
+      folderPath: '$(TargetFolder)\$(ArtifactName)'
+      enableXmlTransform: true
+      xmlTransformationRules: '-transform **\*.$(Environment).config -xml **\*.config'
+    condition: and(variables['Environment'], succeeded())
+  - task: FileTransform@1
+    inputs:
+      folderPath: '$(TargetFolder)\$(ArtifactName)'
+      enableXmlTransform: true
+      xmlTransformationRules: '-transform **\*.$(Environment_WPF).config -xml **\Atom8.AutomationEngine.exe.config'
+    condition: and(variables['Environment_WPF'], succeeded())
+
+  - task: PowerShell@2
+    displayName: Start Application Pool
+    inputs:
+      targetType: inline
+      script: |
+        if((Get-WebAppPoolState -Name $(WebAppPoolName)).Value -ne 'Started')
+          {
+            Start-WebAppPool -Name $(WebAppPoolName)
+          }
+    condition: and(variables['WebAppPoolName'], succeeded())
+
+  - task: PowerShell@2
+    displayName: Start Website $(SiteName)
+    inputs:
+      targetType: inline
+      script: |
+        if((Get-Website -Name $(SiteName)).Value -ne 'Started')
+          {
+            Start-website -Name $(SiteName)
+          }
+    condition: and(variables['SiteName'], succeeded())
+
+  - task: PowerShell@2
+    displayName: Start-Service $(ServiceName)
+    inputs:
+      targetType: inline
+      script: |
+        Start-Service -Name "$(ServiceName)"
+    condition: and(variables['ServiceName'], succeeded())

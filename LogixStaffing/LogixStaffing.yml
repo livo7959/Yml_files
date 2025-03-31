@@ -1,0 +1,413 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: checkout_path
+    value: LogixStaffing
+  - name: dacpac_sqlproj_filepath
+    value: db_scripts/LogixStaffing/LogixStaffing.DB/LogixStaffing.DB.sqlproj
+  - name: Dacpack_ArtifactName
+    value: staffing_Dacpac
+stages:
+  - template: LogixStaffing-build.yml
+    parameters:
+      buildType: app
+  - template: LogixStaffing-build.yml
+    parameters:
+      buildType: api
+  - stage: Build_DAC_PACK
+    displayName: Build-Staffing-DAC-PACK
+    dependsOn: [] # Run this stage immediately (instead of being dependant upon the previous step).
+    pool:
+      name: Build
+    jobs:
+      - job: Build_DAC_PACK
+        displayName: Build-Staffing-DAC-PACK
+        steps:
+          - template: ../templates/Dacpac_build_template.yml
+  - stage: DAC_PACK_DEV_Deployment
+    displayName: DAC-PACK-SQL-DEV
+    dependsOn: Build_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDDSQL001
+    jobs:
+      - deployment: DEV
+        environment: DEV
+        variables:
+          - name: DBServer
+            value: BEDDSQL001
+          - name: TargetFolder
+            value: M:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: staffing_Dacpac
+          - name: Dacpac_file
+            value: LogixStaffing.DB.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: LogixStaffing-DEV.publish.DB.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml
+  - template: LogixStaffing-deploy-dev.yml
+    parameters:
+      buildType: app
+  - template: LogixStaffing-deploy-dev.yml
+    parameters:
+      buildType: api
+  - stage: UAT_APP
+    displayName: UAT_APP
+    dependsOn: build_app
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        variables:
+          - name: ArtifactName
+            value: LogixStaffingApplication
+          - name: Environment
+            value: uat
+          - name: SiteName
+            value: LogixStaffing
+          - name: TargetFolder
+            value: D:\TFS\LogixStaffing\Release
+          - name: WebAppPoolName
+            value: LogixStaffing
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT_USACS_APP
+    displayName: UAT_USACS_APP
+    dependsOn: UAT_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: STF_UAT_WEB1_USACS
+        variables:
+          - name: ArtifactName
+            value: LogixStaffingApplication
+          - name: Environment
+            value: uat
+          - name: SiteName
+            value: LogixStaffingExternal
+          - name: TargetFolder
+            value: D:\TFS\LogixStaffingExternal
+          - name: WebAppPoolName
+            value: LogixStaffingExternal
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+      - deployment: STF_UAT_WEB1_OKTA
+        dependsOn: STF_UAT_WEB1_USACS
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        variables:
+          - name: ArtifactName
+            value: LogixStaffingApplication
+          - name: Environment
+            value: uat
+          - name: SiteName
+            value: LogixStaffingOKTA
+          - name: TargetFolder
+            value: D:\TFS\LogixStaffingOKTA
+          - name: WebAppPoolName
+            value: LogixStaffingOKTA
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+      - deployment: STF_UAT_WEB2_USACS
+        dependsOn: STF_UAT_WEB1_OKTA
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        variables:
+          - name: ArtifactName
+            value: LogixStaffingApplication
+          - name: Environment
+            value: uat
+          - name: SiteName
+            value: LogixStaffingExternal
+          - name: TargetFolder
+            value: D:\TFS\LogixStaffingExternal
+          - name: WebAppPoolName
+            value: LogixStaffingExternal
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT_API
+    displayName: UAT_API
+    dependsOn: Build_API
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        variables:
+          - name: ArtifactName
+            value: StaffingServices
+          - name: Environment
+            value: uat
+          - name: SiteName
+            value: LogixStaffing
+          - name: TargetFolder
+            value: D:\TFS\LogixStaffing\Release
+          - name: WebAppPoolName
+            value: LogixStaffing
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT_USACS_API
+    displayName: UAT-USACS_API
+    dependsOn: UAT_API
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: STF_UAT_APP1_USACS
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        variables:
+          - name: ArtifactName
+            value: StaffingServices
+          - name: Environment
+            value: uat
+          - name: SiteName
+            value: LogixStaffingExternal
+          - name: TargetFolder
+            value: D:\TFS\LogixStaffingExternal
+          - name: WebAppPoolName
+            value: LogixStaffingExternal
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+      - deployment: STF_UAT_APP2_USACS
+        dependsOn: STF_UAT_APP1_USACS
+        variables:
+          - name: ArtifactName
+            value: StaffingServices
+          - name: Environment
+            value: uat
+          - name: SiteName
+            value: LogixStaffingExternal
+          - name: TargetFolder
+            value: D:\TFS\LogixStaffingExternal
+          - name: WebAppPoolName
+            value: LogixStaffingExternal
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: DAC_PACK_UAT_Deployment
+    displayName: DAC-PACK-SQL-UAT
+    dependsOn: Build_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDDSQL001
+    jobs:
+      - deployment: UAT
+        environment: UAT
+        variables:
+          - name: DBServer
+            value: BEDUSQL001
+          - name: TargetFolder
+            value: M:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: staffing_Dacpac
+          - name: Dacpac_file
+            value: LogixStaffing.DB.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: LogixStaffing-UAT.publish.DB.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml
+  - stage: PROD_NewServer_APP
+    displayName: PROD_NewServer_APP
+    dependsOn: UAT_USACS_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: saas
+        variables:
+          - name: ArtifactName
+            value: LogixStaffingApplication
+          - name: Environment
+            value: prod
+          - name: SiteName
+            value: LogixStaffing
+          - name: TargetFolder
+            value: D:\TFS\LogixStaffing
+          - name: WebAppPoolName
+            value: LogixStaffing
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD_NewServer_USACS_APP
+    displayName: PROD_NewServer_USACS_APP
+    dependsOn: PROD_NewServer_APP
+    jobs:
+      - deployment: PROD_Web_USACS
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: saas
+        variables:
+          - name: ArtifactName
+            value: LogixStaffingApplication
+          - name: Environment
+            value: prod
+          - name: SiteName
+            value: MyLogixStaffingUSACS
+          - name: TargetFolder
+            value: D:\TFS\myLogixStaffingUSACS
+          - name: WebAppPoolName
+            value: MyLogixStaffingUSACS
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+      - deployment: PROD_App_USACS
+        dependsOn: PROD_Web_USACS
+        variables:
+          - name: ArtifactName
+            value: LogixStaffingApplication
+          - name: Environment
+            value: prod
+          - name: SiteName
+            value: MyLogixStaffingUSACS
+          - name: TargetFolder
+            value: D:\TFS\myLogixStaffingUSACS
+          - name: WebAppPoolName
+            value: MyLogixStaffingUSACS
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD_NewServer_OKTA_APP
+    displayName: PROD_NewServer_OKTA_APP
+    dependsOn: PROD_NewServer_USACS_APP
+    variables:
+      - name: ArtifactName
+        value: LogixStaffingApplication
+      - name: Environment
+        value: prod
+      - name: SiteName
+        value: MyLogixStaffingUSACS
+      - name: TargetFolder
+        value: D:\TFS\myLogixStaffingUSACS
+      - name: WebAppPoolName
+        value: MyLogixStaffingUSACS
+    jobs:
+      - deployment: STF_PROD_WEB_USACS
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD_NewServer_API
+    displayName: PROD_NewServer_API
+    dependsOn: UAT_USACS_API
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        variables:
+          - name: ArtifactName
+            value: StaffingServices
+          - name: Environment
+            value: prod
+          - name: SiteName
+            value: LogixStaffing
+          - name: TargetFolder
+            value: D:\TFS\LogixStaffing
+          - name: WebAppPoolName
+            value: LogixStaffing
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: DAC_PACK_PROD_Deployment
+    displayName: DAC-PACK-SQL-PROD
+    dependsOn: Build_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDDSQL001
+    jobs:
+      - deployment: UAT
+        environment: UAT
+        variables:
+          - name: DBServer
+            value: BEDSQLLC02
+          - name: TargetFolder
+            value: M:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: staffing_Dacpac
+          - name: Dacpac_file
+            value: LogixStaffing.DB.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: LogixStaffing-PROD.publish.DB.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml

@@ -1,0 +1,41 @@
+trigger: none
+stages:
+  - stage: WaitForDBAValidation
+    displayName: DEV Wait for Validation DBA Validation
+    jobs:
+      - template: ../templates/DevwaitForValidation.yml
+  - stage: DBAScriptExecution
+    dependsOn: WaitForDBAValidation
+    displayName: DEV-UAT-DBAScriptExecution
+    pool:
+      name: DBA
+      demands:
+        - Agent.name -equals  BEDSQLBK001      
+    jobs:
+      - deployment: DEVUAT
+        environment: DEV-DBA
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DevDBAtemplate.yml
+
+  - stage: WaitForDBAValidationPROD
+    displayName: PROD Wait for Validation DBA Validation
+    jobs:
+      - template: ../templates/ProdwaitForValidation.yml
+  - stage: DBAScriptExecutionPROD
+    dependsOn: WaitForDBAValidationPROD
+    displayName: PROD-DBAScriptExecution
+    pool:
+      name: DBA
+      demands:
+        - Agent.name -equals  BEDSQLBK001      
+    jobs:
+      - deployment: PROD
+        environment: PROD-DBA
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/PRODDBAtemplate.yml

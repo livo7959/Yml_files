@@ -1,0 +1,73 @@
+# SOS stands for Shift Optimization Service, a separate website that uses the 3rd party application
+# Gurobi: https://www.gurobi.com/
+
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: api_directory
+    value: platform/API/ApplicationServices
+  - name: api_sln
+    value: Shift Optimization Service/StaffingSOService.sln
+  - name: project_name
+    value: LogixStaffing-SOS
+  - name: artifactname_service
+    value: StaffingSOService
+stages:
+  - stage: Build
+    displayName: Staffing-SOS
+    pool:
+      name: Build
+    jobs:
+      - job: Staffing_SOS
+        steps:
+          - checkout: self
+            path: s/LogixStaffing
+            clean: true
+          - template: ../templates/dotnetframework_48_build.yml
+  - stage: Dev
+    displayName: Dev
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    pool:
+      name: DEV
+      demands:
+        - DotNetFramework
+        - agent.name -equals BEDDTOOLS001
+    variables:
+      - group: StaffingSOS-DEV
+    jobs:
+      - deployment: Dev
+        environment: Dev
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact_dotnetcoreapp.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT_SOService_02
+        environment: UAT
+        pool:
+          name: UAT
+          demands:
+            - DotNetFramework
+            - agent.name -equals BEDUSAAS001
+        variables:
+          - group: StaffingSOS-UAT-SOS-SVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: DownloadArtifact_Staffing_SOS.yml

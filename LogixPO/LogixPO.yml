@@ -1,0 +1,155 @@
+trigger: none
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: BuildLogixPO
+        displayName: BuildLogixPO
+        steps:
+          - checkout: self
+            path: s/POSystem
+            clean: true
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Artifact'
+            inputs:
+              PathtoPublish: 'apps/php/POSystem'
+              ArtifactName: 'App'
+              publishLocation: 'Container'
+          - template: ../templates/remove_sonarqube.yml
+          - template: ../templates/delete_build_files.yml
+  - stage: DEV
+    dependsOn: Build
+    jobs:
+      - deployment: DEV
+        displayName: DEV
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: php
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: PowerShell@2
+                  displayName: 'STOP WEBSITE'
+                  inputs:
+                    targetType: inline
+                    script: |
+                      'stop-website -Name LogixPO'
+                - task: CopyFiles@2
+                  displayName: 'Preserve POs'
+                  inputs:
+                    SourceFolder: 'D:\TFS\LogixPOSystem\App\POs'
+                    Contents: '**'
+                    TargetFolder: 'D:\LogixPO_FileSystem\POs'
+                    overWrite: true
+                - task: CopyFiles@2
+                  displayName: 'Preserve attachments'
+                  inputs:
+                    SourceFolder: 'D:\TFS\LogixPOSystem\App\attachments'
+                    Contents: '**'
+                    TargetFolder: 'D:\LogixPO_FileSystem\attachments'
+                    overWrite: true
+                - task: PowerShell@2
+                  displayName: Clean Target Folder
+                  condition: succeededOrFailed()
+                  inputs:
+                    targetType: inline
+                    script: |
+                      Remove-Item 'D:\TFS\LogixPOSystem\App\*' -Recurse -Force
+                    continueOnError: true
+                - task: DownloadBuildArtifacts@0
+                  displayName: Deploy Codebase
+                  inputs:
+                    artifactName: app
+                    downloadType: single
+                    downloadPath: D:\TFS\LogixPOSystem
+                - task: PowerShell@2
+                  displayName: 'Remove/Rename Config'
+                  inputs:
+                    targetType: inline
+                    script: |
+                      Remove-Item –Path "D:\TFS\LogixPOSystem\App\config.php"
+                      Rename-Item -Path "D:\TFS\LogixPOSystem\App\config_dev.php" -NewName "config.php" -Force
+                - task: CopyFiles@2
+                  displayName: 'Copy POs & Attachments Folder'
+                  inputs:
+                    SourceFolder: 'D:\LogixPO_FileSystem'
+                    Contents: '**'
+                    TargetFolder: 'D:\TFS\LogixPOSystem\App'
+                    overWrite: true
+                - task: PowerShell@2
+                  displayName: 'START WEBSITE'
+                  inputs:
+                    targetType: inline
+                    script: |
+                      'start-website -Name LogixPO'
+  - stage: PROD
+    dependsOn: DEV
+    jobs:
+      - deployment: PROD
+        displayName: PROD
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: php
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: PowerShell@2
+                  displayName: 'STOP WEBSITE'
+                  inputs:
+                    targetType: inline
+                    script: |
+                      'stop-website -Name LogixPOSystem'
+                - task: CopyFiles@2
+                  displayName: 'Preserve POs'
+                  inputs:
+                    SourceFolder: 'D:\AzureDevOps\LogixPOSystem\app\POs'
+                    Contents: '**'
+                    TargetFolder: 'D:\LogixPO_FileSystem\POs'
+                    overWrite: true
+                - task: CopyFiles@2
+                  displayName: 'Preserve attachments'
+                  inputs:
+                    SourceFolder: 'D:\AzureDevOps\LogixPOSystem\app\attachments'
+                    Contents: '**'
+                    TargetFolder: 'D:\LogixPO_FileSystem\attachments'
+                    overWrite: true
+                - task: PowerShell@2
+                  displayName: Clean Target Folder
+                  condition: succeededOrFailed()
+                  inputs:
+                    targetType: inline
+                    script: |
+                      Remove-Item 'D:\AzureDevOps\LogixPOSystem\app\*' -Recurse -Force
+                    continueOnError: true
+                - task: DownloadBuildArtifacts@0
+                  displayName: Deploy Codebase
+                  inputs:
+                    artifactName: app
+                    downloadType: single
+                    downloadPath: D:\AzureDevOps\LogixPOSystem
+                - task: PowerShell@2
+                  displayName: 'Remove/Rename Config'
+                  inputs:
+                    targetType: inline
+                    script: |
+                      Remove-Item –Path "D:\AzureDevOps\LogixPOSystem\app\config.php"
+                      Rename-Item -Path "D:\AzureDevOps\LogixPOSystem\app\config_prod.php" -NewName "config.php" -Force
+                - task: CopyFiles@2
+                  displayName: 'Copy POs & Attachments Folder'
+                  inputs:
+                    SourceFolder: 'D:\LogixPO_FileSystem'
+                    Contents: '**'
+                    TargetFolder: 'D:\AzureDevOps\LogixPOSystem\app'
+                    overWrite: true
+                - task: PowerShell@2
+                  displayName: 'START WEBSITE'
+                  inputs:
+                    targetType: inline
+                    script: |
+                      'start-website -Name LogixPOSystem'

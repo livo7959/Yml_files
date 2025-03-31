@@ -1,0 +1,31 @@
+# waitForValidation.yml
+
+jobs:
+  - job: DisplayDeclearedValue
+    displayName: Display DBA Decleared Values
+    pool:
+      name: DBA
+      demands:
+        - Agent.name -equals  BEDSQLBK001
+    timeoutInMinutes: 5
+    steps:
+      - powershell: |
+          Write-Host "ScriptPath: $(ScriptPath)"
+          Write-Host "SpecifiedScripts: $(devuatspecifiedScripts)"
+          Write-Host "ServerName: $(devuatserverName)"
+          Write-Host "DatabaseName: $(DatabaseName)"
+          Write-Host "Sourcepath: $(devuatsourcepath)"
+        displayName: 'Display Values'
+  - job: waitForValidation
+    dependsOn: DisplayDeclearedValue
+    displayName: Wait for DBA approval
+    pool: server
+    timeoutInMinutes: 1440 # job times out in 1 days
+    steps:
+      - task: ManualValidation@0
+        timeoutInMinutes: 1440 # task times out in 1 day
+        inputs:
+          notifyUsers: |
+            [Software Engineering]\DBA-Reviewers
+          instructions: 'Please validate before build'
+          onTimeout: 'resume'

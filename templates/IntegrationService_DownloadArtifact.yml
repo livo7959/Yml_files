@@ -1,0 +1,19 @@
+steps:
+  - task: DeleteFiles@1
+    displayName: Clean Destination Folder
+    inputs:
+      SourceFolder: '$(TargetFolder)\$(ArtifactName)'
+      Contents: '/**'
+  - task: DownloadBuildArtifacts@0
+    inputs:
+      artifactName: $(ArtifactName)
+      downloadType: single
+      downloadPath: $(TargetFolder)
+    condition: and(variables['ArtifactName'], succeeded())
+  - task: FileTransform@1
+    inputs:
+      folderPath: '$(TargetFolder)\$(ArtifactName)'
+      enableXmlTransform: true
+      xmlTransformationRules: |
+        -transform **\App.$(Environment).config -xml **\$(Conversion).exe.config
+      condition: and(variables['Environment'], succeeded())

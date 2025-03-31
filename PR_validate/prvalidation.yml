@@ -1,0 +1,43 @@
+pr:
+  branches:
+    include:
+      - 'feature/*'
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: Build
+        steps:
+          - task: PowerShell@2
+            displayName: 'Branch Check'
+            inputs:
+              targetType: 'inline'
+              script: |
+                $sourceBranch = "$(System.PullRequest.SourceBranch)"
+                      $targetBranch = "$(System.PullRequest.TargetBranch)"
+
+                      # Define the master branch and feature branch patterns
+                      $masterBranchPattern = "refs/heads/master"
+                      $featureBranchPattern = "refs/heads/feature/*"
+
+                      # Function to check if a branch matches a pattern
+                      function BranchMatchesPattern {
+                          param (
+                              [string]$branch,
+                              [string]$pattern
+                          )
+                          return $branch -like $pattern
+                      }
+
+                      # Check if the source branch matches master pattern and the target branch matches feature pattern
+                      if (BranchMatchesPattern $sourceBranch $masterBranchPattern -and BranchMatchesPattern $targetBranch $featureBranchPattern) {
+                          Write-Error "
+                          =========================================================================================================
+                          Branch check failed.
+                          Illegal Pull Request from $sourceBranch into $targetBranch.
+                          ========================================================================================================="
+                      }
+          - template: ../templates/remove_sonarqube.yml
+          - template: ../templates/delete_build_files.yml

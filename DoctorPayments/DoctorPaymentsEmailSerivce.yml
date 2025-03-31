@@ -1,0 +1,92 @@
+trigger: none
+
+variables:
+  - name: release_branch_condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/release/')
+  - name: api_directory
+    value: platform/API/ApplicationServices/DoctorPaymentsServices/EmailService
+  - name: api_csproj_file
+    value: DPEmailService/DPEmailService.csproj
+  - name: test_csproj_file
+    value: DPEmailService.UnitTest/DPEmailService.UnitTest.csproj
+  - name: publish_apicsproj_file
+    value: DPEmailService/DPEmailService.csproj
+  - name: publish_path-api
+    value: EAPI
+  - name: container_path_api
+    value: EAPI/DPEmailService
+  - name: artifactname_api
+    value: DrPayEmailSvc
+  # - name: project_name
+  #   value:
+  - name: dotnet_version
+    value: 6.x
+stages:
+  - stage: Build
+    pool:
+      name: Build
+    variables:
+      value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+    jobs:
+      - job: Build
+        displayName: Build Email Svc
+        steps:
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.api_directory }}
+          - template: ../templates/dotnetframework_8_build.yml
+  - stage: DEV_EmailSvc
+    displayName: DEV_EmailSvc
+    condition: succeeded()
+    variables:
+      - group: DrPayEmailSvc-DEV
+    dependsOn: Build
+    jobs:
+      - deployment: DEV
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                # - task: PowerShell@2
+                #   displayName: 'STOP DoctorPaymentsEmailService'
+                #   inputs:
+                #     targetType: inline
+                #     script: |
+                #       'stop-service -Name "DoctorPaymentsEmailService"'
+                # - task: PowerShell@2
+                #   displayName: 'Pause'
+                #   inputs:
+                #     targetType: inline
+                #     script: |
+                #       'Start-Sleep -Second 10'
+                - task: DownloadBuildArtifacts@0
+                  inputs:
+                    artifactName: DrPayEmailSvc
+                    downloadType: single
+                    downloadPath: D:\AzureDevOps\DoctorPaymentsEmailService\Release
+                - task: ReplaceVariables@2
+                  displayName: 'Replace Variables'
+                  inputs:
+                    PathToFolder: '$(TargetFolder)\$(ArtifactName)'
+                    FilePattern: '*.json.token'
+                - task: PowerShell@2
+                  displayName: 'Delete/ Rename Config Files'
+                  inputs:
+                    targetType: inline
+                    script: |
+                      if (Test-Path "$(TargetFolder)\$(ArtifactName)\appsettings.json")
+                      {
+                      Remove-Item –path "$(TargetFolder)\$(ArtifactName)\appsettings.json"
+                      Move-Item -Path "$(TargetFolder)\$(ArtifactName)\appsettings.json.token" "$(TargetFolder)\$(ArtifactName)\appsettings.json" -Force
+                      }
+                # - task: PowerShell@2
+                #   displayName: 'Start DoctorPaymentsEmailService'
+                #   inputs:
+                #    targetType: inline
+                #    script: |
+                #      'start-service -Name "DoctorPaymentsEmailService"'

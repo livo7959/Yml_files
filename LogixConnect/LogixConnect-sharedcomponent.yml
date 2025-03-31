@@ -1,0 +1,135 @@
+trigger: none
+
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: angular_version
+    value: 18.x
+  - name: cli_working_directory
+    value: apps/Angular/projects
+  - name: package_working_directory
+    value: apps/Angular
+  - name: sonar_working_directory
+    value: apps/Angular/projects/logix-sharedcomponents/src
+  - name: build_project_name
+    value: sharedcomponents
+  - name: pubilsh_path
+    value: apps/Angular/dist/logix-sharedcomponents
+  - name: artifactname
+    value: info
+  - name: sonar_project_name
+    value: logix-sharedcomponents
+  # - name: build_testproject_name
+  #   value: logix-sharedcomponents
+  - name: code_coverage_path
+    value: apps/Angular/projects/logix-sharedcomponents
+  - name: Prebuild_Validation
+    value: prebuild-Logix-Sharedcomponent
+parameters:
+  - name: Build_env
+    type: string
+    default: DEV
+    values:
+      - DEV
+      - UAT
+      - PROD
+
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+
+    jobs:
+      - job: LogixRefunds
+        displayName: LogixRefunds
+        steps:
+          - checkout: self
+            path: s/LogixApplications
+          - template: ../templates/angular_build.yml
+            parameters:
+              Build_env: ${{ parameters.Build_env }}
+  - stage: DEV
+    displayName: DEV
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        displayName: DEV
+        variables:
+          - name: ArtifactName
+            value: info
+          - name: SiteName
+            value: devlhconnect.logixhealth.com
+          - name: TargetFolder
+            value: D:\TFSReleases\devlhconnect.logixhealth.com
+          - name: WebAppPoolName
+            value: LogixConnect
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  # - stage: UAT
+  #   displayName: UAT
+  #   dependsOn: Build
+  #   condition: ${{ variables.build_reason_condition }}
+  #   jobs:
+  #     - deployment: UAT
+  #       displayName: UAT
+  #       variables:
+  #         - name: ArtifactName
+  #           value: info
+  #         - name: SiteName
+  #           value: devlhconnect.logixhealth.com
+  #         - name: TargetFolder
+  #           value: D:\TFSReleases\devlhconnect.logixhealth.com
+  #         - name: WebAppPoolName
+  #           value: LogixConnect
+  #       environment:
+  #         name: UAT
+  #         resourceType: virtualMachine
+  #         tags: saas
+  #       strategy:
+  #         runOnce:
+  #           deploy:
+  #             steps:
+  #               - template: ../templates/DownloadArtifact.yml
+  # - stage: PROD
+  #   displayName: PROD
+  #   dependsOn: UAT
+  #   condition: ${{ variables.build_reason_condition }}
+  #   jobs:
+  #     - deployment: PROD
+  #       displayName: PROD
+  #       variables:
+  #         - name: ArtifactName
+  #           value: info
+  #         - name: SiteName
+  #           value: D:\TFSReleases\devlhconnect.logixhealth.com
+  #         - name: TargetFolder
+  #           value: D:\TFS\LogixRefunds
+  #         - name: WebAppPoolName
+  #           value: LogixConnect
+  #       environment:
+  #         name: PROD
+  #         resourceType: virtualMachine
+  #         tags: saas
+  #       strategy:
+  #         runOnce:
+  #           deploy:
+  #             steps:
+  #               - template: ../templates/DownloadArtifact.yml

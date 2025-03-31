@@ -1,0 +1,179 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+parameters:
+  - name: Environment
+    type: string
+    default: development
+    values:
+      - development
+      - uat
+      - prod
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: api_directory
+    value: platform/API/Microservices/CMS
+  - name: api_csproj_file
+    value: LogixHealth.Microservice.CMS/LogixHealth.Microservice.CMS.csproj
+  - name: project_name
+    value: Microservices-CMS
+  - name: test_csproj_file
+    value: LogixHealth.Microservice.CMS.MStest/LogixHealth.Microservice.CMS.MStest.csproj
+  - name: container_path_api
+    value: LogixHealth.Microservice.CMS
+  - name: dotnet_version
+    value: 8.x
+  - name: publish_apicsproj_file
+    value: LogixHealth.Microservice.CMS/LogixHealth.Microservice.CMS.csproj
+  - name: artifactname_api
+    value: CMS
+  - name: EF_sln
+    value: yes
+  - name: buildEnvironment
+    value: ${{ parameters.Environment }}
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: CMS
+        displayName: CMS
+        steps:
+          - checkout: self
+            clean: true
+            path: s/CMS
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.api_directory }}
+          - template: ../templates/dotnetframework_8_build.yml
+  - stage: EFDevDeployment
+    displayName: EF-Deploy-Dev
+    dependsOn: Build
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDSQLBK001
+    jobs:
+      - deployment: DEV
+        environment: DEV
+        variables:
+          - name: databaseName
+            value: logixoltp
+          - name: scriptPaths
+            value: E:\DB-solutions\Dev\Efbundle\script.sql
+          - name: servers
+            value: BEDDSQL001
+          - name: Download_Path
+            value: E:\DB-solutions\Dev
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/EF_SQl_Script_Execution.yml
+  - stage: DEV
+    displayName: DEV
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        variables:
+          - name: ArtifactName
+            value: CMS
+          - name: SiteName
+            value: cms.dmicrosvc.logixhealth.com
+          - name: TargetFolder
+            value: D:\TFS\MicroServices\Atomic\CMS\Release
+          - name: WebAppPoolName
+            value: cms.dmicrosvc.logixhealth.com
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    variables:
+      - name: ArtifactName
+        value: CMS
+      - name: SiteName
+        value: cms.umicrosvc.logixhealth.com
+      - name: TargetFolder
+        value: D:\TFS\MicroServices\Atomic\CMS\Release\
+      - name: WebAppPoolName
+        value: cms.umicrosvc.logixhealth.com
+    jobs:
+      - deployment: UAT
+        displayName: UAT
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: EFProdDeployment
+    displayName: EF-Deploy-Prod
+    dependsOn: Build
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDSQLBK001
+    jobs:
+      - deployment: Prod
+        environment: Prod
+        variables:
+          - name: databaseName
+            value: logixoltp
+          - name: scriptPaths
+            value: E:\DB-solutions\Prod\Efbundle\script.sql
+          - name: servers
+            value: BEDSQLLC02
+          - name: Download_Path
+            value: E:\DB-solutions\Prod
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/EF_SQl_Script_Execution.yml
+  - stage: PROD
+    displayName: PROD
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    variables:
+      - name: ArtifactName
+        value: CMS
+      - name: SiteName
+        value: cms.microsvc.logixhealth.com
+      - name: TargetFolder
+        value: D:\TFS\Services\Micro
+      - name: WebAppPoolName
+        value: cms.microsvc.logixhealth.com
+    jobs:
+      - deployment: PROD
+        displayName: PROD
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

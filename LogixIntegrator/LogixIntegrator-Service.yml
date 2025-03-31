@@ -1,0 +1,225 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: app_directory
+    value: apps/wpf/Integrator/LogixIntegrator-App-Service
+  - name: app_sln
+    value: LogixIntegrator.Service.sln
+  - name: project_name
+    value: LogixIntegrator-SVC
+  - name: container_path_app
+    value: _PublishedWebsites/Services
+  - name: artifactname_app
+    value: Services
+  - name: app_test_csproj
+    value: ServiceUnitTest/ServiceUnitTest.csproj
+  - name: App_Test_dll_path
+    value: ServiceUnitTest.dll
+  - name: checkout_path
+    value: Integrator
+  - name: dacpac_sqlproj_filepath
+    value: db_scripts/LogixIntegrator/LogixIntegrator DB/Integrator.sqlproj
+  - name: Dacpack_ArtifactName
+    value: Integrator_Dacpac
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: Integrator_Service
+        displayName: Integrator-Service
+        steps:
+          - checkout: self
+            clean: true
+            path: s/LogixIntegrator
+          - template: ../templates/dotnetframework_48_build.yml
+  - stage: Build_DAC_PACK
+    displayName: Build-DAC-PACK
+    dependsOn: [] # Run this stage immediately (instead of being dependant upon the previous step).
+    pool:
+      name: Build
+    jobs:
+      - job: Job_2
+        displayName: Agent job 2
+        steps:
+          - template: ../templates/Dacpac_build_template.yml
+  - stage: DACPKDeployment
+    displayName: DEV-DAC-PACK
+    dependsOn: Build_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDDSQL001
+    jobs:
+      - deployment: DEV
+        environment: DEV
+        variables:
+          - name: DBServer
+            value: BEDDSQL001
+          - name: TargetFolder
+            value: M:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: Integrator_Dacpac
+          - name: Dacpac_file
+            value: Integrator.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: Integrator.publish.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml
+  - stage: Dev
+    displayName: Dev
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    variables:
+      - name: ArtifactName
+        value: Services
+      - name: Environment
+        value: DEV
+      - name: SiteName
+        value: LogixIntegrator
+      - name: TargetFolder
+        value: D:\TFS\Release\LogixIntegrator\Release
+      - name: WebAppPoolName
+        value: LogixIntegrator
+    jobs:
+      - deployment: Dev
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: ICER-APP-DEV
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    variables:
+      - name: ArtifactName
+        value: Services
+      - name: Environment
+        value: UAT
+      - name: SiteName
+        value: LogixIntegrator
+      - name: TargetFolder
+        value: D:\TFS\Release\LogixIntegrator
+      - name: WebAppPoolName
+        value: LogixIntegrator
+    jobs:
+      - deployment: UAT_001
+        displayName: UAT-001
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: ICER-APP-UAT
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+      - deployment: UAT_002
+        displayName: UAT-002
+        dependsOn: UAT_001
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: ICER-APP-UAT-002
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UATDACPACDeployment
+    displayName: UAT-DAC-PACK
+    dependsOn: Build_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDDSQL001
+    jobs:
+      - deployment: UAT
+        environment: UAT
+        variables:
+          - name: DBServer
+            value: BEDUSQL001
+          - name: TargetFolder
+            value: M:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: Integrator_Dacpac
+          - name: Dacpac_file
+            value: Integrator.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: Integrator.publish.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml
+  - stage: PROD
+    displayName: PROD
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    variables:
+      - name: ArtifactName
+        value: Services
+      - name: Environment
+        value: Production
+      - name: SiteName
+        value: LogixIntegrator
+      - name: TargetFolder
+        value: D:\TFS\IntegratorServices
+      - name: WebAppPoolName
+        value: LogixIntegrator
+    jobs:
+      - deployment: PROD
+        displayName: PROD
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: integrator-PROD
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PRODDACPACDeployment
+    displayName: PROD-DAC-PACK
+    dependsOn: Build_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDDSQL001
+    jobs:
+      - deployment: PROD
+        environment: PROD
+        variables:
+          - name: DBServer
+            value: BEDPSQLSI01
+          - name: TargetFolder
+            value: M:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: Integrator_Dacpac
+          - name: Dacpac_file
+            value: Integrator.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: Integrator.publish.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml

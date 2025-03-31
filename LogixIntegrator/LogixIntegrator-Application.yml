@@ -1,0 +1,189 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: app_directory
+    value: apps/wpf/Integrator/LogixIntegrator-App-Service
+  - name: app_test_csproj
+    value: ConfigurationTests/ConfigurationTests.csproj
+  - name: app_Test_dll_path
+    value: ConfigurationTests.dll
+# parameters:
+#   - name: Env
+#     type: string
+#     default: 'DEV'
+#     values:
+#       - DEV
+#       - UAT
+#       - PROD
+#   - name: App_version
+#     type: string
+#     default: ''
+
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: Integrator_Application
+        steps:
+          - checkout: self
+            clean: true
+            path: s/LogixIntegrator
+          - task: NuGetCommand@2
+            displayName: 'Nuget Restore'
+            inputs:
+              command: restore
+              restoreSolution: '${{ variables.app_directory }}/LogixIntegrator.Application.sln'
+              feedsToUse: select
+          - task: MSBuild@1
+            displayName: Build $(project_name)  Test
+            inputs:
+              solution: '$(app_directory)/$(app_test_csproj)'
+              msbuildArguments: /p:OutDir="$(Build.ArtifactStagingDirectory)\\" /p:DeployDefaultTarget=WebPublish --warnaserror
+          - task: PowerShell@2
+            displayName: run vstest
+            inputs:
+              targetType: inline
+              pwsh: true
+              warningPreference: stop
+              script: |
+                & "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\Extensions\TestPlatform\vstest.console.exe" "$(Build.ArtifactStagingDirectory)\$(app_Test_dll_path)" /logger:trx /Collect:"Code Coverage"
+          - task: PowerShell@2
+            displayName: Convert .coverage to .coveragexml (1/2)
+            inputs:
+              targetType: inline
+              pwsh: true
+              warningPreference: stop
+              script: |
+                $coverageFile = Get-ChildItem -Path $(System.DefaultWorkingDirectory)\TestResults -Recurse -Filter *.coverage
+                & "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Team Tools\Dynamic Code Coverage Tools\CodeCoverage.exe" analyze /output:$(System.DefaultWorkingDirectory)\TestResults\coverage.coveragexml $coverageFile.FullName
+          - task: SonarQubePrepare@5
+            condition: and(${{ variables.SonarQube_Condition }}, succeeded())
+            inputs:
+              SonarQube: SonarQube New
+              projectKey: LogixIntegrator-App
+              projectName: LogixIntegrator-App
+              projectVersion: LogixIntegrator-master
+              extraProperties: |
+                sonar.cs.opencover.reportPaths=$(System.DefaultWorkingDirectory)\TestResults\coverage.coveragexml
+
+          - task: MSBuild@1
+            displayName: 'Build LogixIntegrator-App-Service Solution'
+            inputs:
+              solution: '${{ variables.app_directory }}/LogixIntegrator.Application.sln'
+              configuration: $(Build_Env)
+              msbuildArguments: '/p:OutDir="$(Build.ArtifactStagingDirectory)\\" /t:Publish /p:Configuration=Release /p:BuildEnvironment=$(Build_Env) /p:ApplicationVersion=$(applicationVersion) --warnaserror'
+          - task: PowerShell@2
+            displayName: 'Copy publish file task'
+            inputs:
+              targetType: 'inline'
+              script: |
+                $sourcePath = "$(Build.SourcesDirectory)\apps\wpf\Integrator\LogixIntegrator-App-Service\Configuration\PublishTemplate"
+                      $destinationPath1 = '$(ArtifactStagingDirectory)'
+
+                      # Adjust path to the PowerShell script file
+                      $scriptPath = "$(Build.SourcesDirectory)\ci_cd\utilities\copy_and_replace.ps1"
+
+                      # Call the PowerShell script with parameters
+                      & $scriptPath -SourcePath $sourcePath -DestinationPath1 $destinationPath1 `
+                                    -BuildEnvironment $(Build_Env) `
+                                    -ApplicationVersion $(applicationVersion)
+          - task: SonarQubeAnalyze@5
+            condition: and(${{ variables.SonarQube_Condition }}, succeeded())
+
+          - task: SonarQubePublish@5
+            condition: and(${{ variables.SonarQube_Condition }}, succeeded())
+            continueOnError: true
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Artifact'
+            inputs:
+              PathtoPublish: '$(Build.ArtifactStagingDirectory)\$(Build_Env)'
+              ArtifactName: 'Application'
+              publishLocation: 'Container'
+          - template: ../templates/remove_sonarqube.yml
+          - template: ../templates/delete_build_files.yml
+  - stage: Dev
+    displayName: Dev
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    variables:
+      - name: ArtifactName
+        value: Application
+      - name: SiteName
+        value: LogixIntegrator
+      - name: TargetFolder
+        value: D:\TFS\Release\LogixIntegrator
+      - name: WebAppPoolName
+        value: LogixIntegrator
+    jobs:
+      - deployment: Dev
+        displayName: Dev
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: ICER-WEB-DEV
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    variables:
+      - name: ArtifactName
+        value: Application
+      - name: SiteName
+        value: LogixIntegrator
+      - name: TargetFolder
+        value: D:\TFS\Release\LogixIntegrator
+      - name: WebAppPoolName
+        value: LogixIntegrator
+    jobs:
+      - deployment: UAT
+        displayName: UAT
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: ICER-WEB-UAT
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD
+    displayName: PROD
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    variables:
+      - name: ArtifactName
+        value: Application
+      - name: SiteName
+        value: LogixIntegrator
+      - name: TargetFolder
+        value: D:\TFS\Release\LogixIntegrator
+      - name: WebAppPoolName
+        value: LogixIntegrator
+    jobs:
+      - deployment: PROD
+        displayName: PROD
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: integrator-PROD
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

@@ -1,0 +1,57 @@
+steps:
+  - task: PowerShell@2
+    displayName: 'STOP-SITE'
+    inputs:
+      targetType: inline
+      script: |
+        'stop-website -Name $(SiteName)'
+  - task: PowerShell@2
+    displayName: 'Stop Application Pool'
+    inputs:
+      targetType: inline
+      script: |
+        if((Get-WebAppPoolState -Name $(WebAppPoolName)).Value -ne 'Stopped')
+        {
+            Stop-WebAppPool -Name $(WebAppPoolName)
+        }
+  - task: DownloadBuildArtifacts@0
+    displayName: 'Download Artifact'
+    inputs:
+      artifactName: '$(ArtifactName)'
+      buildType: 'current'
+      downloadPath: '$(TargetFolder)'
+  - task: ReplaceVariables@2
+    displayName: 'Replace Variables'
+    inputs:
+      PathToFolder: '$(TargetFolder)\$(ArtifactName)'
+      FilePattern: '*.config.token'
+  - task: PowerShell@2
+    displayName: 'Delete/Move Config File'
+    inputs:
+      targetType: inline
+      script: |
+        if (Test-Path "$(TargetFolder)\$(ArtifactName)\bin\web.config")
+        {
+        Remove-Item –path "$(TargetFolder)\$(ArtifactName)\bin\web.config"
+        Move-Item -Path "$(TargetFolder)\bin\web.config.token" "$(TargetFolder)\$(ArtifactName)\web.config" -Force
+        }
+        if(Test-Path "$(TargetFolder)\$(ArtifactName)\web.config")
+        {
+        Remove-Item –path "$(TargetFolder)\$(ArtifactName)\web.config"
+        Rename-Item -Path "$(TargetFolder)\$(ArtifactName)\web.config.token" -NewName web.config -Force
+        }
+  - task: PowerShell@2
+    displayName: 'Start Application Pool'
+    inputs:
+      targetType: inline
+      script: |
+        if((Get-WebAppPoolState -Name $(WebAppPoolName)).Value -ne 'Started')
+          {
+            Start-WebAppPool -Name $(WebAppPoolName)
+          }
+  - task: PowerShell@2
+    displayName: 'START-SITE'
+    inputs:
+      targetType: inline
+      script: |
+        'start-website -Name $(SiteName)'

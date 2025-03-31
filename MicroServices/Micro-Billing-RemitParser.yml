@@ -1,0 +1,115 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: api_directory
+    value: platform/API/Microservices/Remit
+  - name: api_csproj_file
+    value: LogixHealth.Microservice.Billing.RemitParser/LogixHealth.Microservice.Billing.RemitParser.csproj
+  - name: project_name
+    value: Micro-Billing-Remit
+  - name: container_path_api
+    value: LogixHealth.Microservice.Billing.RemitParser
+  - name: publish_apicsproj_file
+    value: LogixHealth.Microservice.Billing.RemitParser/LogixHealth.Microservice.Billing.RemitParser.csproj
+  - name: artifactname_api
+    value: Billing_Remit
+  - name: dotnet_version
+    value: 8.x
+  - name: test_csproj_file
+    value: LogixHealth.Microservice.Billing.RemitParser.MSTest/LogixHealth.Microservice.Billing.RemitParser.MSTest.csproj
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: Build
+        steps:
+          - checkout: self
+            clean: true
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.api_directory }}
+          - template: ../templates/dotnetframework_8_build.yml
+  - stage: DEV
+    displayName: DEV
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        variables:
+          - name: ArtifactName
+            value: Billing_Remit
+          - name: SiteName
+            value: remit.dmicrosvc.logixhealth.com
+          - name: TargetFolder
+            value: D:\AzureDevOps\APIServices\Microservice\Remit\Release
+          - name: WebAppPoolName
+            value: remit.dmicrosvc.logixhealth.com
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        variables:
+          - name: ArtifactName
+            value: Billing_Remit
+          - name: SiteName
+            value: remit.umicrosvc.logixhealth.com
+          - name: TargetFolder
+            value: D:\AzureDevOps\APIServices\Microservice\Remit\Release
+          - name: WebAppPoolName
+            value: remit.umicrosvc.logixhealth.com
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD
+    displayName: PROD
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        variables:
+          - name: ArtifactName
+            value: Billing_Remit
+          - name: SiteName
+            value: remit.microsvc.logixhealth.com
+          - name: TargetFolder
+            value: D:\AzureDevOps\APIServices\Microservice\Remit\Release
+          - name: WebAppPoolName
+            value: remit.microsvc.logixhealth.com
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

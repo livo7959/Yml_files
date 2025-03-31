@@ -1,0 +1,21 @@
+steps:
+  - task: CopyFiles@2
+    inputs:
+      SourceFolder: '$(Build.SourcesDirectory)/$(prodsourcepath)'
+      contents: '**'
+      targetFolder: '$(scriptPath)'
+  - task: PowerShell@2
+    displayName: Execute DBA script
+    inputs:
+      targetType: filePath
+      filePath: ./ci_cd/utilities/DBAscriptexecution.ps1
+      arguments: '-ScriptPath "$(ScriptPath)" -SpecifiedScripts "$(prodspecifiedScripts)" -ServerName "$(prodserverName)" -DatabaseName "$(DatabaseName)"'
+  - task: PowerShell@2
+    displayName: Delete Build Files
+    condition: succeededOrFailed()
+    inputs:
+      targetType: inline
+      script: |
+        Remove-Item $(Build.SourcesDirectory)\* -Recurse -Force
+        Remove-Item $(Build.ArtifactStagingDirectory)\* -Recurse -Force
+        Remove-Item $(scriptPath)\* -Recurse -Force

@@ -1,0 +1,73 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: ne(variables['Build.Reason'], 'Schedule')
+  - name: api_directory
+    value: platform/Libraries/commonLibrary480
+  - name: feedName
+    value: LogixLibrary
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: Build
+        displayName: Build
+        steps:
+          - checkout: self
+            path: s/EL
+          - template: ../../../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.api_directory }}
+          - task: DotNetCoreCLI@2
+            displayName: 'Nuget restore OneG.CommonLibrary'
+            inputs:
+              command: restore
+              projects: '${{ variables.api_directory }}/LogixHealth.OneG.CommonLibrary/LogixHealth.OneG.CommonLibrary.csproj'
+              feedsToUse: select
+          - task: SonarQubePrepare@5
+            condition: ${{ variables.SonarQube_Condition }}
+            inputs:
+              SonarQube: SonarQube New
+              projectKey: OneG.CommonLibrary
+              projectName: OneG.CommonLibrary
+              projectVersion: OneG.CommonLibrary
+          - task: DotNetCoreCLI@2
+            inputs:
+              command: 'build'
+              projects: '${{ variables.api_directory }}/LogixHealth.OneG.CommonLibrary/LogixHealth.OneG.CommonLibrary.csproj'
+              arguments: '--warnaserror'
+          - task: SonarQubeAnalyze@5
+            condition: ${{ variables.SonarQube_Condition }}
+          - task: SonarQubePublish@5
+            condition: ${{ variables.SonarQube_Condition }}
+          - task: sonar-buildbreaker@8
+            inputs:
+              SonarQube: SonarQube New
+            continueOnError: true
+
+          - task: DotNetCoreCLI@2
+            displayName: 'Pack Project OneG.CommonLibrary'
+            inputs:
+              command: 'pack'
+              packagesToPack: '${{ variables.api_directory }}/**/*.csproj'
+              versioningScheme: 'byEnvVar'
+              versionEnvVar: 'AssemblyVersion'
+          - task: DotNetCoreCLI@2
+            inputs:
+              command: 'push'
+              packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'
+              nuGetFeedType: 'internal'
+              publishVstsFeed: '$(feedName)'
+          - template: ../../../templates/remove_sonarqube.yml
+          - template: ../../../templates/delete_build_files.yml

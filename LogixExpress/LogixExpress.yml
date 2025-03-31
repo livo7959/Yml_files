@@ -1,0 +1,519 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: autoproject
+    value: ExpressPlaywright
+  - name: dtesturl
+    value: 'https://dexpress.logixhealth.com/LogixExpressApplication'
+  - name: qtesturl
+    value: 'https://qexpress.logixhealth.com/LogixExpressApplication'
+  - name: utesturl
+    value: 'https://uexpress.logixhealth.com/LogixExpressApplication'
+  - name: ptesturl
+    value: 'https://express.logixhealth.com/LogixExpressApplication'
+  - name: RegressionSuite
+    value: 'regression.xml'
+  - name: SanitySuite
+    value: 'sanity.xml'
+  - name: checkout_path
+    value: LogixExpress
+  - name: dacpac_sqlproj_filepath
+    value: db_scripts/LogixExpress/LogixExpressDB/LogixExpressDB.sqlproj
+  - name: Dacpack_ArtifactName
+    value: Express_Dacpac
+stages:
+  - stage: Build_APP
+    displayName: Build_APP
+    pool:
+      name: Build
+    variables:
+      - name: app_directory
+        value: apps/mvc/LogixExpressApplication
+      - name: restore_app_sln
+        value: LAW.sln
+      - name: app_csproj_file
+        value: LAWApplication/LAWApplication.csproj
+      - name: project_name
+        value: LogixExpressApp
+      - name: container_path_app
+        value: _PublishedWebsites/LAWApplication
+      - name: artifactname_app
+        value: LogixExpressApplication
+
+    jobs:
+      - job: LogixExpressApp
+        displayName: LogixExpressApp
+        steps:
+          - checkout: self
+            clean: true
+            path: s/LogixExpressApp
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.app_directory }}
+          - template: ../templates/dotnetframework_48_build.yml
+  - stage: Build_API
+    displayName: Build_API
+    dependsOn: [] # Run this stage immediately (instead of being dependant upon the previous step).
+    pool:
+      name: Build
+    variables:
+      - name: app_directory
+        value: apps/mvc/LogixExpressApplication
+      - name: restore_app_sln
+        value: LAW.sln
+      - name: api_directory
+        value: platform/API/ApplicationServices/LogixExpressServices
+      - name: api_csproj_file
+        value: Services/Services.csproj
+      - name: csvc_csproj_file
+        value: LAWCommonServices/LAWCommonServices.csproj
+      - name: project_name
+        value: LogixExpressApi
+      - name: container_path_service
+        value: _PublishedWebsites/Services
+      - name: artifactname_service
+        value: LogixExpressServices
+      - name: container_path_commonService
+        value: _PublishedWebsites/LAWCommonServices
+      - name: artifactname_commonService
+        value: LogixExpressCommonServices
+      - name: test_csproj
+        value: UnitTest/ExpressUnitTest/ExpressUnitTest.csproj
+      - name: Test_dll_path
+        value: ExpressUnitTest.dll
+    jobs:
+      - job: LogixExpressApi
+        displayName: LogixExpressApi
+        steps:
+          - checkout: self
+            clean: true
+            path: s/LogixExpressApi
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.api_directory }}
+          - template: ../templates/dotnetframework_48_build.yml
+  - stage: Build_DAC_PACK
+    displayName: Build-DAC-PACK
+    dependsOn: [] # Run this stage immediately (instead of being dependant upon the previous step).
+    pool:
+      name: Build
+    jobs:
+      - job: Build_DAC_PACK
+        displayName: Build-DAC-PACK
+        steps:
+          - template: ../templates/Dacpac_build_template.yml
+  - stage: DEV_DACPKDeployment
+    displayName: DEV_DAC_PACK
+    dependsOn: Build_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDDSQL001
+    jobs:
+      - deployment: DEV
+        environment: DEV
+        variables:
+          - name: DBServer
+            value: BEDDSQL001
+          - name: TargetFolder
+            value: M:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: Express_Dacpac
+          - name: Dacpac_file
+            value: LogixExpressDB.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: LogixExpress.publish.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml
+  - stage: DEV_APP
+    displayName: DEV_APP
+    dependsOn: Build_APP
+    jobs:
+      - deployment: DEV
+        displayName: DEV
+        variables:
+          - name: ArtifactName
+            value: LogixExpressApplication
+          - name: Environment
+            value: DEV
+          - name: SiteName
+            value: LogixExpress
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixExpress
+          - name: WebAppPoolName
+            value: LogixExpress
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: ICER-WEB-DEV
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: DEV_API
+    displayName: DEV_API
+    dependsOn: Build_API
+    jobs:
+      - deployment: DEV_SVC
+        displayName: DEV_SVC
+        variables:
+          - name: ArtifactName
+            value: LogixExpressServices
+          - name: Environment
+            value: DEV
+          - name: SiteName
+            value: LogixExpress
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixExpress
+          - name: WebAppPoolName
+            value: LogixExpress
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: ICER-APP-DEV
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+      - deployment: DEV_CSVC
+        displayName: DEV_CSVC
+        dependsOn: DEV_SVC
+        variables:
+          - name: ArtifactName
+            value: LogixExpressCommonServices
+          - name: Environment
+            value: DEV
+          - name: SiteName
+            value: LogixExpress
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixExpress
+          - name: WebAppPoolName
+            value: LogixExpress
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: ICER-APP-DEV
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT_APP
+    displayName: UAT_APP
+    dependsOn: Build_APP
+    jobs:
+      - deployment: UAT
+        displayName: UAT
+        variables:
+          - name: ArtifactName
+            value: LogixExpressApplication
+          - name: Environment
+            value: UAT
+          - name: SiteName
+            value: LogixExpress
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixExpress
+          - name: WebAppPoolName
+            value: LogixExpress
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: ICER-WEB-UAT
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT_API
+    displayName: UAT_API
+    dependsOn: Build_API
+    jobs:
+      - deployment: UAT_SVC
+        displayName: UAT_SVC
+        variables:
+          - name: ArtifactName
+            value: LogixExpressServices
+          - name: Environment
+            value: UAT
+          - name: SiteName
+            value: LogixExpress
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixExpress
+          - name: WebAppPoolName
+            value: LogixExpress
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: ICER-APP-UAT
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+      - deployment: UAT_CSVC
+        displayName: UAT_CSVC
+        dependsOn: UAT_SVC
+        variables:
+          - name: ArtifactName
+            value: LogixExpressCommonServices
+          - name: Environment
+            value: UAT
+          - name: SiteName
+            value: LogixExpress
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixExpress
+          - name: WebAppPoolName
+            value: LogixExpress
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: ICER-APP-UAT
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT_DACPKDeployment
+    displayName: UAT-DAC-PACK
+    dependsOn: Build_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDDSQL001
+    jobs:
+      - deployment: UAT
+        environment: UAT
+        variables:
+          - name: DBServer
+            value: BEDUSQL001
+          - name: TargetFolder
+            value: M:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: Express_Dacpac
+          - name: Dacpac_file
+            value: LogixExpressDB.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: LogixExpress.publish.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml
+  - stage: TRAINING_APP
+    displayName: TRAINING_APP
+    dependsOn: UAT_APP
+    jobs:
+      - deployment: TRAINING
+        displayName: TRAINING
+        variables:
+          - name: ArtifactName
+            value: LogixExpressApplication
+          - name: Environment
+            value: Training
+          - name: SiteName
+            value: LogixExpress
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixExpress
+          - name: WebAppPoolName
+            value: LogixExpress
+        environment:
+          name: TRAINING
+          resourceType: virtualMachine
+          tags: TWEBICER
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: TRAINING_API
+    displayName: TRAINING_API
+    dependsOn: UAT_API
+    jobs:
+      - deployment: TRAINING_SVC
+        displayName: TRAINING_SVC
+        variables:
+          - name: ArtifactName
+            value: LogixExpressServices
+          - name: Environment
+            value: Training
+          - name: SiteName
+            value: LogixExpress
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixExpress
+          - name: WebAppPoolName
+            value: LogixExpress
+        environment:
+          name: TRAINING
+          resourceType: virtualMachine
+          tags: TAPPICER
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+      - deployment: TRAINING_CSVC
+        displayName: TRAINING_CSVC
+        dependsOn: TRAINING_SVC
+        variables:
+          - name: ArtifactName
+            value: LogixExpressCommonServices
+          - name: Environment
+            value: Training
+          - name: SiteName
+            value: LogixExpress
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixExpress
+          - name: WebAppPoolName
+            value: LogixExpress
+        environment:
+          name: TRAINING
+          resourceType: virtualMachine
+          tags: TAPPICER
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: TRAINING_DACPKDeployment
+    displayName: TRAINING-DAC-PACK
+    dependsOn: Build_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDDSQL001
+    jobs:
+      - deployment: TRAINING
+        environment: TRAINING
+        variables:
+          - name: DBServer
+            value: BEDTSQL001
+          - name: TargetFolder
+            value: M:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: Express_Dacpac
+          - name: Dacpac_file
+            value: LogixExpressDB.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: LogixExpress.publish.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml  
+  - stage: PROD_APP
+    displayName: PROD_APP
+    dependsOn: UAT_APP
+    jobs:
+      - deployment: PROD
+        displayName: PROD
+        variables:
+          - name: ArtifactName
+            value: LogixExpressApplication
+          - name: Environment
+            value: Production
+          - name: SiteName
+            value: LogixExpress
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixExpress
+          - name: WebAppPoolName
+            value: LogixExpress
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: PWEBICER
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD_API
+    displayName: PROD_API
+    dependsOn: UAT_API
+    jobs:
+      - deployment: PROD_SVC
+        displayName: PROD_SVC
+        variables:
+          - name: ArtifactName
+            value: LogixExpressServices
+          - name: Environment
+            value: Production
+          - name: SiteName
+            value: LogixExpress
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixExpress
+          - name: WebAppPoolName
+            value: LogixExpress
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: PAPPICER
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+      - deployment: PROD_CSVC
+        displayName: PROD_CSVC
+        dependsOn: PROD_SVC
+        variables:
+          - name: ArtifactName
+            value: LogixExpressCommonServices
+          - name: Environment
+            value: Production
+          - name: SiteName
+            value: LogixExpress
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixExpress
+          - name: WebAppPoolName
+            value: LogixExpress
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: PAPPICER
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD_DACPKDeployment
+    displayName: PROD-DAC-PACK
+    dependsOn: Build_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDDSQL001
+    jobs:
+      - deployment: PROD
+        environment: PROD
+        variables:
+          - name: DBServer
+            value: BEDPSQLSI01
+          - name: TargetFolder
+            value: M:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: Express_Dacpac
+          - name: Dacpac_file
+            value: LogixExpressDB.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: LogixExpress.publish.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml

@@ -1,0 +1,146 @@
+parameters:
+  - name: environmentName
+    displayName: "Environment Name"
+    type: string
+    default: "DEV"
+  - name: tag
+    displayName: "Environment Tag"
+    type: string
+    default: ""
+  - name: appPoolName
+    displayName: "Application Pool Name"
+    type: string
+    default: ""
+  - name: siteName
+    displayName: "Website Name"
+    type: string
+    default: ""
+
+stages:
+- stage: validation_for_ApplicationPoolStop
+  jobs:
+    - job: waitForValidation
+      displayName: Wait for external validation
+      pool: server
+      steps:
+        - task: ManualValidation@0
+          timeoutInMinutes: 180
+          inputs:
+            notifyUsers: '[LogixHealth]\DevOps Team'
+            instructions: 'Please approve'
+
+- stage: ApppoolStop
+  dependsOn: validation_for_ApplicationPoolStop
+  jobs: 
+    - deployment: IISAppPool
+      displayName: IIS-App-pool stop
+      environment:
+        name: ${{ parameters.environmentName }}
+        resourceType: virtualMachine
+        tags: ${{ parameters.tag }}
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+              - task: PowerShell@2
+                displayName: 'Stop Apppool'
+                inputs:
+                  targetType: 'inline'
+                  script: |
+                    Stop-WebAppPool -Name "${{ parameters.appPoolName }}"
+
+- stage: validation_for_WebsiteStop
+  jobs:
+    - job: waitForValidation
+      displayName: Wait for external validation
+      pool: server
+      steps:
+        - task: ManualValidation@0
+          timeoutInMinutes: 180
+          inputs:
+            notifyUsers: '[LogixHealth]\DevOps Team'
+            instructions: 'Please approve'
+
+- stage: WebsiteStop
+  dependsOn: validation_for_WebsiteStop
+  jobs:
+    - deployment: IISWebsite
+      displayName: IIS-Website stop
+      environment:
+        name: ${{ parameters.environmentName }}
+        resourceType: virtualMachine
+        tags: ${{ parameters.tag }}
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+              - task: PowerShell@2
+                displayName: 'Stop Website'
+                inputs:
+                  targetType: 'inline'
+                  script: |
+                    Stop-Website -Name "${{ parameters.siteName }}"
+
+- stage: validation_for_ApplicationPoolStart
+  jobs:
+    - job: waitForValidation
+      displayName: Wait for external validation
+      pool: server
+      steps:
+        - task: ManualValidation@0
+          timeoutInMinutes: 180
+          inputs:
+            notifyUsers: '[LogixHealth]\DevOps Team'
+            instructions: 'Please approve'
+
+- stage: ApppoolStart
+  dependsOn: validation_for_ApplicationPoolStart 
+  jobs: 
+    - deployment: IISAppPool
+      displayName: IIS-App-pool start
+      environment:
+        name: ${{ parameters.environmentName }}
+        resourceType: virtualMachine
+        tags: ${{ parameters.tag }}
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+              - task: PowerShell@2
+                displayName: 'Start Apppool'
+                inputs:
+                  targetType: 'inline'
+                  script: |
+                    Start-WebAppPool -Name "${{ parameters.appPoolName }}"
+
+- stage: validation_for_WebsiteStart
+  jobs:
+    - job: waitForValidation
+      displayName: Wait for external validation
+      pool: server
+      steps:
+        - task: ManualValidation@0
+          timeoutInMinutes: 180
+          inputs:
+            notifyUsers: '[LogixHealth]\DevOps Team'
+            instructions: 'Please approve'
+
+- stage: Websitestart
+  dependsOn: validation_for_WebsiteStart
+  jobs: 
+    - deployment: IISWebsite
+      displayName: IIS-Website start
+      environment:
+        name: ${{ parameters.environmentName }}
+        resourceType: virtualMachine
+        tags: ${{ parameters.tag }}
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+              - task: PowerShell@2
+                displayName: 'Start Website'
+                inputs:
+                  targetType: 'inline'
+                  script: |
+                    Start-Website -Name "${{ parameters.siteName }}"

@@ -1,0 +1,75 @@
+trigger: none
+
+variables:
+  release_branch_condition: contains(variables['Build.SourceBranch'], 'refs/heads/release/')
+
+stages:
+  - stage: Build
+    pool:
+      name: Build
+    jobs:
+      - job: Build
+        displayName: Build
+        steps:
+          - checkout: self
+            clean: true
+          - task: PublishBuildArtifacts@1
+            displayName: Publish Artifact LogixUX Code Base
+            inputs:
+              PathtoPublish: platform/CDN/LogixUX
+              ArtifactName: LogixUX
+              publishLocation: Container
+          - template: ../../../templates/delete_build_files.yml
+  - stage: Dev
+    displayName: Dev
+    dependsOn: Build
+    jobs:
+      - deployment: LogixScripts
+        displayName: LogixScripts Dev
+        variables:
+          - group: LogixUX-CDN-Dev
+        environment:
+          name: Dev
+          resourceType: virtualMachine
+          tags: logix_ux_cdn
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: logix_ux_cdn_deploy.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.release_branch_condition }}
+    jobs:
+      - deployment: LogixScripts
+        displayName: LogixScripts UAT
+        variables:
+          - group: LogixUX-CDN-UAT
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: logix_ux_cdn
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: logix_ux_cdn_deploy.yml
+  - stage: Prod
+    displayName: Prod
+    dependsOn: UAT
+    condition: ${{ variables.release_branch_condition }}
+    jobs:
+      - deployment: LogixScripts
+        displayName: LogixScripts Prod
+        variables:
+          - group: LogixUX-CDN-Prod
+        environment:
+          name: Prod
+          resourceType: virtualMachine
+          tags: logix_ux_cdn
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: logix_ux_cdn_deploy.yml

@@ -1,0 +1,47 @@
+trigger: none
+
+variables:
+  release_branch_condition: contains(variables['Build.SourceBranch'], 'refs/heads/release/')
+
+stages:
+  - stage: Build
+    pool:
+      name: Build
+    jobs:
+      - job: Build
+        displayName: Build
+        steps:
+          - checkout: self
+            clean: true
+          - task: PublishBuildArtifacts@1
+            displayName: Publish Artifact LogixUX Code Base
+            inputs:
+              PathtoPublish: apps/ui
+              ArtifactName: LogixReview
+              publishLocation: Container
+          - template: ../../../templates/delete_build_files.yml
+  - stage: Dev
+    displayName: Dev
+    dependsOn: Build
+    jobs:
+      - deployment: LogixReview_Dev
+        displayName: LogixReview Dev
+        environment:
+          name: Dev
+          resourceType: virtualMachine
+          tags: logix_ux_cdn
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: PowerShell@2
+                  displayName: Clean Target Folder
+                  inputs:
+                    targetType: inline
+                    pwsh: true
+                    script: Remove-Item D:\AzureDevOps\LogixReview\Release\* -Recurse -Force
+                - task: DownloadBuildArtifacts@0
+                  inputs:
+                    artifactName: LogixReview
+                    downloadType: single
+                    downloadPath: D:\AzureDevOps\LogixReview\Release

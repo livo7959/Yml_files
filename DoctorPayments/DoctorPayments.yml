@@ -1,0 +1,326 @@
+trigger: none
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: release_branch_condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/release/')
+  - name: dotnet_version
+    value: 8.x
+  - name: checkout_path
+    value: DoctorPayments
+  - name: dacpac_sqlproj_filepath
+    value: db_scripts/DoctorPayments_scripts/DB Project/DoctorPayments/DoctorPayments.sqlproj
+stages:
+  - stage: Build_APP
+    displayName: Build_APP
+    pool:
+      name: Build
+    variables:
+      - name: app_directory
+        value: apps/mvc/DoctorPayments
+      - name: app_csproj_file
+        value: DoctorPayments.csproj
+      - name: project_name
+        value: DoctorPaymentsApp
+      - name: publish_appcsproj_file
+        value: DoctorPayments.csproj
+      - name: publish_path_app
+        value: APP
+      - name: container_path_app
+        value: APP/DoctorPayments
+      - name: artifactname_app
+        value: DoctorPayments
+    jobs:
+      - job: DoctorPaymentsApp
+        displayName: DoctorPaymentsApp
+        steps:
+          - checkout: self
+            path: s/DoctorPaymentsApp
+            clean: true
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.app_directory }}
+          - template: ../templates/dotnetframework_8_build.yml
+  - stage: Build_API
+    displayName: Build_API
+    dependsOn: [] # Run this stage immediately (instead of being dependant upon the previous step).
+    pool:
+      name: Build
+    variables:
+      - name: api_directory
+        value: platform/API/ApplicationServices/DoctorPaymentsServices
+      - name: api_csproj_file
+        value: DP.NetCore/DP.NetCoreAPI/DoctorPayments.API.csproj
+      - name: project_name
+        value: DoctorPaymentsApi
+      - name: publish_apicsproj_file
+        value: DP.NetCore/DP.NetCoreAPI/DoctorPayments.API.csproj
+      - name: publish_path_api
+        value: API
+      - name: container_path_api
+        value: API/DP.NetCoreAPI
+      - name: artifactname_api
+        value: DoctorPaymentsAPI
+      - name: test_csproj_file
+        value: DP.NetCore/DoctorPayments.MSTest/DoctorPayments.MSTest.csproj
+      - name: integration_test_csrpoj_file
+        value: DP.NetCore/DoctorPayments.MSTest.Integration/DoctorPayments.MSTest.Integration.csproj
+    jobs:
+      - job: DoctorPaymentsApi
+        displayName: DoctorPaymentsApi
+        steps:
+          - checkout: self
+            path: s/DoctorPaymentsApi
+            clean: true
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.api_directory }}
+          - template: ../templates/dotnetframework_8_build.yml
+  - stage: DEV_APP
+    displayName: DEV_APP
+    dependsOn: Build_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        variables:
+          - name: ArtifactName
+            value: DoctorPayments
+          - name: SiteName
+            value: DoctorPayments
+          - name: WebAppPoolName
+            value: DoctorPayments
+          - name: TargetFolder
+            value: D:\AzureDevOps\DoctorPayments\Release
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: DEV_API
+    displayName: DEV_API
+    dependsOn: Build_API
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        variables:
+          - name: ArtifactName
+            value: DoctorPaymentsAPI
+          - name: SiteName
+            value: LogixServices
+          - name: WebAppPoolName
+            value: DoctorPayments
+          - name: TargetFolder
+            value: D:\AzureDevOps\LogixServices\DrPayAPI\Release
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: Build_DAC_PACK
+    displayName: Build_DAC_PACK
+    dependsOn: [] # Run this stage immediately (instead of being dependant upon the previous step).
+    pool:
+      name: Build
+    variables:
+      - name: Dacpack_ArtifactName
+        value: DoctorPayments_Dacpac
+      - name: Dacpac_file
+        value: DoctorPayments.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+      - name: xml_file
+        value: DoctorPayments.publish.xml # give file name for your xml file
+    jobs:
+      - job: Build_DAC_PACK
+        displayName: Build_DAC_PACK
+        steps:
+          - template: ../templates/Dacpac_build_template.yml
+  - stage: DEV_DAC_PACK
+    displayName: DEV_DAC_PACK
+    dependsOn: Build_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDDSQL001
+    jobs:
+      - deployment: DEV
+        environment: DEV
+        variables:
+          - name: DBServer
+            value: BEDDSQL001
+          - name: TargetFolder
+            value: M:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: DoctorPayments_Dacpac
+          - name: Dacpac_file
+            value: DoctorPayments.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: DoctorPayments.publish.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml
+  - stage: UAT_APP
+    displayName: UAT_APP
+    dependsOn: Build_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        variables:
+          - name: ArtifactName
+            value: DoctorPayments
+          - name: SiteName
+            value: DoctorPayments
+          - name: WebAppPoolName
+            value: DoctorPaymentsUI
+          - name: TargetFolder
+            value: D:\AzureDevOps\DoctorPayments\Release
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT_API
+    displayName: UAT_API
+    dependsOn: Build_API
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        variables:
+          - name: ArtifactName
+            value: DoctorPaymentsAPI
+          - name: SiteName
+            value: LogixServices
+          - name: WebAppPoolName
+            value: DoctorPayments
+          - name: TargetFolder
+            value: D:\AzureDevOps\LogixServices\DrPayAPI\Release
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT_DAC_PACK
+    displayName: UAT_DAC_PACK
+    dependsOn: Build_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDSQLBK001
+    jobs:
+      - deployment: UAT
+        environment: UAT
+        variables:
+          - name: DBServer
+            value: BEDUSQL001
+          - name: TargetFolder
+            value: H:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: DoctorPayments_Dacpac
+          - name: Dacpac_file
+            value: DoctorPayments.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: DoctorPayments.publish.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml
+  - stage: PROD_APP
+    displayName: PROD_APP
+    dependsOn: UAT_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        variables:
+          - name: ArtifactName
+            value: DoctorPayments
+          - name: SiteName
+            value: DoctorPayments
+          - name: WebAppPoolName
+            value: DoctorPayments
+          - name: TargetFolder
+            value: D:\AzureDevOps\DoctorPayments\Release
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD_API
+    displayName: PROD_API
+    dependsOn: UAT_API
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        variables:
+          - name: ArtifactName
+            value: DoctorPaymentsAPI
+          - name: SiteName
+            value: LogixServices
+          - name: WebAppPoolName
+            value: LogixServices
+          - name: TargetFolder
+            value: D:\AzureDevOps\DoctorPaymentsAPI
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: ops
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD_DAC_PACK
+    displayName: PROD_DAC_PACK
+    dependsOn: UAT_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDSQLBK001
+    jobs:
+      - deployment: PROD
+        environment: PROD
+        variables:
+          - name: DBServer
+            value: BEDSQLLC02
+          - name: TargetFolder
+            value: M:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: DoctorPayments_Dacpac
+          - name: Dacpac_file
+            value: DoctorPayments.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: DoctorPayments.publish.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml

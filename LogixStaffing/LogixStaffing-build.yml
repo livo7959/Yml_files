@@ -1,0 +1,68 @@
+parameters:
+  - name: buildType
+    type: string
+    values:
+      - app
+      - api
+
+  - name: validate
+    type: boolean
+    default: true
+
+stages:
+  - stage: build_${{ parameters.buildType }}
+    dependsOn: [] # Run this stage immediately (instead of being dependant upon the previous step).
+    pool:
+      name: Build
+    jobs:
+      - job: build_${{ parameters.buildType }}
+        variables:
+          # By default, Azure DevOps will check out the repository that triggered the pipeline. Since
+          # the LogixApplications monorepo takes a very long time to clone, we disable this and instead
+          # use a repository elsewhere on disk. (This saves around 2 minutes and 20 seconds.)
+          - name: cachedRepositoryPath
+            value: C:\_IT\LogixApplications
+
+          - name: codeDirectory
+            ${{ if eq(parameters.buildType, 'app') }}:
+              value: $(cachedRepositoryPath)\apps\mvc\LogixStaffing
+            ${{ if eq(parameters.buildType, 'api') }}:
+              value: $(cachedRepositoryPath)\platform\API\ApplicationServices\LogixStaffingServices
+
+        steps:
+          - checkout: none
+
+          - task: PowerShell@2
+            displayName: Reset the cached repository
+            inputs:
+              targetType: inline
+              pwsh: true
+              script: |
+                cd "$(cachedRepositoryPath)"
+                git config --global --add safe.directory "$(cachedRepositoryPath)"
+                git fetch --all
+                git checkout $(Build.SourceVersion)
+                git clean -ffdx
+                git reset --hard HEAD
+
+          - ${{ if eq(parameters.validate, true) }}:
+              - template: ../templates/prebuild_validation_new.yml
+                parameters:
+                  cachedRepositoryPath: $(cachedRepositoryPath)
+                  codeDirectory: $(codeDirectory)
+
+          - template: ../templates/dotnetframework_48_build_new.yml
+            parameters:
+              ${{ if eq(parameters.buildType, 'app') }}:
+                projectName: LogixStaffing_App
+                codeDirectory: $(codeDirectory)
+                projectSolutionName: LogixStaffing.sln
+                artifactDirectory: _PublishedWebsites\LogixStaffing
+                artifactName: LogixStaffingApplication
+              ${{ if eq(parameters.buildType, 'api') }}:
+                projectName: LogixStaffing_Api
+                codeDirectory: $(codeDirectory)
+                projectSolutionName: LogixStaffingServices.sln
+                artifactDirectory: _PublishedWebsites\LogixStaffingServices
+                artifactName: StaffingServices
+              validate: ${{ parameters.validate }}

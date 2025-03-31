@@ -1,0 +1,205 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: api_directory
+    value: platform/API/WorkerServices/MobilePay/LogixHealth.MobilePay
+  - name: api_csproj_file
+    value: LogixHealth.MobilePay.csproj
+  - name: dotnet_version
+    value: 8.x
+  - name: project_name
+    value: LogixMobilePay
+  - name: publish_apicsproj_file
+    value: LogixHealth.MobilePay.csproj
+  - name: container_path_api
+    value: LogixHealth.MobilePay
+  - name: artifactname_api
+    value: LogixHealth.MobilePay
+  - name: checkout_path
+    value: LogixMobilePay
+  - name: dacpac_sqlproj_filepath
+    value: db_scripts/LogixMobilePay/DB Project/MobilePay.sqlproj
+  - name: test_csproj_file
+    value: ../LogixHealth.MobilePay.MSTest/LogixHealth.MobilePay.MSTest.csproj
+pool:
+  name: Build
+stages:
+  - stage: Build
+    jobs:
+      - job: Build
+        displayName: Build
+        steps:
+          - checkout: self
+            clean: true
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.api_directory }}
+          - template: ../templates/dotnetframework_8_build.yml
+  - stage: Dev
+    dependsOn: Build
+    jobs:
+      - deployment: MobilePay
+        displayName: MobilePay
+        variables:
+          - name: ArtifactName
+            value: LogixHealth.MobilePay
+          - name: ServiceName
+            value: LogixMobilePay
+          - name: TargetFolder
+            value: D:\AzureDevOps\MobilePayWorkerService\Release
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: billing-api
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: Build_DAC_PACK
+    displayName: Build_DAC_PACK
+    dependsOn: [] # Run this stage immediately (instead of being dependant upon the previous step).
+    pool:
+      name: Build
+    variables:
+      - name: Dacpack_ArtifactName
+        value: MobilePay_Dacpac
+      - name: Dacpac_file
+        value: MobilePay.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+      - name: xml_file
+        value: MobilePay.publish.xml # give file name for your xml file
+    jobs:
+      - job: Build_DAC_PACK
+        displayName: Build-DAC-PACK
+        steps:
+          - template: ../templates/Dacpac_build_template.yml
+  - stage: DEV_DAC_PACK
+    displayName: DEV_DAC_PACK
+    dependsOn: Build_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDDSQL001
+    jobs:
+      - deployment: DEV
+        environment: DEV
+        variables:
+          - name: DBServer
+            value: BEDDSQL001
+          - name: TargetFolder
+            value: M:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: MobilePay_Dacpac
+          - name: Dacpac_file
+            value: MobilePay.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: MobilePay.publish.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml
+  - stage: UAT
+    dependsOn: Build
+    jobs:
+      - deployment: MobilePay
+        displayName: MobilePay
+        variables:
+          - name: ArtifactName
+            value: LogixHealth.MobilePay
+          - name: ServiceName
+            value: LogixMobilePay
+          - name: TargetFolder
+            value: D:\AzureDevOps\MobilePayWorkerService\Release
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: billing-api
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT_DAC_PACK
+    displayName: UAT_DAC_PACK
+    dependsOn: Build_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDSQLBK001
+    jobs:
+      - deployment: UAT
+        environment: UAT
+        variables:
+          - name: DBServer
+            value: BEDUSQL001
+          - name: TargetFolder
+            value: H:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: MobilePay_Dacpac
+          - name: Dacpac_file
+            value: MobilePay.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: MobilePay.publish.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml
+  - stage: PROD
+    dependsOn: UAT
+    jobs:
+      - deployment: MobilePay
+        displayName: MobilePay
+        variables:
+          - name: ArtifactName
+            value: LogixHealth.MobilePay
+          - name: ServiceName
+            value: LogixMobilePay
+          - name: TargetFolder
+            value: D:\AzureDevOps\MobilePayWorkerService\Release
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: billing-api
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD_DAC_PACK
+    displayName: PROD_DAC_PACK
+    dependsOn: UAT_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDSQLBK001
+    jobs:
+      - deployment: PROD
+        environment: PROD
+        variables:
+          - name: DBServer
+            value: BEDSQLLC02
+          - name: TargetFolder
+            value: H:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: MobilePay_Dacpac
+          - name: Dacpac_file
+            value: MobilePay.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: MobilePay.publish.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml

@@ -1,0 +1,30 @@
+parameters:
+  # Optional. If the "package.json" file is not in the root of the repository, you must specify the
+  # directory where it is located.
+  - name: workingDirectory
+    type: string
+    default: .
+
+steps:
+  - task: UseNode@1
+    displayName: Install Node.js
+    inputs:
+      # Specifying the version is necessary because the default version is "10.x", which is from
+      # 2018 and is very old.
+      # https://learn.microsoft.com/en-us/azure/devops/pipelines/tasks/reference/use-node-v1?view=azure-pipelines
+      # 20 is the latest LTS version as of July 17, 2024.
+      # https://nodejs.org/en/download/package-manager
+      version: 20.x
+    env:
+      # This is needed because the `UseNode` job gives the following error:
+      # self signed certificate in certificate chain
+      # NodeJS does not use the system certificate store and instead must be explicitly provided
+      # with a non-standard cert:
+      # https://stackoverflow.com/questions/21004645/where-is-nodes-certificate-store
+      # The root CA certificate must exist at this path for all of the VMs in this build agent pool:
+      # https://azuredevops.logixhealth.com/LogixHealth/Infrastructure/_settings/agentqueues?queueId=65&view=agents
+      NODE_EXTRA_CA_CERTS: /usr/local/share/ca-certificates/BEDROOTCA001.crt
+
+  - bash: npm ci
+    displayName: Install project dependencies
+    workingDirectory: ${{ parameters.workingDirectory }}

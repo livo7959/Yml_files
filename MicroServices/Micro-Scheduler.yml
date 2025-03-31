@@ -1,0 +1,132 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: api_directory
+    value: platform/API/Microservices/Scheduler
+  - name: api_csproj_file
+    value: LogixHealth.Microservice.Scheduler.sln
+  - name: project_name
+    value: Microservices-Scheduler
+  - name: artifactname_api
+    value: Scheduler
+  - name: container_path_api
+    value: LogixHealth.Microservice.Scheduler
+  - name: test_csproj_file
+    value: LogixHealth.Microservice.Scheduler.Test/LogixHealth.Microservice.Scheduler.Test.csproj
+  - name: publish_apicsproj_file
+    value: LogixHealth.Microservice.Scheduler/LogixHealth.Microservice.Scheduler.csproj
+  - name: dotnet_version
+    value: 8.x
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: MicroServicesScheduler
+        displayName: Micro-Scheduler
+        steps:
+          - checkout: self
+            clean: true
+            path: s/Micro-Scheduler
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.api_directory }}
+          - template: ../templates/dotnetframework_8_build.yml
+
+  - stage: DEV
+    displayName: DEV
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        displayName: DEV
+        variables:
+          - name: ArtifactName
+            value: Scheduler
+          - name: SiteName
+            value: scheduler.dmicrosvc.logixhealth.com
+          - name: TargetFolder
+            value: C:\TFS\MicroServices\Atomic\Scheduler\Release\
+          - name: WebAppPoolName
+            value: scheduler.dmicrosvc.logixhealth.com
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    variables:
+      - name: ArtifactName
+        value: Scheduler
+      - name: SiteName
+        value: scheduler.umicrosvc.logixhealth.com
+      - name: TargetFolder
+        value: D:\TFS\MicroServices\Atomic\Scheduler\Release\
+      - name: WebAppPoolName
+        value: scheduler.umicrosvc.logixhealth.com
+    jobs:
+      - deployment: UAT
+        displayName: UAT
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD
+    displayName: PROD
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    variables:
+      - name: ArtifactName
+        value: Scheduler
+      - name: SiteName
+        value: scheduler.microsvc.logixhealth.com
+      - name: TargetFolder
+        value: D:\TFS\MicroServices\
+      - name: WebAppPoolName
+        value: scheduler.microsvc.logixhealth.com
+    jobs:
+      - deployment: PROD_1
+        displayName: Prod-1
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+      - deployment: PROD_2
+        displayName: Prod-2
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

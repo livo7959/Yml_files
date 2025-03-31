@@ -1,0 +1,64 @@
+trigger: none
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: ne(variables['Build.Reason'], 'Schedule')
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: Logixlibrary
+        displayName: Logix-library
+        steps:
+          - checkout: self
+          - task: UseNode@1
+            displayName: Node 18.x
+            inputs:
+              version: 18.x
+          - task: Npm@1
+            displayName: Install Angular CLI12
+            inputs:
+              command: custom
+              workingDir: apps/Angular/projects
+              customCommand: install -g @angular/cli
+          - task: Npm@1
+            displayName: Install Npm Packages
+            inputs:
+              command: install
+              workingDir: apps/Angular
+          - task: SonarQubePrepare@5
+            condition: ${{ variables.SonarQube_Condition }}
+            inputs:
+              SonarQube: SonarQube New
+              scannerMode: CLI
+              configMode: manual
+              cliProjectKey: Logix-library_SPA
+              cliProjectName: Logix-library
+              cliProjectVersion: Logix-library_SPA
+              cliSources: apps/Angular/projects/logix-library/src
+          # - task: Npm@1
+          #   displayName: Npm Build
+          #   inputs:
+          #     command: custom
+          #     workingDir: apps/Angular
+          #     customCommand: run ng build
+          - task: SonarQubeAnalyze@5
+            condition: ${{ variables.SonarQube_Condition }}
+          - task: SonarQubePublish@5
+            condition: ${{ variables.SonarQube_Condition }}
+          - task: sonar-buildbreaker@8
+            inputs:
+              SonarQube: SonarQube New
+            continueOnError: true
+          - template: ../templates/remove_sonarqube.yml
+          - template: ../templates/delete_build_files.yml

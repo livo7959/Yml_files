@@ -1,0 +1,111 @@
+trigger: none
+
+# schedules:
+#   - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+#     displayName: Automated SonarQube Build
+#     branches:
+#       include:
+#         - master
+#     always: true
+variables:
+  autoproject: SchedulerPlaywright
+  dtesturl: 'https://dscheduler.logixhealth.com'
+  qtesturl: 'https://qscheduler.logixhealth.com'
+  utesturl: 'https://uscheduler.logixhealth.com'
+  ptesturl: 'https://scheduler.logixhealth.com'
+  SonarQube_Condition: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  build_reason_condition: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: LHScheduler
+        displayName: LHScheduler
+        steps:
+          - checkout: self
+          - task: UseNode@1
+            displayName: Node 18.x
+            inputs:
+              version: 18.x
+          - task: Npm@1
+            displayName: Install Angular CLI
+            inputs:
+              command: custom
+              workingDir: apps/Angular/projects
+              customCommand: install -g @angular/cli
+          - task: Npm@1
+            displayName: Install Npm Packages
+            inputs:
+              command: install
+              workingDir: apps/Angular
+          - task: SonarQubePrepare@5
+            condition: ${{ variables.SonarQube_Condition }}
+            inputs:
+              SonarQube: SonarQube New
+              scannerMode: CLI
+              configMode: manual
+              cliProjectKey: LHScheduler_SPA
+              cliProjectName: LHScheduler
+              cliProjectVersion: LHScheduler_SPA
+              cliSources: apps/Angular/projects/logix-scheduler/src
+          - task: Npm@1
+            displayName: Npm Build
+            inputs:
+              command: custom
+              workingDir: apps/Angular
+              customCommand: run build-scheduler --production --strict
+          - task: SonarQubeAnalyze@5
+            condition: ${{ variables.SonarQube_Condition }}
+          - task: SonarQubePublish@5
+            condition: ${{ variables.SonarQube_Condition }}
+          - task: sonar-buildbreaker@8
+            inputs:
+              SonarQube: SonarQube New
+            continueOnError: true
+          - task: PublishBuildArtifacts@1
+            displayName: publish angular app
+            inputs:
+              PathtoPublish: apps/Angular/dist/logix-scheduler
+              ArtifactName: App
+              publishLocation: Container
+          - template: ../templates/remove_sonarqube.yml
+          - template: ../templates/delete_build_files.yml
+  - stage: DEV
+    displayName: DEV
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        displayName: DEV
+        variables:
+          - group: LHScheduler-DEV
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: DownloadArtifact.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        displayName: UAT
+        variables:
+          - group: LHScheduler-UAT
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: DownloadArtifact.yml

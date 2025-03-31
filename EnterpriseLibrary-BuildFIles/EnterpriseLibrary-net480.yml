@@ -1,0 +1,72 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: ne(variables['Build.Reason'], 'Schedule')
+  - name: api_directory
+    value: platform/Libraries/net480
+  - name: packageDir
+    value: '..\packages'
+  - name: feedName
+    value: 'LogixLibrary'
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+
+    jobs:
+      - job: Build
+        displayName: Build
+        steps:
+          - checkout: self
+            path: s/EL
+          - task: DotNetCoreCLI@2
+            displayName: 'Nuget restore'
+            inputs:
+              command: restore
+              projects: '${{ variables.api_directory }}/LogixHealth.EnterpriseLibraries.sln'
+              feedsToUse: select
+          - task: SonarQubePrepare@5
+            condition: ${{ variables.SonarQube_Condition }}
+            inputs:
+              SonarQube: SonarQube New
+              projectKey: 'EL-net480'
+              projectName: 'EL-net480'
+              projectVersion: 'EL-net480-Master'
+          - task: MSBuild@1
+            displayName: 'Build Net480'
+            inputs:
+              solution: '${{ variables.api_directory }}/LogixHealth.EnterpriseLibraries.sln'
+              msbuildArchitecture: 'x64'
+              clean: true
+          - task: SonarQubeAnalyze@5
+            condition: ${{ variables.SonarQube_Condition }}
+          - task: SonarQubePublish@5
+            condition: ${{ variables.SonarQube_Condition }}
+          - task: sonar-buildbreaker@8
+            inputs:
+              SonarQube: SonarQube New
+            continueOnError: true
+          - task: DotNetCoreCLI@2
+            displayName: 'Pack Project'
+            inputs:
+              command: 'pack'
+              packagesToPack: '${{ variables.api_directory }}/**/*.csproj'
+              versioningScheme: 'byEnvVar'
+              versionEnvVar: 'AssemblyVersion'
+          - task: DotNetCoreCLI@2
+            inputs:
+              command: 'push'
+              packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'
+              nuGetFeedType: 'internal'
+              publishVstsFeed: '$(feedName)'
+          - template: ../templates/remove_sonarqube.yml
+          - template: ../templates/delete_build_files.yml

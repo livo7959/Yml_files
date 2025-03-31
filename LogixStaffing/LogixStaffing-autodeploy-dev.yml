@@ -1,0 +1,26 @@
+trigger:
+  branches:
+    include:
+      - master
+  paths:
+    include:
+      - apps/mvc/LogixStaffing/*
+      - platform/API/ApplicationServices/LogixStaffingServices/*
+      - ci_cd/LogixStaffing/*
+
+stages:
+  - template: LogixStaffing-build.yml
+    parameters:
+      buildType: app
+      validate: false
+  - template: LogixStaffing-deploy-dev.yml
+    parameters:
+      buildType: app
+
+  - template: LogixStaffing-build.yml
+    parameters:
+      buildType: api
+      validate: false
+  - template: LogixStaffing-deploy-dev.yml
+    parameters:
+      buildType: api

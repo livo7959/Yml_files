@@ -1,0 +1,344 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: buildConfiguration
+    value: Release
+  - name: autoproject
+    value: ClaimStatusPlaywright
+  - name: dtesturl
+    value: 'https://dclaimstatus.logixhealth.com'
+  - name: qtesturl
+    value: 'https://qclaimstatus.logixhealth.com'
+  - name: utesturl
+    value: 'https://uclaimstatus.logixhealth.com'
+  - name: ptesturl
+    value: 'https://claimstatus.logixhealth.com'
+  - name: RegressionSuite
+    value: 'regression.xml'
+  - name: SanitySuite
+    value: 'sanity.xml'
+  - name: dotnet_version
+    value: 8.x
+  - name: checkout_path
+    value: LogixClaimStatus
+  - name: dacpac_sqlproj_filepath
+    value: db_scripts/LogixClaimStatus/LogixClaimStatusDB/LogixClaimStatus.sqlproj
+  - name: Dacpack_ArtifactName
+    value: LogixClaimStatus
+
+stages:
+  - stage: Build_APP
+    displayName: Build_APP
+    variables:
+      - name: app_directory
+        value: apps/mvc/LogixClaimStatus
+      - name: app_csproj_file
+        value: LogixHealth.ClaimStatus.sln
+      - name: project_name
+        value: LogixClaimStatusApp
+      - name: publish_path_app
+        value: APP
+      - name: container_path_app
+        value: APP/LogixHealth.ClaimStatus
+      - name: publish_appcsproj_file
+        value: LogixHealth.ClaimStatus/LogixHealth.ClaimStatus.csproj
+      - name: artifactname_app
+        value: LogixClaimStatus
+      - name: test_app_csproj_file
+        value: LogixHealth.ClaimStatus.Tests/LogixHealth.ClaimStatus.Tests.csproj
+    pool:
+      name: Build
+    jobs:
+      - job: ClaimStatusApp
+        displayName: ClaimStatusApp
+        steps:
+          - checkout: self
+            clean: true
+            path: s/LogixClaimStatusApp
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.app_directory }}
+          - template: ../templates/dotnetframework_8_build.yml
+
+  - stage: Build_API
+    displayName: Build_API
+    dependsOn: [] # Run this stage immediately (instead of being dependant upon the previous step).
+    pool:
+      name: Build
+    variables:
+      - name: api_directory
+        value: platform/API/ApplicationServices/LogixClaimStatus
+      - name: api_csproj_file
+        value: LogixClaimStatus.API.sln
+      - name: project_name
+        value: LogixClaimStatusApi
+      - name: publish_path_api
+        value: API
+      - name: container_path_api
+        value: API/LogixHealth.ClaimStatus.API
+      - name: publish_apicsproj_file
+        value: LogixHealth.ClaimStatus.API/LogixHealth.ClaimStatus.API.csproj
+      - name: artifactname_api
+        value: LogixClaimStatusAPI
+      - name: test_csproj_file
+        value: LogixHealth.ClaimStatus.Tests/LogixHealth.ClaimStatus.Tests.csproj
+    jobs:
+      - job: ClaimStatusApi
+        displayName: ClaimStatusApi
+        steps:
+          - checkout: self
+            clean: true
+            path: s/LogixClaimStatusApi
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.api_directory }}
+          - template: ../templates/dotnetframework_8_build.yml
+  - stage: Build_DAC_PACK
+    displayName: Build-DAC-PACK
+    dependsOn: [] # Run this stage immediately (instead of being dependant upon the previous step).
+    pool:
+      name: Build
+    jobs:
+      - job: Build_DAC_PACK
+        displayName: Build-DAC-PACK
+        steps:
+          - template: ../templates/Dacpac_build_template.yml
+  - stage: DACPKDeployment_DEV
+    displayName: DEV-DAC-PACK
+    dependsOn: Build_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDDSQL001
+    jobs:
+      - deployment: DEV
+        environment: DEV
+        variables:
+          - name: DBServer
+            value: BEDDSQL001
+          - name: TargetFolder
+            value: M:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: LogixClaimStatus
+          - name: Dacpac_file
+            value: LogixClaimStatus.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: LogixClaimStatus.publish.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml
+  - stage: DEV_APP
+    displayName: DEV_APP
+    dependsOn: Build_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: Dev
+        displayName: Dev
+        variables:
+          - name: ArtifactName
+            value: LogixClaimStatus
+          - name: SiteName
+            value: LogixClaimStatus
+          - name: TargetFolder
+            value: D:\TFS\LogixClaimStatus\Release
+          - name: WebAppPoolName
+            value: LogixClaimStatus
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: billing
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: DEV_API
+    displayName: DEV_API
+    dependsOn: Build_API
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: Dev
+        displayName: Dev
+        variables:
+          - name: ArtifactName
+            value: LogixClaimStatusAPI
+          - name: SiteName
+            value: LogixClaimStatus
+          - name: TargetFolder
+            value: D:\TFS\LogixClaimStatus\Release
+          - name: WebAppPoolName
+            value: LogixClaimStatus
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: billing-api
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: DACPKDeployment_UAT
+    displayName: UAT-DAC-PACK
+    dependsOn: Build_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDDSQL001
+    jobs:
+      - deployment: UAT
+        environment: UAT
+        variables:
+          - name: DBServer
+            value: BEDUSQL001
+          - name: TargetFolder
+            value: M:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: LogixClaimStatus
+          - name: Dacpac_file
+            value: LogixClaimStatus.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: LogixClaimStatus.publish.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml
+  - stage: UAT_APP
+    displayName: UAT_APP
+    dependsOn: Build_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        displayName: UAT
+        variables:
+          - name: ArtifactName
+            value: LogixClaimStatus
+          - name: SiteName
+            value: LogixClaimStatus
+          - name: TargetFolder
+            value: D:\TFS\LogixClaimStatus\Release
+          - name: WebAppPoolName
+            value: LogixClaimStatus
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: billing
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT_API
+    displayName: UAT_API
+    dependsOn: Build_API
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        displayName: UAT
+        variables:
+          - name: ArtifactName
+            value: LogixClaimStatusAPI
+          - name: SiteName
+            value: LogixClaimStatus
+          - name: TargetFolder
+            value: D:\TFS\LogixClaimStatus\Release
+          - name: WebAppPoolName
+            value: LogixClaimStatus
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: billing-api
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: DACPKDeployment_PROD
+    displayName: PROD-DAC-PACK
+    dependsOn: Build_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDDSQL001
+    jobs:
+      - deployment: PROD
+        environment: PROD
+        variables:
+          - name: DBServer
+            value: BEDSQLLC02
+          - name: TargetFolder
+            value: M:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: LogixClaimStatus
+          - name: Dacpac_file
+            value: LogixClaimStatus.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: LogixClaimStatus.publish.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml
+  - stage: PROD_APP
+    displayName: PROD_APP
+    dependsOn: UAT_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        displayName: PROD
+        variables:
+          - name: ArtifactName
+            value: LogixClaimStatus
+          - name: SiteName
+            value: LogixClaimStatus
+          - name: TargetFolder
+            value: D:\TFS\LogixClaimStatus\Release
+          - name: WebAppPoolName
+            value: LogixClaimStatus
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: billing
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD_API
+    displayName: PROD_API
+    dependsOn: UAT_API
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        displayName: PROD
+        variables:
+          - name: ArtifactName
+            value: LogixClaimStatusAPI
+          - name: SiteName
+            value: LogixClaimStatus
+          - name: TargetFolder
+            value: D:\TFS\LogixClaimStatus\Release
+          - name: WebAppPoolName
+            value: LogixClaimStatus
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: billing-api
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

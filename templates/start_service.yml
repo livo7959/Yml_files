@@ -1,0 +1,8 @@
+steps:
+  - task: PowerShell@2
+    displayName: Start-Service $(ServiceName)
+    inputs:
+      targetType: inline
+      script: |
+        Start-Service -Name "$(ServiceName)"
+    condition: and(variables['ServiceName'], succeeded())

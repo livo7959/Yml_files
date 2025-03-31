@@ -1,0 +1,358 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: feature_branch_condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/feature/')
+  - name: master_branch_condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: release_branch_condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/release')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: autoproject
+    value: CodifyPlaywright
+  - name: dtesturl
+    value: 'https://dcodify.logixhealth.com/LogixCodifyApplication'
+  - name: qtesturl
+    value: 'https://qdcodify.logixhealth.com/LogixCodifyApplication'
+  - name: utesturl
+    value: 'https://udcodify.logixhealth.com/LogixCodifyApplication'
+  - name: ptesturl
+    value: 'https://codify.logixhealth.com/LogixCodifyApplication'
+  - name: RegressionSuite
+    value: 'regression.xml'
+  - name: SanitySuite
+    value: 'sanity.xml'
+  - name: checkout_path
+    value: LogixCodify_DACPAC
+  - name: dacpac_sqlproj_filepath
+    value: db_scripts/LogixCodify/LogixCodifyDB/LogixCodify.sqlproj
+  - name: Dacpack_ArtifactName
+    value: Codify_Dacpac
+stages:
+  - stage: Build_APP
+    displayName: Build_APP
+    pool:
+      name: Build
+    variables:
+      - name: app_directory
+        value: apps/mvc/LogixCodifyApplication
+      - name: restore_app_sln
+        value: CAFE.sln
+      - name: app_csproj_file
+        value: CafeApplication/CafeApplication.csproj
+      - name: container_path_app
+        value: _PublishedWebsites\CafeApplication
+      - name: project_name
+        value: LogixCodifyApp
+      - name: artifactname_app
+        value: LogixCodifyApplication
+    jobs:
+      - job: Codify
+        steps:
+          - checkout: self
+            clean: true
+            path: s/LogixCodifyApp
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.app_directory }}
+          - template: ../templates/dotnetframework_48_build.yml
+  - stage: Build_API
+    displayName: Build_API
+    dependsOn: [] # Run this stage immediately (instead of being dependant upon the previous step).
+    pool:
+      name: Build
+    variables:
+      - name: api_directory
+        value: platform/API/ApplicationServices/LogixCodifyServices
+      - name: app_directory
+        value: apps/mvc/LogixCodifyApplication
+      - name: restore_app_sln
+        value: CAFE.sln
+      - name: api_csproj_file
+        value: Services/Services.csproj
+      - name: api_test_csproj
+        value: UnitTest/DataAccessLayer.Test/DataAccessLayer.Test.csproj
+      - name: container_path_service
+        value: _PublishedWebsites/Services
+      - name: project_name
+        value: LogixCodifyApi
+      - name: artifactname_service
+        value: LogixCodifyServices
+      - name: test_csproj
+        value: UnitTest/CodifyUnitTest/CodifyUnitTest.csproj
+      - name: Test_dll_path
+        value: CodifyUnitTest.dll
+      
+    jobs:
+      - job: Codify
+        steps:
+          - checkout: self
+            clean: true
+            path: s/LogixCodifyApi
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.api_directory }}
+          - template: ../templates/dotnetframework_48_build.yml
+
+  - stage: Build_DAC_PACK
+    displayName: Build-DAC-PACK
+    dependsOn: [] # Run this stage immediately (instead of being dependant upon the previous step).
+    pool:
+      name: Build
+    jobs:
+      - job: Build_DAC_PACK
+        displayName: Build-DAC-PACK
+        steps:
+          - template: ../templates/Dacpac_build_template.yml
+  - stage: DevDACPKDeployment
+    displayName: DEV-DAC-PACK
+    dependsOn: Build_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDDSQL001
+    jobs:
+      - deployment: DEV
+        environment: DEV
+        variables:
+          - name: DBServer
+            value: BEDDSQL001
+          - name: TargetFolder
+            value: M:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: Codify_Dacpac
+          - name: Dacpac_file
+            value: LogixCodify.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: LogixCodify.publish.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml
+  - stage: DEV_APP
+    displayName: DEV_APP
+    dependsOn: Build_APP
+    condition: and(${{ variables.build_reason_condition }}, or(${{ variables.feature_branch_condition }}, ${{ variables.master_branch_condition }}))
+    jobs:
+      - deployment: DEV
+        displayName: DEV
+        variables:
+          - name: Environment
+            value: DEV
+          - name: SiteName
+            value: LogixCodify
+          - name: WebAppPoolName
+            value: LogixCodify
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixCodify
+          - name: ArtifactName
+            value: LogixCodifyApplication
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: ICER-WEB-DEV
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: DEV_API
+    displayName: DEV_API
+    dependsOn: Build_API
+    condition: and(${{ variables.build_reason_condition }}, or(${{ variables.feature_branch_condition }}, ${{ variables.master_branch_condition }}))
+    jobs:
+      - deployment: DEV
+        displayName: DEV
+        variables:
+          - name: Environment
+            value: DEV
+          - name: SiteName
+            value: LogixCodify
+          - name: WebAppPoolName
+            value: LogixCodify
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixCodify
+          - name: ArtifactName
+            value: LogixCodifyServices
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: ICER-APP-DEV
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT_APP
+    displayName: UAT_APP
+    dependsOn: Build_APP
+    condition: and(${{ variables.build_reason_condition }}, ${{ variables.release_branch_condition }})
+    jobs:
+      - deployment: UAT
+        displayName: UAT
+        variables:
+          - name: Environment
+            value: UAT
+          - name: SiteName
+            value: LogixCodify
+          - name: WebAppPoolName
+            value: LogixCodify
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixCodify
+          - name: ArtifactName
+            value: LogixCodifyApplication
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: ICER-WEB-UAT
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT_API
+    displayName: UAT_API
+    dependsOn: Build_API
+    condition: and(${{ variables.build_reason_condition }}, ${{ variables.release_branch_condition }})
+    jobs:
+      - deployment: UAT
+        displayName: UAT
+        variables:
+          - name: Environment
+            value: UAT
+          - name: SiteName
+            value: LogixCodify
+          - name: WebAppPoolName
+            value: LogixCodify
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixCodify
+          - name: ArtifactName
+            value: LogixCodifyServices
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: ICER-APP-UAT
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: TRAINING_APP
+    displayName: TRAINING_APP
+    dependsOn: UAT_APP
+    condition: and(${{ variables.build_reason_condition }}, ${{ variables.release_branch_condition }})
+    jobs:
+      - deployment: TRAN
+        displayName: TRAN
+        variables:
+          - name: Environment
+            value: TRAINING
+          - name: SiteName
+            value: LogixCodify
+          - name: WebAppPoolName
+            value: LogixCodify
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixCodify
+          - name: ArtifactName
+            value: LogixCodifyApplication
+        environment:
+          name: TRAINING
+          resourceType: virtualMachine
+          tags: TWEBICER
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: TRAINING_API
+    displayName: TRAINING_API
+    dependsOn: UAT_API
+    condition: and(${{ variables.build_reason_condition }}, ${{ variables.release_branch_condition }})
+    jobs:
+      - deployment: TRAN
+        displayName: TRAN
+        variables:
+          - name: Environment
+            value: TRAINING
+          - name: SiteName
+            value: LogixCodify
+          - name: WebAppPoolName
+            value: LogixCodify
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixCodify
+          - name: ArtifactName
+            value: LogixCodifyServices
+        environment:
+          name: TRAINING
+          resourceType: virtualMachine
+          tags: TAPPICER
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD_APP
+    displayName: PROD_APP
+    dependsOn: UAT_APP
+    condition: and(${{ variables.build_reason_condition }}, ${{ variables.release_branch_condition }})
+    jobs:
+      - deployment: PROD
+        displayName: PROD
+        variables:
+          - name: Environment
+            value: PROD
+          - name: SiteName
+            value: LogixCodify
+          - name: WebAppPoolName
+            value: LogixCodify
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixCodify
+          - name: ArtifactName
+            value: LogixCodifyApplication
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: PWEBICER
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD_API
+    displayName: PROD_API
+    dependsOn: UAT_API
+    condition: and(${{ variables.build_reason_condition }}, ${{ variables.release_branch_condition }})
+    jobs:
+      - deployment: PROD
+        displayName: PROD
+        variables:
+          - name: Environment
+            value: PROD
+          - name: SiteName
+            value: LogixCodify
+          - name: WebAppPoolName
+            value: LogixCodify
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixCodify
+          - name: ArtifactName
+            value: LogixCodifyServices
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: PAPPICER
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

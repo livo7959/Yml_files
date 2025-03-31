@@ -1,0 +1,117 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: release_branch_condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/release/')
+  - name: dotnet_version
+    value: 8.x
+  - name: app_directory
+    value: apps/mvc/DoctorPayments
+  - name: app_csproj_file
+    value: DoctorPayments.csproj
+  - name: project_name
+    value: DoctorPaymentsApp
+  - name: publish_appcsproj_file
+    value: DoctorPayments.csproj
+  - name: publish_path_app
+    value: APP
+  - name: container_path_app
+    value: APP/DoctorPayments
+  - name: artifactname_app
+    value: DoctorPayments
+stages:
+  - stage: Build_APP
+    displayName: Build_APP
+    pool:
+      name: Build
+    jobs:
+      - job: DoctorPaymentsApp
+        displayName: DoctorPaymentsApp
+        steps:
+          - checkout: self
+            path: s/DoctorPaymentsApp
+            clean: true
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.app_directory }}
+          - template: ../templates/dotnetframework_8_build.yml
+  - stage: DEV_APP
+    displayName: DEV_APP
+    dependsOn: Build_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        variables:
+          - name: ArtifactName
+            value: DoctorPayments
+          - name: SiteName
+            value: DoctorPayments
+          - name: WebAppPoolName
+            value: DoctorPayments
+          - name: TargetFolder
+            value: D:\AzureDevOps\DoctorPayments\Release
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT_APP
+    displayName: UAT_APP
+    dependsOn: Build_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        variables:
+          - name: ArtifactName
+            value: DoctorPayments
+          - name: SiteName
+            value: DoctorPayments
+          - name: WebAppPoolName
+            value: DoctorPaymentsUI
+          - name: TargetFolder
+            value: D:\AzureDevOps\DoctorPayments\Release
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD_APP
+    displayName: PROD_APP
+    dependsOn: UAT_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        variables:
+          - name: ArtifactName
+            value: DoctorPayments
+          - name: SiteName
+            value: DoctorPayments
+          - name: WebAppPoolName
+            value: DoctorPayments
+          - name: TargetFolder
+            value: D:\AzureDevOps\DoctorPayments\Release
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

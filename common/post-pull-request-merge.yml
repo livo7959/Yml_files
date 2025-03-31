@@ -1,0 +1,44 @@
+# This is a pipeline that runs workflows after every pull request is merged/squashed into master.
+
+trigger:
+  branches:
+    include:
+      - master
+
+# By default, pull requests to master will trigger pipelines that should be run on master, so we
+# have to explicitly disable this.
+pr: none
+
+pool: BuildLinux
+
+variables:
+  workingDirectory: ci_cd/common/typescript
+
+stages:
+  - stage: post_pr_merge
+    jobs:
+      - job: post_pr_merge
+        displayName: Run Post PR Merge Tasks
+        # We read a privileged personal access from the "AZDO_PERSONAL_ACCESS_TOKEN" variable. This
+        # is needed because the token from "$(System.AccessToken)" only has read access to the code
+        # and thus cannot delete a branch. Note that this access token expires and must be updated
+        # every year.
+        variables:
+          - group: ci_cd
+        steps:
+          - template: templates/install-node-and-dependencies.yml
+            parameters:
+              workingDirectory: $(workingDirectory)
+
+          - bash: |
+              if [ -z "$(AZDO_PERSONAL_ACCESS_TOKEN)" ]; then
+                echo "Failed to find the \"AZDO_PERSONAL_ACCESS_TOKEN\" secret in the \"ci_cd\" Azure DevOps library."
+                exit 1
+              fi
+
+              npm run post-pull-request-merge "$(AZDO_PERSONAL_ACCESS_TOKEN)" "$(System.CollectionUri)" "$(System.TeamProjectId)" "$(Build.Repository.ID)"
+            displayName: Run Post PR Merge Tasks
+            workingDirectory: $(workingDirectory)
+            env:
+              # See the documentation in the "install-node-and-dependencies.yml" template.
+              NODE_EXTRA_CA_CERTS: /usr/local/share/ca-certificates/BEDROOTCA001.crt

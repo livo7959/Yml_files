@@ -1,0 +1,189 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: app_directory
+    value: apps/wpf/LA/Service
+  - name: app_sln
+    value: LogixAutomation.Service.sln
+  - name: app_test_csproj
+    value: LogixAutomation.ServiceTests/LogixAutomation.ServiceTests.csproj
+  - name: App_Test_dll_path
+    value: LogixAutomation.ServiceTests.dll
+  - name: project_name
+    value: LogixAutomation-SVC
+  - name: container_path_app
+    value: _PublishedWebsites\LogixAutomation.Service
+  - name: artifactname_app
+    value: LA_Service
+  - name: checkout_path
+    value: LogixAutomation
+  - name: dacpac_sqlproj_filepath
+    value: db_scripts/LogixAutomation/LogixAutomationDB/LogixAutomation0.7X.sqlproj
+  - name: Dacpack_ArtifactName
+    value: Automation_Dacpac
+
+trigger: none
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: LAService
+        displayName: LA-Service
+        steps:
+          - checkout: self
+            path: s/LogixProjection
+            clean: true
+          - template: ../templates/dotnetframework_48_build.yml
+  - stage: Build_DAC_PACK
+    displayName: Build-DAC-PACK
+    dependsOn: [] # Run this stage immediately (instead of being dependant upon the previous step).
+    pool:
+      name: Build
+    jobs:
+      - job: Job_2
+        displayName: Agent job 2
+        steps:
+          - template: ../templates/Dacpac_build_template.yml
+  - stage: DACPKDeployment
+    displayName: DEV-DAC-PACK
+    dependsOn: Build_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDDSQL001
+    jobs:
+      - deployment: DEV
+        environment: DEV
+        variables:
+          - name: DBServer
+            value: BEDDSQL001
+          - name: TargetFolder
+            value: M:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: Automation_Dacpac
+          - name: Dacpac_file
+            value: LogixAutomation0.7X.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: LogixAutomation0.7X.publish.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml          
+  - stage: Dev
+    displayName: Dev
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    variables:
+      - name: ArtifactName
+        value: LA_Service
+      - name: Environment
+        value: DEV
+      - name: SiteName
+        value: LogixAutomation
+      - name: TargetFolder
+        value: D:\TFS\LogixAuotmationSevice\Release
+      - name: WebAppPoolName
+        value: LogixAutomation
+    jobs:
+      - deployment: Dev
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: dev_automation
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    variables:
+      - name: ArtifactName
+        value: LA_Service
+      - name: Environment
+        value: UAT
+      - name: SiteName
+        value: LogixAutomation
+      - name: TargetFolder
+        value: D:\TFS\LogixAuotmationSevice\Release
+      - name: WebAppPoolName
+        value: LogixAutomation
+    jobs:
+      - deployment: UAT
+        displayName: UAT
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: uat_automation
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UATDACPKDeployment
+    displayName: UAT-DAC-PACK
+    dependsOn: Build_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDDSQL001
+    jobs:
+      - deployment: UAT
+        environment: UAT
+        variables:
+          - name: DBServer
+            value: BEDUSQL001
+          - name: TargetFolder
+            value: M:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: Automation_Dacpac
+          - name: Dacpac_file
+            value: LogixAutomation0.7X.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: LogixAutomation0.7X.publish.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml    
+  - stage: PROD
+    displayName: PROD
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    variables:
+      - name: ArtifactName
+        value: LA_Service
+      - name: Environment
+        value: PROD
+      - name: SiteName
+        value: LogixAutomation
+      - name: TargetFolder
+        value: C:\TFS\LogixAutomationService\Release
+      - name: WebAppPoolName
+        value: LogixAutomation
+    jobs:
+      - deployment: PROD
+        displayName: PROD
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: prod_automation
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

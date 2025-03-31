@@ -1,0 +1,22 @@
+steps:
+  - task: PowerShell@2
+    displayName: 'Pause'
+    inputs:
+      targetType: inline
+      script: |
+        Start-Sleep -Seconds 10
+  - task: DeleteFiles@1
+    displayName: 'Clean Destination Folder'
+    inputs:
+      SourceFolder: '$(TargetFolder)\$(ArtifactName)'
+      Contents: '/**'
+  - task: DownloadBuildArtifacts@0
+    inputs:
+      artifactName: '$(ArtifactName)'
+      downloadType: single
+      downloadPath: $(TargetFolder)
+  - task: FileTransform@1
+    inputs:
+      folderPath: '$(TargetFolder)\$(ArtifactName)'
+      enableXmlTransform: true
+      xmlTransformationRules: '-transform **\*.$(Environment).config -xml **\*.config'

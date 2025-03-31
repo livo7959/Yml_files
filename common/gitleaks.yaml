@@ -1,0 +1,33 @@
+# This is a pipeline that ensures that pull requests do not contain secrets. (Any secrets that are
+# accidentally committed to a Git repository should be considered burned and should be immediately
+# rotated.)
+
+trigger: none
+
+pool: BuildLinux
+
+stages:
+  - stage: gitleaks
+    jobs:
+      - job: gitleaks
+        steps:
+          # https://github.com/JoostVoskuil/azure-devops-gitleaks
+          - task: Gitleaks@2
+            inputs:
+              # The default is "predefined". "custom" allows you to set a custom configuration file.
+              configtype: custom
+              # The default is "$(Build.SourcesDirectory)/.gitleaks.toml".
+              configfile: $(Build.SourcesDirectory)/gitleaks-config-extend.toml
+              # The default is "smart". "prevalidation" will scan only the commits that are part of
+              # a pull request.
+              scanmode: prevalidation
+              # The default is "sarif".
+              reportformat: json
+              # The default is "false".
+              verbose: true
+              # The default is "latest". Version 8.23.2 introduces false positives.
+              # https://teams.microsoft.com/l/message/19:4EfpP7bkDKSD5lpqFr7Nu3BDbQTI7eMi5RcN10lbYgk1@thread.tacv2/1737737305346?tenantId=54ba6692-0195-4329-9a5d-08a427817083&groupId=31b49366-b4f4-433a-972a-52dd0e8dc8cb&parentMessageId=1737731412437&teamName=Technology&channelName=DevOps%20Support&createdTime=1737737305346&ngc=true&allowXTenantAccess=true
+              version: 8.23.1
+            env:
+              # See the documentation in the "install-node-and-dependencies.yml" template.
+              NODE_EXTRA_CA_CERTS: /usr/local/share/ca-certificates/BEDROOTCA001.crt

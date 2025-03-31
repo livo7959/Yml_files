@@ -1,0 +1,23 @@
+{
+  "name": "typescript",
+  "private": true,
+  "author": "jnesta-lh",
+  "type": "module",
+  "scripts": {
+    "check-pull-request": "tsx ./src/checkPullRequest/main.ts",
+    "lint": "tsx ./scripts/lint.ts",
+    "post-pull-request-merge": "tsx ./src/postPullRequestMerge/main.ts",
+    "sqlfluff": "tsx ./src/sqlfluff/main.ts", 
+    "update": "npm-check-updates --upgrade && npm install"
+  },
+  "dependencies": {
+    "azure-devops-node-api": "^14.1.0",
+    "complete-common": "^1.0.1",
+    "complete-lint": "^1.11.1",
+    "complete-node": "^1.7.4",
+    "npm-check-updates": "^17.1.11",
+    "prettier": "^3.3.3",
+    "tsx": "^4.19.2",
+    "typescript": "5.6.3"
+  }
+}

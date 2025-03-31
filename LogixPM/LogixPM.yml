@@ -1,0 +1,138 @@
+# schedules:
+#   - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+#     displayName: Automated SonarQube Build
+#     branches:
+#       include:
+#         - master
+#     always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: api_directory
+    value: platform/API/ApplicationServices/LogixPMAPI
+  - name: app_directory
+    value: apps/mvc/LogixPM
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: Build
+        displayName: Build
+        steps:
+          - checkout: self
+            clean: true
+            path: s/LogixPM
+          - task: NuGetCommand@2
+            displayName: Restore
+            inputs:
+              command: restore
+              restoreSolution: '${{ variables.app_directory }}/LogixHealth.PracticeManagement.sln'
+              feedsToUse: select
+              vstsFeed: LogixLibrary
+          - task: SonarQubePrepare@4
+            condition: ${{ variables.SonarQube_Condition }}
+            inputs:
+              SonarQube: SonarQube New
+              projectKey: LogixPM
+              projectName: LogixPM
+              projectVersion: LogixPM-Master
+          - task: MSBuild@1
+            displayName: Build LogixPM Core
+            inputs:
+              solution: '${{ variables.app_directory }}/LogixHealth.PracticeManagement.sln'
+              msbuildArguments: /p:OutDir="$(Build.ArtifactStagingDirectory)\\" /p:DeployDefaultTarget=WebPublish --warnaserror
+              clean: true
+          - task: SonarQubeAnalyze@4
+            condition: ${{ variables.SonarQube_Condition }}
+          - task: SonarQubePublish@4
+            condition: ${{ variables.SonarQube_Condition }}
+          - task: sonar-buildbreaker@8
+            inputs:
+              SonarQube: SonarQube New
+            continueOnError: true
+          - task: DotNetCoreCLI@2
+            displayName: 'Publish LogixPM Core - Application'
+            inputs:
+              command: publish
+              publishWebProjects: false
+              projects: '${{ variables.app_directory }}/LogixHealth.PM/LogixHealth.PM.csproj'
+              arguments: '--output $(Build.ArtifactStagingDirectory)/APP'
+              zipAfterPublish: false
+          - task: PublishBuildArtifacts@1
+            displayName: Publish LogixPM App
+            inputs:
+              PathtoPublish: '$(Build.ArtifactStagingDirectory)/APP/LogixHealth.PM'
+              ArtifactName: PMCore
+              publishLocation: Container
+          - task: DotNetCoreCLI@2
+            displayName: publish BusinessAPI
+            inputs:
+              command: publish
+              publishWebProjects: false
+              projects: '${{ variables.api_directory }}/LogixHealth.PM.BusinessAPI/LogixHealth.PM.BusinessAPI.csproj'
+              arguments: '--output $(Build.ArtifactStagingDirectory)/API'
+              zipAfterPublish: false
+          - task: PublishBuildArtifacts@1
+            displayName: Publish LogixPM Api
+            inputs:
+              PathtoPublish: '$(Build.ArtifactStagingDirectory)/API/LogixHealth.PM.BusinessAPI'
+              ArtifactName: PMCoreAPI
+              publishLocation: Container
+          - template: ../templates/remove_sonarqube.yml
+          - template: ../templates/delete_build_files.yml
+  - stage: DEV
+    displayName: DEV
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        variables:
+          - group: PM_DEV
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: DownloadArtifact-PM.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        variables:
+          - group: PM_UAT
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: DownloadArtifact-PM.yml
+  - stage: PROD
+    displayName: PROD
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    pool:
+      name: PROD
+      demands:
+        - Agent.Name -equals BEDWEBLC05
+    jobs:
+      - deployment: PROD
+        variables:
+          - group: PM_PROD
+        environment: PROD
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: DownloadArtifact-PM.yml

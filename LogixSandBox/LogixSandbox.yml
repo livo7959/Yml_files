@@ -1,0 +1,117 @@
+trigger: none
+
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    variables:
+      - name: SonarQube_Condition
+        value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+      - name: build_reason_condition
+        value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+    jobs:
+      - job: LogixSandbox
+        displayName: LogixSandbox
+        steps:
+          - checkout: self
+            path: s/
+          - task: UseNode@1
+            displayName: 'Node 18.x'
+            inputs:
+              version: 18.x
+          - task: Npm@1
+            displayName: 'Install Angular CLI'
+            inputs:
+              command: 'custom'
+              workingDir: 'apps/Angular/projects'
+              customCommand: 'install -g @angular/cli'
+          - task: Npm@1
+            displayName: 'Install Npm Packages'
+            inputs:
+              command: 'install'
+              workingDir: 'apps/Angular'
+              verbose: false
+          - task: SonarQubePrepare@5
+            condition: ${{ variables.SonarQube_Condition }}
+            inputs:
+              SonarQube: SonarQube New
+              scannerMode: 'CLI'
+              configMode: 'manual'
+              cliProjectKey: 'LogixSandbox_01'
+              cliProjectName: 'LogixSandbox'
+              cliProjectVersion: 'LogixSandbox_01'
+              cliSources: 'apps/Angular/projects/logix-sandbox/src'
+          - task: Npm@1
+            displayName: 'Npm Build '
+            inputs:
+              command: 'custom'
+              workingDir: 'apps/Angular'
+              customCommand: 'run build-sandbox --production --strict'
+          - task: SonarQubeAnalyze@5
+            condition: ${{ variables.SonarQube_Condition }}
+          - task: SonarQubePublish@5
+            condition: ${{ variables.SonarQube_Condition }}
+          - task: sonar-buildbreaker@8
+            inputs:
+              SonarQube: SonarQube New
+            continueOnError: true
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Artifact: drop'
+            inputs:
+              PathtoPublish: 'apps/Angular/dist/logix-sandbox'
+              ArtifactName: 'Angular15'
+              publishLocation: 'Container'
+          - template: ../templates/remove_sonarqube.yml
+          - template: ../templates/delete_build_files.yml
+
+  - stage: Dev
+    displayName: Dev
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    variables:
+      - name: ArtifactName
+        value: Angular15
+      - name: SiteName
+        value: dsandbox.logixhealth.com
+      - name: TargetFolder
+        value: D:\TFS\LogixSandbox
+      - name: WebAppPoolName
+        value: dsandbox.logixhealth.com
+    jobs:
+      - deployment: Dev
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: saas
+        displayName: Dev
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact_angular.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    variables:
+      - name: ArtifactName
+        value: Angular15
+      - name: SiteName
+        value: usandbox.logixhealth.com
+      - name: TargetFolder
+        value: D:\TFS\LogixSandbox
+      - name: WebAppPoolName
+        value: LogixSandbox
+    jobs:
+      - deployment: UAT
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        displayName: UAT
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact_angular.yml

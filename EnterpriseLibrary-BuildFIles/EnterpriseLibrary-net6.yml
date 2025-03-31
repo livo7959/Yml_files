@@ -1,0 +1,76 @@
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: ne(variables['Build.Reason'], 'Schedule')
+  - name: api_directory
+    value: platform/Libraries/net6/LogixHealth.EnterpriseLibrary.Core
+  - name: feedName
+    value: LogixLibrary
+trigger: none
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: ELnet6
+        displayName: EL-net6
+        steps:
+          - checkout: self
+            path: s/EL
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.api_directory }}
+          - task: UseDotNet@2
+            displayName: 'Use .NET Core sdk 6.x'
+            inputs:
+              version: 6.x
+          - task: DotNetCoreCLI@2
+            displayName: 'dotnet Restore EL-net6'
+            inputs:
+              command: restore
+              projects: '${{ variables.api_directory }}/LogixHealth.EnterpriseLibrary.Core.csproj'
+          - task: SonarQubePrepare@5
+            condition: ${{ variables.SonarQube_Condition }}
+            inputs:
+              SonarQube: SonarQube New
+              projectKey: 'EL-net6'
+              projectName: 'EL-net6'
+              projectVersion: 'EL-net6-Master'
+          - task: UseDotNet@2
+            displayName: 'Use .NET Core sdk 6.x'
+            inputs:
+              version: 6.x
+          - task: DotNetCoreCLI@2
+            displayName: 'dotnet Build EL-net6'
+            inputs:
+              command: 'build'
+              projects: '${{ variables.api_directory }}/LogixHealth.EnterpriseLibrary.Core.csproj'
+              arguments: '--warnaserror'
+          - task: SonarQubeAnalyze@5
+            condition: ${{ variables.SonarQube_Condition }}
+          - task: SonarQubePublish@5
+            condition: ${{ variables.SonarQube_Condition }}
+          - task: sonar-buildbreaker@8
+            inputs:
+              SonarQube: SonarQube New
+            continueOnError: true
+          - task: DotNetCoreCLI@2
+            displayName: 'Dotnet Pack'
+            inputs:
+              command: 'pack'
+              packagesToPack: ${{ variables.api_directory }}/LogixHealth.EnterpriseLibrary.Core.csproj
+              versioningScheme: 'off'
+          - task: NuGetAuthenticate@1
+            displayName: 'NuGet Authenticate'
+          - task: NuGetCommand@2
+            displayName: 'NuGet push'
+            inputs:
+              command: 'push'
+              packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'
+              nuGetFeedType: 'internal'
+              publishVstsFeed: $(feedName)
+          - template: ../templates/remove_sonarqube.yml
+          - template: ../templates/delete_build_files.yml

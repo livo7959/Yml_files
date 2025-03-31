@@ -1,0 +1,110 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: app_directory
+    value: apps/wpf/LA/LogixAutomationEngine/Engine/AAE
+  - name: api_directory
+    value: apps/wpf/LA/LogixAutomationEngine/Engine/AAE
+  - name: app_sln
+    value: AAE.sln
+  - name: project_name
+    value: LogixAutomationEngine
+  - name: artifactname_app
+    value: Release
+  - name: test_csproj
+    value: LAEngineTestProject/LAEngineTestProject.csproj
+  - name: Test_dll_path
+    value: LAEngineTestProject.dll
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: LogixAutomation
+        steps:
+          - checkout: self
+            clean: true
+            path: s/LogixAutomationEngine
+          - template: ../templates/dotnetframework_48_build.yml
+  - stage: Dev
+    displayName: Dev
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    variables:
+      - name: ArtifactName
+        value: Release
+      - name: TargetFolder
+        value: D:\TFS\LogixAutomationEngine
+      - name: ServiceName
+        value: LogixAutomation-AutomationEngine
+      - name: Environment_WPF
+        value: Dev
+    jobs:
+      - deployment: Dev
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: dev_automation
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    variables:
+      - name: ArtifactName
+        value: Release
+      - name: TargetFolder
+        value: D:\TFS\LogixAutomationEngine
+      # - name: ServiceName
+      #   value: LogixAutomation-AutomationEngine
+      - name: Environment_WPF
+        value: UAT
+    jobs:
+      - deployment: UAT
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: uat_automation
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD
+    displayName: PROD
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    variables:
+      - name: ArtifactName
+        value: Release
+      - name: TargetFolder
+        value: C:\TFS\LogixAutomationEngine
+      # - name: ServiceName
+      #   value: LogixAutomation-AutomationEngine
+      - name: Environment_WPF
+        value: Prod
+    jobs:
+      - deployment: PROD
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: prod_automation
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

@@ -1,0 +1,96 @@
+# schedules:
+#   - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+#     displayName: Automated SonarQube Build
+#     branches:
+#       include:
+#         - master
+#     always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: api_directory
+    value: platform/API/ApplicationServices/APIM
+  - name: api_sln
+    value: LogixHealth.API.Management/LogixHealth.API.Management.csproj
+  - name: project_name
+    value: LogixHealthAPIM
+  - name: artifactname_service
+    value: API
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: LogixHealthAPIM
+        displayName: LogixHealthAPIM
+        steps:
+          - checkout: self
+            clean: true
+            path: s/LogixHealthAPIM
+          - template: ../templates/dotnetframework_48_build.yml
+
+  - stage: DEV
+    displayName: DEV
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        displayName: DEV
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: PowerShell@2
+                  displayName: 'STOP Site APMI'
+                  inputs:
+                    targetType: inline
+                    script: |
+                      'start-website -Name api.logixhealth.com'
+                - task: PowerShell@2
+                  displayName: 'STOP Apppool APMI'
+                  inputs:
+                    targetType: inline
+                    script: |
+                      'Stop-WebAppPool -Name api.logixhealth.com'
+                - task: DownloadBuildArtifacts@0
+                  inputs:
+                    artifactName: API
+                    downloadType: single
+                    downloadPath: D:\TFS\LogixAPISandbox
+                - task: PowerShell@2
+                  displayName: 'Remove folder '
+                  inputs:
+                    targetType: inline
+                    script: |
+                      Remove-Item -Path 'D:\TFS\LogixAPISandbox\DashboardAPI' -Force -Recurse
+
+                - task: PowerShell@2
+                  displayName: 'Rename the folder '
+                  inputs:
+                    targetType: 'inline'
+                    script: |
+                      if (Test-Path "D:\TFS\LogixAPISandbox\API\LogixHealth.API.Management")
+                      {
+                      Move-Item -Path "D:\TFS\LogixAPISandbox\API\LogixHealth.API.Management\" "D:\TFS\LogixAPISandbox\DashboardAPI" -Force
+                      Remove-Item –path "D:\TFS\LogixAPISandbox\API\"
+                      }
+                          failOnStderr: true
+                - task: PowerShell@2
+                  displayName: 'START Site APMI'
+                  inputs:
+                    targetType: inline
+                    script: |
+                      'start-website -Name api.logixhealth.com'
+                - task: PowerShell@2
+                  displayName: 'START Apppool APMI'
+                  inputs:
+                    targetType: inline
+                    script: |
+                      'start-WebAppPool -Name api.logixhealth.com'

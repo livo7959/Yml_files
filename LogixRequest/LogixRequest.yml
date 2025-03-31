@@ -1,0 +1,355 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: autoproject
+    value: RequestPlaywright
+  - name: dtesturl
+    value: 'https://drequest.logixhealth.com/WorkQueue/ToBeSearched'
+  - name: qtesturl
+    value: 'https://qrequest.logixhealth.com/WorkQueue/ToBeSearched'
+  - name: utesturl
+    value: 'https://urequest.logixhealth.com/WorkQueue/ToBeSearched'
+  - name: ptesturl
+    value: 'https://request.logixhealth.com/WorkQueue/ToBeSearched'
+  - name: RegressionSuite
+    value: 'regression.xml'
+  - name: SanitySuite
+    value: 'sanity.xml'
+  - name: dotnet_version
+    value: 8.x
+  - name: checkout_path
+    value: Logixrequest
+  - name: dacpac_sqlproj_filepath
+    value: db_scripts/LogixRequest/DB Project/Logixrequest/Logixrequest/Logixrequest.sqlproj
+  - name: Dacpack_ArtifactName
+    value: Request_Dacpac
+stages:
+  - stage: Build_APP
+    displayName: Build_APP
+    pool:
+      name: Build
+    variables:
+      - name: app_directory
+        value: apps/mvc/LogixRequest/LogixHealth.Request
+      - name: app_csproj_file
+        value: LogixHealth.Request.sln
+      - name: container_path_app
+        value: App/LogixHealth.Request.App
+      - name: publish_appcsproj_file
+        value: LogixHealth.Request.App/LogixHealth.Request.App.csproj
+      - name: publish_path_app
+        value: APP
+      - name: project_name
+        value: LogixRequestApp
+      - name: artifactname_app
+        value: LogixRequestWeb
+    jobs:
+      - job: RequestApp
+        displayName: RequestApp
+        steps:
+          - checkout: self
+            clean: true
+            path: s/LogixRequestApp
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.app_directory }}
+          - template: ../templates/dotnetframework_8_build.yml
+  - stage: Build_API
+    displayName: Build_API
+    dependsOn: [] # Run this stage immediately (instead of being dependant upon the previous step).
+    pool:
+      name: Build
+    variables:
+      - name: api_directory
+        value: platform/API/ApplicationServices/LogixRequestServices
+      - name: container_path_api
+        value: API/LogixHealth.Request.API
+      - name: publish_apicsproj_file
+        value: LogixHealth.Request.Api/LogixHealth.Request.Api.csproj
+      - name: publish_path_api
+        value: API
+      - name: project_name
+        value: LogixRequestApi
+      - name: artifactname_api
+        value: LogixRequestApp
+      - name: test_csproj_file
+        value: Request.ApiUnitTest/Request.ApiUnitTest.csproj
+    jobs:
+      - job: RequestApi
+        displayName: RequestApi
+        steps:
+          - checkout: self
+            clean: true
+            path: s/LogixRequestApi
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.api_directory }}
+          - template: ../templates/dotnetframework_8_build.yml
+  - stage: Build_DAC_PACK
+    displayName: Build-DAC-PACK
+    dependsOn: [] # Run this stage immediately (instead of being dependant upon the previous step).
+    pool:
+      name: Build
+    jobs:
+      - job: Build_DAC_PACK
+        displayName: Build-DAC-PACK
+        steps:
+          - template: ../templates/Dacpac_build_template.yml
+  - stage: DEV_DAC_PACK
+    displayName: DEV-DAC-PACK
+    dependsOn: Build_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDDSQL001
+    jobs:
+      - deployment: DEV
+        environment: DEV
+        variables:
+          - name: DBServer
+            value: BEDDSQL001
+          - name: TargetFolder
+            value: M:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: Request_Dacpac
+          - name: Dacpac_file
+            value: LogixRequest.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: LogixRequest.publish.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml
+  - stage: DEV_APP
+    dependsOn: Build_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        displayName: DEV
+        variables:
+          - name: ArtifactName
+            value: LogixRequestWeb
+          - name: SiteName
+            value: LogixRequest
+          - name: TargetFolder
+            value: D:\TFS\LogixRequest\Release
+          - name: WebAppPoolName
+            value: LogixRequest
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: ICER-WEB-DEV
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: DEV_API
+    dependsOn: Build_API
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        displayName: DEV
+        variables:
+          - name: ArtifactName
+            value: LogixRequestApp
+          - name: SiteName
+            value: LogixRequestAPI
+          - name: TargetFolder
+            value: D:\TFS\LogixRequestAPI\Release
+          - name: WebAppPoolName
+            value: LogixRequestAPI
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: ICER-WEB-DEV
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT_DAC_PACK
+    displayName: UAT-DAC-PACK
+    dependsOn: Build_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDDSQL001
+    jobs:
+      - deployment: UAT
+        environment: UAT
+        variables:
+          - name: DBServer
+            value: BEDUSQL001
+          - name: TargetFolder
+            value: M:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: Request_Dacpac
+          - name: Dacpac_file
+            value: LogixRequest.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: LogixRequest.publish.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml
+  - stage: UAT_APP
+    dependsOn: Build_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        displayName: UAT
+        variables:
+          - name: ArtifactName
+            value: LogixRequestWeb
+          - name: SiteName
+            value: LogixRequest
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixRequest
+          - name: WebAppPoolName
+            value: LogixRequest
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: ICER-WEB-UAT
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT_API
+    dependsOn: Build_API
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        displayName: UAT
+        variables:
+          - name: ArtifactName
+            value: LogixRequestApp
+          - name: SiteName
+            value: LogixRequest
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixRequest
+          - name: WebAppPoolName
+            value: LogixRequest
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: ICER-APP-UAT # only deploy to virtual machines with "ICER-DEV" tag
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT_Sanity_Tests
+    displayName: UAT_Sanity_Tests
+    dependsOn: UAT_APP
+    pool:
+      name: QAAUTO
+    jobs:
+      - deployment: Run_Sanity_Tests
+        displayName: Run_Sanity_Tests
+        environment: UAT
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                  path: s\
+                  clean: true
+                - task: PowerShell@2
+                  displayName: Execute Sanity Test
+                  inputs:
+                    targetType: filePath
+                    filepath: 'test\automation\Execute-Test-Automation.ps1'
+                    arguments: >
+                      -appdir $(autoproject)
+                      -env $(utesturl)
+                      -suite $(SanitySuite)
+  - stage: PROD_DAC_PACK
+    displayName: PROD-DAC-PACK
+    dependsOn: UAT_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDDSQL001
+    jobs:
+      - deployment: PROD
+        environment: PROD
+        variables:
+          - name: DBServer
+            value: BEDPSQLSI01
+          - name: TargetFolder
+            value: M:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: Request_Dacpac
+          - name: Dacpac_file
+            value: LogixRequest.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: LogixRequest.publish.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml
+  - stage: PROD_APP
+    dependsOn: UAT_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        displayName: PROD
+        variables:
+          - name: ArtifactName
+            value: LogixRequestWeb
+          - name: SiteName
+            value: LogixRequest
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixRequest
+          - name: WebAppPoolName
+            value: LogixRequest
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: PWEBICERREQ
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD_API
+    dependsOn: UAT_API
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        displayName: PROD
+        variables:
+          - name: ArtifactName
+            value: LogixRequestApp
+          - name: SiteName
+            value: LogixRequest
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixRequest
+          - name: WebAppPoolName
+            value: LogixRequest
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: PAPPICERREQ # only deploy to virtual machines with "PAPPICERREQ" tag
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

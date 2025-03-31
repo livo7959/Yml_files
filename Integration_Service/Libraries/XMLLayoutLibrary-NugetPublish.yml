@@ -1,0 +1,49 @@
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: ne(variables['Build.Reason'], 'Schedule')
+  - name: feedName
+    value: LogixLibrary
+trigger: none
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: XMLLayoutLibrary
+        displayName: XMLLayoutLibrary
+        steps:
+          - checkout: self
+            path: s/XMLLayoutLibrary
+
+          - task: NuGet@0
+            displayName: Restore  XMLLayoutLibrary
+            inputs:
+              command: restore
+              arguments: 'apps/desktop_apps/integration_services/Libraries/XMLLayoutLibrary/XMLLayoutLibrary.sln'
+
+          - task: MSBuild@1
+            displayName: Build XMLLayoutLibrary
+            inputs:
+              solution: apps/desktop_apps/integration_services/Libraries/XMLLayoutLibrary/XMLLayoutLibrary/XMLLayoutLibrary.csproj
+              msbuildArchitecture: 'x64'
+              clean: true
+
+          - task: NuGetCommand@2
+            inputs:
+              command: pack
+              packagesToPack: 'apps/desktop_apps/integration_services/Libraries/XMLLayoutLibrary/XMLLayoutLibrary/XMLLayoutLibrary.csproj'
+              packDestination: '$(Build.ArtifactStagingDirectory)'
+          - task: NuGetAuthenticate@1
+            displayName: 'NuGet Authenticate'
+
+          - task: NuGetCommand@2
+            displayName: 'NuGet push'
+            inputs:
+              command: push
+              publishVstsFeed: $(feedName)
+              allowPackageConflicts: true
+          - template: ../../templates/remove_sonarqube.yml
+          - template: ../../templates/delete_build_files.yml

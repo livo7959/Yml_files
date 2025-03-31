@@ -1,0 +1,74 @@
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: ne(variables['Build.Reason'], 'Schedule')
+  - name: feedName
+    value: LogixLibrary
+
+trigger: none
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: MRSIHL7Library
+        displayName: MRSIHL7Library
+        steps:
+          - checkout: self
+            path: s/MRSIHL7Library
+
+          - task: NuGetCommand@2
+            displayName: Nuget restore MRSINotification
+            inputs:
+              command: restore
+              restoreSolution: 'apps/desktop_apps/integration_services/Libraries/MRSINotificationLibrary/MRSINotificationLibrary/MRSINotificationLibrary.csproj'
+              feedsToUse: select
+          - task: NuGetCommand@2
+            displayName: Nuget restore PervasiveDAL
+            inputs:
+              command: restore
+              restoreSolution: 'apps/desktop_apps/integration_services/Libraries/PervasiveDAL/PervasiveDAL.sln'
+              feedsToUse: select
+          - task: NuGetCommand@2
+            displayName: Nuget restore MRSIHL7
+            inputs:
+              command: restore
+              restoreSolution: 'apps/desktop_apps/integration_services/Libraries/MRSIHL7Library/MRSIHL7Library.csproj'
+              feedsToUse: select
+          - task: MSBuild@1
+            displayName: Build  MRSINotificationLibrary
+            inputs:
+              solution: 'apps/desktop_apps/integration_services/Libraries/MRSINotificationLibrary/MRSINotificationLibrary/MRSINotificationLibrary.csproj'
+              # msbuildArguments: '/p:OutDir="$(Build.ArtifactStagingDirectory)\\" /p:DeployDefaultTarget=WebPublish'
+          - task: MSBuild@1
+            displayName: Build PervasiveDALLibrary
+            inputs:
+              solution: apps/desktop_apps/integration_services/Libraries/PervasiveDAL/PervasiveDAL.sln
+              clean: true
+          - task: MSBuild@1
+            displayName: Build MRSIHL7Library
+            inputs:
+              solution: apps/desktop_apps/integration_services/Libraries/MRSIHL7Library/MRSIHL7Library.csproj
+              # msbuildArguments: /p:OutDir="$(Build.ArtifactStagingDirectory)\\"
+              clean: true
+
+          - task: NuGetCommand@2
+            displayName: 'Pack MRSIHL7Library'
+            inputs:
+              command: 'pack'
+              packagesToPack: 'apps/desktop_apps/integration_services/Libraries/MRSIHL7Library/MRSIHL7Library.csproj'
+              versioningScheme: 'off'
+          - task: NuGetAuthenticate@1
+            displayName: 'NuGet Authenticate'
+
+          - task: NuGetCommand@2
+            displayName: 'NuGet push'
+            inputs:
+              command: 'push'
+              packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'
+              nuGetFeedType: 'internal'
+              publishVstsFeed: '$(feedName)'
+          - template: ../../templates/remove_sonarqube.yml
+          - template: ../../templates/delete_build_files.yml

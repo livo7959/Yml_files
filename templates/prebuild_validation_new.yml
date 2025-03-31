@@ -1,0 +1,64 @@
+# This is a newer version of the "prebuild_validation.yml" file. We chose to make a new file instead
+# of updating the old one because we want to refactor all of the global variables into parameters.
+# However, this is a breaking change for the 90+ places in the repository that use this template.
+
+parameters:
+  # The full path to the cached repository.
+  # For example: C:\_IT\LogixHealth
+  - name: cachedRepositoryPath
+    type: string
+
+  # The full path to the code directory to check.
+  # For example: C:\_IT\LogixHealth\apps\mvc\LogixStaffing
+  - name: codeDirectory
+    type: string
+
+steps:
+  - task: Npm@1
+    displayName: Install npm Packages
+    inputs:
+      command: install
+      workingDir: ${{ parameters.cachedRepositoryPath }}
+
+  - task: PowerShell@2
+    displayName: prettier check
+    inputs:
+      targetType: inline
+      pwsh: true
+      warningPreference: stop
+      workingDirectory: ${{ parameters.cachedRepositoryPath }}
+      script: npm run prettier_check -- ${{ parameters.codeDirectory }}
+
+  - task: PowerShell@2
+    displayName: eslint check
+    inputs:
+      targetType: inline
+      pwsh: true
+      warningPreference: stop
+      workingDirectory: ${{ parameters.cachedRepositoryPath }}
+      script: npm run eslint_check -- ${{ parameters.codeDirectory }}
+
+  - task: PowerShell@2
+    displayName: eclint check
+    inputs:
+      targetType: inline
+      pwsh: true
+      warningPreference: stop
+      workingDirectory: ${{ parameters.cachedRepositoryPath }}
+      script: npm run eclint_check -- ${{ parameters.codeDirectory }}
+
+  - task: PowerShell@2
+    displayName: Validate .csproj File Standards
+    inputs:
+      targetType: filePath
+      pwsh: true
+      filePath: ${{ parameters.cachedRepositoryPath}}\ci_cd\utilities\validate_csproj_standards.ps1
+      arguments: -directoryPaths ${{ parameters.codeDirectory }}
+
+  - task: PowerShell@2
+    displayName: Validate dotnet format
+    inputs:
+      targetType: filePath
+      pwsh: true
+      filePath: ${{ parameters.cachedRepositoryPath}}\ci_cd\utilities\validate_dotnet_format.ps1
+      arguments: -directoryPaths ${{ parameters.codeDirectory }}

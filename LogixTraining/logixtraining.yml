@@ -1,0 +1,121 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: app_directory
+    value: apps/mvc/LogixTraining
+  - name: app_sln
+    value: LogixHealth.Training.sln
+  - name: project_name
+    value: LogixTraining
+  - name: container_path_app
+    value: _PublishedWebsites\LogixHealth.Training
+  - name: artifactname_app
+    value: Training
+  - name: app_test_csproj
+    value: UnitTestProject/UnitTestProject.csproj
+  - name: App_Test_dll_path
+    value: UnitTestProject.dll
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+
+    jobs:
+      - job: Build
+        steps:
+          - checkout: self
+            clean: true
+            path: s/LogixTraining
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.app_directory }}
+          - template: ../templates/dotnetframework_48_build.yml
+  - stage: DEV
+    displayName: DEV
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: Dev_Env
+        variables:
+          - name: ArtifactName
+            value: Training
+          - name: Environment
+            value: DEV
+          - name: SiteName
+            value: LogixLearning
+          - name: TargetFolder
+            value: D:\TFS\LogixLearning\Release
+          - name: WebAppPoolName
+            value: LogixLearning
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT_Env
+        variables:
+          - name: ArtifactName
+            value: Training
+          - name: Environment
+            value: UAT
+          - name: SiteName
+            value: LogixLearning
+          - name: TargetFolder
+            value: D:\TFS\LogixLearning\Release
+          - name: WebAppPoolName
+            value: LogixLearning
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD
+    displayName: PROD
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD_Env
+        variables:
+          - name: ArtifactName
+            value: Training
+          - name: Environment
+            value: Production
+          - name: SiteName
+            value: LogixLearning
+          - name: TargetFolder
+            value: D:\TFS\LogixLearning\Release
+          - name: WebAppPoolName
+            value: LogixLearning
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: ops002
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

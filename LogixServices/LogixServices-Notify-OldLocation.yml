@@ -1,0 +1,145 @@
+# schedules:
+#   - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+#     displayName: Automated SonarQube Build
+#     branches:
+#       include:
+#         - master
+#     always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: api_directory
+    value: platform/API/ApplicationServices/LogixConnect-IDPServices
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: Build
+        displayName: Build
+        steps:
+          - checkout: self
+            path: s/LogixConnect
+          - task: NuGetCommand@2
+            inputs:
+              command: restore
+              restoreSolution: ${{ variables.api_directory }}/LogixHealth.IDP.sln
+              feedsToUse: select
+              vstsFeed: LogixLibrary
+          - task: SonarQubePrepare@5
+            condition: ${{ variables.SonarQube_Condition }}
+            inputs:
+              SonarQube: SonarQube New
+              projectKey: LogixServices-Notify
+              projectName: LogixServices-Notify
+              projectVersion: LogixServices-Notify-Master
+          - task: MSBuild@1
+            displayName: 'Build.IDPServices'
+            inputs:
+              solution: ${{ variables.api_directory }}/LogixHealth.IDP.sln
+              msbuildArchitecture: 'x64'
+              msbuildArguments: '/p:OutDir="$(Build.ArtifactStagingDirectory)\\" /p:DeployDefaultTarget=WebPublish'
+          - task: SonarQubeAnalyze@5
+            condition: ${{ variables.SonarQube_Condition }}
+          - task: SonarQubePublish@5
+            condition: ${{ variables.SonarQube_Condition }}
+          - task: sonar-buildbreaker@8
+            inputs:
+              SonarQube: SonarQube New
+            continueOnError: true
+          - task: PublishSymbols@1
+            displayName: 'Publish symbols path'
+            inputs:
+              SearchPattern: '**\bin\**\*.pdb'
+            continueOnError: true
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Artifact ProjectionApp'
+            inputs:
+              PathtoPublish: '$(Build.ArtifactStagingDirectory)\_PublishedWebsites\LogixHealth.NotificationServices'
+              ArtifactName: 'Notify'
+              publishLocation: 'Container'
+          - template: ../templates/remove_sonarqube.yml
+          - template: ../templates/delete_build_files.yml
+  - stage: DEV
+    displayName: Development
+    dependsOn: Build
+    jobs:
+      - deployment: DEV_Notify
+        displayName: DEV_Notify
+        variables:
+          - name: ArtifactName
+            value: Notify
+          - name: Environment
+            value: DEV
+          - name: SiteName
+            value: LogixServices
+          - name: TargetFolder
+            value: D:\TFS\LogixServices_new\LogixIDP\NotificationServices
+          - name: WebAppPoolName
+            value: LogixServices
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact_mvcapp.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT_Notify
+        displayName: UAT_Notify
+        variables:
+          - name: ArtifactName
+            value: Notify
+          - name: Environment
+            value: UAT
+          - name: SiteName
+            value: LogixServices
+          - name: TargetFolder
+            value: D:\TFS\LogixServices_new\LogixIDP\NotificationServices
+          - name: WebAppPoolName
+            value: LogixServices
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact_mvcapp.yml
+  - stage: PROD
+    displayName: PROD
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD_Notify
+        displayName: PROD_Notify
+        variables:
+          - name: ArtifactName
+            value: Notify
+          - name: Environment
+            value: DEV
+          - name: SiteName
+            value: LogixServices
+          - name: TargetFolder
+            value: D:\TFS\LogixIDP\NotificationServices
+          - name: WebAppPoolName
+            value: LogixServices
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: ops
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact_mvcapp.yml

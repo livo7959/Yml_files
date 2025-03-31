@@ -1,0 +1,47 @@
+variables:
+  - name: app_directory
+    value: apps/wpf/LA/MSMQListener
+  - name: app_sln
+    value: MSMQListener.sln
+  - name: project_name
+    value: LogixAutomation-SVC
+  - name: artifactname_app
+    value: MSMQListener
+trigger: none
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: LAService
+        displayName: LA-Service
+        steps:
+          - checkout: self
+            path: s/MSMQListener
+            clean: true
+          - template: ../templates/dotnetframework_48_build.yml
+  - stage: PROD
+    displayName: PROD
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    variables:
+      - name: ArtifactName
+        value: MSMQListener
+      - name: TargetFolder
+        value: C:\TFS
+      # - name: ServiceName
+      #   value: LogixAutomation-AutomationEngine
+      - name: Environment_WPF
+        value: Prod
+    jobs:
+      - deployment: PROD
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: prod_automation
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

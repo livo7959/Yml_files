@@ -1,0 +1,208 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: false
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: app_directory
+    value: apps/mvc/RequestCCV
+  - name: app_sln
+    value: RequestCCV.sln
+  - name: project_name
+    value: RequestCCV
+  - name: container_path_app
+    value: _PublishedWebsites/RequestCCV
+  - name: artifactname_app
+    value: RequestCCV
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: RequestCCV
+        displayName: RequestCCV
+        steps:
+          - checkout: self
+            clean: true
+            path: s/RequestCCV
+          # - template: ../templates/dotnetframework_48_build.yml
+          - task: CopyFiles@2
+            displayName: Copy scripts
+            inputs:
+              SourceFolder: '$(Build.SourcesDirectory)/$(app_directory)/ClientChartViewer'
+              Contents: '*.config'
+              targetFolder: '$(Build.ArtifactStagingDirectory)'
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Artifact $(project_name) commonService'
+            inputs:
+              PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+              ArtifactName: webconfig
+              publishLocation: Container
+          - template: ../templates/remove_sonarqube.yml
+          - template: ../templates/delete_build_files.yml
+  - stage: DEV
+    displayName: DEV
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        variables:
+          - name: ArtifactName
+            value: webconfig
+          - name: Environment
+            value: DEV
+          - name: SiteName
+            value: RequestCCV
+          - name: tempTargetFolder
+            value: D:\TFS\test
+          - name: WebAppPoolName
+            value: RequestCCV
+          - name: rootpath
+            value: D:\TFS\RequestCCV\Release\RequestCCV
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: ICER-WEB-DEV
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                # - template: ../templates/DownloadArtifact_mvcapp.yml
+                - task: DownloadBuildArtifacts@0
+                  inputs:
+                    artifactName: '$(ArtifactName)'
+                    downloadType: single
+                    downloadPath: $(tempTargetFolder)
+                  condition: variables['ArtifactName']
+                - task: FileTransform@1
+                  inputs:
+                    folderPath: '$(tempTargetFolder)\$(ArtifactName)'
+                    enableXmlTransform: true
+                    xmlTransformationRules: '-transform **\*.$(Environment).config -xml **\*.config'
+                  condition: variables['Environment']
+                - task: PowerShell@2
+                  inputs:
+                    targetType: 'inline'
+                    script: |
+                      Remove-Item -Path '$(rootpath)\*.config' -Force
+                  displayName: 'Clean up old config files'
+                  condition: succeededOrFailed()
+                - task: CopyFiles@2
+                  displayName: 'Copy Files to: $(rootpath)'
+                  inputs:
+                    SourceFolder: '$(tempTargetFolder)\$(ArtifactName)'
+                    Contents: '*.config'
+                    TargetFolder: '$(rootpath)'
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        variables:
+          - name: ArtifactName
+            value: webconfig
+          - name: Environment
+            value: UAT
+          - name: SiteName
+            value: RequestCCV
+          - name: tempTargetFolder
+            value: D:\TFS\test
+          - name: WebAppPoolName
+            value: RequestCCV
+          - name: rootpath
+            value: D:\TFS\Release\RequestCCV
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: ICER-WEB-UAT
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                # - template: ../templates/DownloadArtifact_mvcapp.yml
+                - task: DownloadBuildArtifacts@0
+                  inputs:
+                    artifactName: '$(ArtifactName)'
+                    downloadType: single
+                    downloadPath: $(tempTargetFolder)
+                  condition: variables['ArtifactName']
+                - task: FileTransform@1
+                  inputs:
+                    folderPath: '$(tempTargetFolder)\$(ArtifactName)'
+                    enableXmlTransform: true
+                    xmlTransformationRules: '-transform **\*.$(Environment).config -xml **\*.config'
+                  condition: variables['Environment']
+                - task: PowerShell@2
+                  inputs:
+                    targetType: 'inline'
+                    script: |
+                      Remove-Item -Path '$(rootpath)\*.config' -Force
+                  displayName: 'Clean up old config files'
+                  condition: succeededOrFailed()
+                - task: CopyFiles@2
+                  displayName: 'Copy Files to: $(rootpath)'
+                  inputs:
+                    SourceFolder: '$(tempTargetFolder)\$(ArtifactName)'
+                    Contents: '*.config'
+                    TargetFolder: '$(rootpath)'
+  - stage: PROD_NEW
+    displayName: PROD-NEW
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        variables:
+          - name: ArtifactName
+            value: webconfig
+          - name: Environment
+            value: Production
+          - name: SiteName
+            value: RequestCCV
+          - name: tempTargetFolder
+            value: D:\TFS\test
+          - name: WebAppPoolName
+            value: RequestCCV
+          - name: rootpath
+            value: D:\TFS\Release\RequestCCV
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: CCV
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                # - template: ../templates/DownloadArtifact_mvcapp.yml
+                - task: DownloadBuildArtifacts@0
+                  inputs:
+                    artifactName: '$(ArtifactName)'
+                    downloadType: single
+                    downloadPath: $(tempTargetFolder)
+                  condition: variables['ArtifactName']
+                - task: FileTransform@1
+                  inputs:
+                    folderPath: '$(tempTargetFolder)\$(ArtifactName)'
+                    enableXmlTransform: true
+                    xmlTransformationRules: '-transform **\*.$(Environment).config -xml **\*.config'
+                  condition: variables['Environment']
+                - task: PowerShell@2
+                  inputs:
+                    targetType: 'inline'
+                    script: |
+                      Remove-Item -Path '$(rootpath)\*.config' -Force
+                  displayName: 'Clean up old config files'
+                  condition: succeededOrFailed()
+                - task: CopyFiles@2
+                  displayName: 'Copy Files to: $(rootpath)'
+                  inputs:
+                    SourceFolder: '$(tempTargetFolder)\$(ArtifactName)'
+                    Contents: '*.config'
+                    TargetFolder: '$(rootpath)'

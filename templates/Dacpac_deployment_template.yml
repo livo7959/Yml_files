@@ -1,0 +1,25 @@
+steps:
+  - task: DownloadBuildArtifacts@0
+    displayName: 'Download Artifact DACKPACK'
+    inputs:
+      artifactName: '$(Dacpack_ArtifactName)'
+      buildType: 'current'
+      downloadPath: '$(TargetFolder)'
+  - task: ReplaceVariables@2
+    displayName: 'Replace Variables'
+    inputs:
+      PathToFolder: '$(TargetFolder)\$(Dacpack_ArtifactName)'
+      FilePattern: '*.xml'
+  - task: CmdLine@2
+    displayName: 'Run SqlPackage.exe'
+    inputs:
+      script: |
+        cd "C:\Program Files\Microsoft SQL Server\160\DAC\bin"
+        SqlPackage.exe /Action:Publish /SourceFile:"$(TargetFolder)\$(Dacpack_ArtifactName)\$(Dacpac_file)" /pr:"$(TargetFolder)\$(Dacpack_ArtifactName)\$(xml_file)"
+  - task: PowerShell@2
+    displayName: Delete Build Files
+    condition: succeededOrFailed()
+    inputs:
+      targetType: inline
+      script: |
+        Remove-Item $(TargetFolder)\$(Dacpack_ArtifactName)\* -Recurse -Force

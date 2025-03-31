@@ -1,0 +1,14 @@
+parameters:
+  - name: notifyUsers
+    type: string
+  - name: instructions
+    type: string
+
+jobs:
+  - job: Approval_Into_QA
+    pool: server
+    steps:
+      - task: ManualValidation@0
+        inputs:
+          notifyUsers: ${{ parameters.notifyUsers }}
+          instructions: ${{ parameters.instructions }}

@@ -1,0 +1,169 @@
+# schedules:
+#   - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+#     displayName: Automated SonarQube Build
+#     branches:
+#       include:
+#         - master
+#     always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: app_directory
+    value: apps/mvc/LogixHelp
+trigger: none
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: LogixHelp
+        displayName: LogixHelp
+        steps:
+          - checkout: self
+            path: s/LogixHelp
+            clean: true
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.app_directory }}
+          - task: DotNetCoreCLI@2
+            displayName: 'dotnet Restore LogixHelp'
+            inputs:
+              command: restore
+              projects: ${{ variables.app_directory }}/LogixHealth.Help.Web.sln
+
+          - task: SonarQubePrepare@5
+            condition: ${{ variables.SonarQube_Condition }}
+            inputs:
+              SonarQube: SonarQube New
+              projectKey: LogixHelp
+              projectName: LogixHelp
+              projectVersion: LogixHelp-Master
+          - task: DotNetCoreCLI@2
+            displayName: 'dotnet Build LogixHelp'
+            inputs:
+              command: 'build'
+              projects: ${{ variables.app_directory }}/LogixHealth.Help.Web/LogixHealth.Help.Web.csproj
+              arguments: /p:OutDir="$(Build.ArtifactStagingDirectory)\\" /p:DeployDefaultTarget=WebPublish --warnaserror
+          - task: SonarQubeAnalyze@5
+            condition: ${{ variables.SonarQube_Condition }}
+          - task: SonarQubePublish@5
+            condition: ${{ variables.SonarQube_Condition }}
+          - task: sonar-buildbreaker@8
+            inputs:
+              SonarQube: SonarQube New
+            continueOnError: true
+          - task: DotNetCoreCLI@2
+            displayName: LogixHelp APP Publish
+            inputs:
+              command: publish
+              publishWebProjects: false
+              projects: ${{ variables.app_directory }}/LogixHealth.Help.Web/LogixHealth.Help.Web.csproj
+              arguments: '--output $(Build.ArtifactStagingDirectory)/APP'
+              zipAfterPublish: false
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Artifact Eligibility APP'
+            inputs:
+              PathtoPublish: '$(Build.ArtifactStagingDirectory)/App/LogixHealth.Help.Web'
+              ArtifactName: LogixHelp-App
+              publishLocation: Container
+          - template: ../templates/remove_sonarqube.yml
+          - template: ../templates/delete_build_files.yml
+
+  - stage: DEV
+    displayName: DEV
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        variables:
+          - name: ArtifactName
+            value: LogixHelp-App
+          - name: SiteName
+            value: devlhconnect.logixhealth.com
+          - name: TargetFolder
+            value: D:\TFS\LogixHelp
+          - name: WebAppPoolName
+            value: LogixConnect
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    jobs:
+      - deployment: UAT
+        variables:
+          - name: ArtifactName
+            value: LogixHelp-App
+          - name: SiteName
+            value: LogixConnect
+          - name: TargetFolder
+            value: D:\TFS\LogixHelp
+          - name: WebAppPoolName
+            value: LogixHelp
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: TRAINING
+    displayName: TRAINING
+    dependsOn: Build
+    jobs:
+      - deployment: TRAINING
+        variables:
+          - name: ArtifactName
+            value: LogixHelp-App
+          - name: SiteName
+            value: LogixConnect
+          - name: TargetFolder
+            value: D:\TFS\LogixHelp
+          - name: WebAppPoolName
+            value: LogixConnect
+        environment:
+          name: TRAINING
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD
+    displayName: PROD
+    dependsOn: UAT
+    jobs:
+      - deployment: PROD
+        variables:
+          - name: ArtifactName
+            value: LogixHelp-App
+          - name: SiteName
+            value: LogixConnect
+          - name: TargetFolder
+            value: D:\TFS\LogixHelp
+          - name: WebAppPoolName
+            value: LogixHelp
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

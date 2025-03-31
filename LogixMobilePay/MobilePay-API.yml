@@ -1,0 +1,116 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: api_directory
+    value: platform/API/Microservices/MobilePay/LogixHealth.Microservice.MobilePay
+  - name: api_csproj_file
+    value: LogixHealth.Microservice.MobilePay.csproj
+  - name: project_name
+    value: LogixHealth.Microservice.MobilePay
+  - name: publish_apicsproj_file
+    value: LogixHealth.Microservice.MobilePay.csproj
+  - name: artifactname_api
+    value: MobilePayAPI
+  - name: container_path_api
+    value: LogixHealth.Microservice.MobilePay
+  - name: dotnet_version
+    value: 8.x
+  - name: test_csproj_file
+    value: ../LogixHealth.Microservice.MobilePay.MSTest/LogixHealth.Microservice.MobilePay.MSTest.csproj
+pool:
+  name: Build
+stages:
+  - stage: Build
+    jobs:
+      - job: Build
+        displayName: Build
+        steps:
+          - checkout: self
+            clean: true
+            path: s/MobilePay
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.api_directory }}
+          - template: ../templates/dotnetframework_8_build.yml
+  - stage: DEV
+    displayName: DEV
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        variables:
+          - name: ArtifactName
+            value: MobilePayAPI
+          - name: SiteName
+            value: mobilepay.dmicrosvc.logixhealth.com
+          - name: TargetFolder
+            value: D:\TFS\MicroServices\Atomic\MobilePay\Release
+          - name: WebAppPoolName
+            value: mobilepay.dmicrosvc.logixhealth.com
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        variables:
+          - name: ArtifactName
+            value: MobilePayAPI
+          - name: SiteName
+            value: mobilepay.umicrosvc.logixhealth.com
+          - name: TargetFolder
+            value: D:\TFS\MicroServices\Atomic\MobilePay\Release
+          - name: WebAppPoolName
+            value: mobilepay.umicrosvc.logixhealth.com
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD
+    displayName: PROD
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        variables:
+          - name: ArtifactName
+            value: MobilePayAPI
+          - name: SiteName
+            value: mobilepay.microsvc.logixhealth.com
+          - name: TargetFolder
+            value: D:\TFS\MicroServices\Atomic\MobilePay\Release
+          - name: WebAppPoolName
+            value: mobilepay.microsvc.logixhealth.com
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

@@ -1,0 +1,30 @@
+steps:
+  - checkout: self
+    path: s/$(checkout_path)
+    clean: true
+  - task: UseDotNet@2
+    displayName: 'UseDotNet@2'
+    inputs:
+      version: 8.0.x
+      packageType: sdk
+  - task: DotNetCoreCLI@2
+    displayName: 'Build DACPAC'
+    inputs:
+      command: 'build'
+      projects: '$(dacpac_sqlproj_filepath)'
+      arguments: '/p:OutDir="$(Build.ArtifactStagingDirectory)\\" /p:DeployDefaultTarget=WebPublish'
+    condition: and(variables['dacpac_sqlproj_filepath'], succeeded())
+  - task: PublishBuildArtifacts@1
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      ArtifactName: '$(Dacpack_ArtifactName)'
+      publishLocation: 'Container'
+    condition: and(variables['Dacpack_ArtifactName'], succeeded())
+  - task: PowerShell@2
+    displayName: Delete Build Files
+    condition: succeededOrFailed()
+    inputs:
+      targetType: inline
+      script: |
+        Remove-Item $(Build.SourcesDirectory)\* -Recurse -Force
+        Remove-Item $(Build.ArtifactStagingDirectory)\* -Recurse -Force

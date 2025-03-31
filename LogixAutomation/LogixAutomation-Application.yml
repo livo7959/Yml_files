@@ -1,0 +1,148 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: app_directory
+    value: apps/wpf/LA/LogixAutomation.Application_WPF
+  - name: ArtifactStagingDirectory
+    value: $(Build.ArtifactStagingDirectory)
+trigger: none
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: LAApplication
+        displayName: LA-Application
+        steps:
+          - task: NuGetCommand@2
+            displayName: 'NuGet restore'
+            inputs:
+              restoreSolution: '${{ variables.app_directory }}/UIApplication.sln'
+          - task: SonarQubePrepare@5
+            condition: ${{ variables.SonarQube_Condition }}
+            inputs:
+              SonarQube: SonarQube New
+              projectKey: LA-Application
+              projectName: LogixAutomation-App
+              projectVersion: LogixAutomation-App-Master
+          - task: MSBuild@1
+            displayName: Build LA-Application
+            inputs:
+              solution: '${{ variables.app_directory }}/UIApplication.sln'
+              configuration: $(Build_Env)
+              msbuildArguments: '/p:OutDir="$(ArtifactStagingDirectory)\\" /t:Publish /p:Configuration=Release /p:BuildEnvironment=$(Build_Env) /p:ApplicationVersion=$(application_version) --warnaserror'
+              clean: true
+          - task: MSBuild@1
+            displayName: Build LA-Application Test
+            inputs:
+              solution: '${{ variables.app_directory }}/UIApplicationTests/UIApplicationTests.csproj'
+              msbuildArguments: /p:OutDir="$(Build.ArtifactStagingDirectory)\\" /p:DeployDefaultTarget=WebPublish --warnaserror
+              clean: true
+          - task: PowerShell@2
+            displayName: run vstest
+            inputs:
+              targetType: inline
+              pwsh: true
+              warningPreference: stop
+              script: |
+                & "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\Extensions\TestPlatform\vstest.console.exe" "$(Build.ArtifactStagingDirectory)\UIApplicationTests.dll" /logger:trx /Collect:"Code Coverage"
+          - task: SonarQubeAnalyze@5
+            condition: ${{ variables.SonarQube_Condition }}
+          - task: SonarQubePublish@5
+            condition: ${{ variables.SonarQube_Condition }}
+          - task: sonar-buildbreaker@8
+            inputs:
+              SonarQube: SonarQube New
+            continueOnError: true
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Artifact MergeServices'
+            inputs:
+              PathtoPublish: '$(ArtifactStagingDirectory)\$(Build_Env)'
+              ArtifactName: 'Application'
+              publishLocation: 'Container'
+          - template: ../templates/remove_sonarqube.yml
+          - template: ../templates/delete_build_files.yml
+  - stage: Dev
+    displayName: Dev
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    variables:
+      - name: ArtifactName
+        value: Application
+      - name: SiteName
+        value: LogixAutomation
+      - name: TargetFolder
+        value: D:\TFS\LogixAutomationApplication\Release
+      - name: WebAppPoolName
+        value: LogixAutomation
+    jobs:
+      - deployment: Dev
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: dev_automation
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    variables:
+      - name: ArtifactName
+        value: Application
+      - name: SiteName
+        value: LogixAutomation
+      - name: TargetFolder
+        value: D:\TFS\LogixAutomationApplication\Release
+      - name: WebAppPoolName
+        value: LogixAutomation
+    jobs:
+      - deployment: UAT
+        displayName: UAT
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: uat_automation
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD
+    displayName: PROD
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    variables:
+      - name: ArtifactName
+        value: Application
+      - name: SiteName
+        value: LogixAutomation
+      - name: TargetFolder
+        value: C:\TFS\LogixAutomationApplication\Release
+      - name: WebAppPoolName
+        value: LogixAutomation
+    jobs:
+      - deployment: PROD
+        displayName: PROD
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: prod_automation
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

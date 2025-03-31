@@ -1,0 +1,21 @@
+steps:
+  - checkout: none   # Disables repo checkout
+  - task: PowerShell@2
+    displayName: 'Create Virtual Environment, Install, and List Python Packages'
+    inputs:
+      targetType: 'inline'
+      script: |
+        cd "$(file_path)"
+        Write-Output "switched directory"
+        Write-Output $(venv_activate_path)
+        $(venv_activate_path)
+        pip list
+        & $(python_exe) "$(file_name)" --env "$(environment)"
+
+  - task: PowerShell@2
+    displayName: Delete Build Files
+    condition: succeededOrFailed()
+    inputs:
+      targetType: inline
+      script: |
+        Remove-Item $(Build.SourcesDirectory)\* -Recurse -Force

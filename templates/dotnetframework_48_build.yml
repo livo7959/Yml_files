@@ -1,0 +1,261 @@
+parameters:
+  - name: workingDirectory
+    type: string
+    default: $(System.DefaultWorkingDirectory)
+
+  - name: validate
+    type: boolean
+    default: true
+
+steps:
+  # https://learn.microsoft.com/en-us/azure/devops/pipelines/tasks/reference/nuget-tool-installer-v1?view=azure-pipelines
+  - task: NuGetToolInstaller@1
+    displayName: Install NuGet
+    inputs:
+      versionSpec: $(nuget_version)
+      checkLatest: true
+    condition: and(variables['nuget_version'], succeeded())
+
+  - task: NuGetCommand@2
+    displayName: Restore $(project_name) service
+    inputs:
+      command: restore
+      restoreSolution: '${{ parameters.workingDirectory }}/$(api_directory)/$(api_sln)'
+      feedsToUse: select
+      vstsFeed: LogixLibrary
+    condition: and(variables['api_sln'], succeeded())
+
+  - task: NuGetCommand@2
+    displayName: Restore $(project_name) (1/2)
+    inputs:
+      command: restore
+      restoreSolution: '${{ parameters.workingDirectory }}/$(app_directory)/$(app_sln)'
+      feedsToUse: select
+      vstsFeed: LogixLibrary
+    condition: and(variables['app_sln'], succeeded())
+
+  - task: NuGetCommand@2
+    displayName: Restore $(project_name) (2/2)
+    inputs:
+      command: restore
+      restoreSolution: '${{ parameters.workingDirectory }}/$(app_directory)/$(restore_app_sln)'
+      feedsToUse: select
+      vstsFeed: LogixLibrary
+    condition: and(variables['restore_app_sln'], succeeded())
+
+  - ${{ if eq(parameters.validate, true) }}:
+      - task: MSBuild@1
+        displayName: Build $(project_name) Test (1/2)
+        inputs:
+          solution: '${{ parameters.workingDirectory }}/$(api_directory)/$(test_csproj)'
+          msbuildArguments: /p:OutDir="$(Build.ArtifactStagingDirectory)\\" /p:DeployDefaultTarget=WebPublish --warnaserror
+        condition: and(variables['test_csproj'], succeeded())
+
+  - ${{ if eq(parameters.validate, true) }}:
+      - task: PowerShell@2
+        displayName: run vstest (1/2)
+        inputs:
+          targetType: inline
+          pwsh: true
+          warningPreference: stop
+          script: |
+            & "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\Extensions\TestPlatform\vstest.console.exe" "$(Build.ArtifactStagingDirectory)\$(Test_dll_path)" /logger:trx /Collect:"Code Coverage"
+        condition: and(variables['Test_dll_path'], succeeded())
+
+  - ${{ if eq(parameters.validate, true) }}:
+      - task: PowerShell@2
+        displayName: Convert .coverage to .coveragexml (1/2)
+        inputs:
+          targetType: inline
+          pwsh: true
+          warningPreference: stop
+          script: |
+            $coverageFile = Get-ChildItem -Path ${{ parameters.workingDirectory }}\TestResults -Recurse -Filter *.coverage
+            & "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Team Tools\Dynamic Code Coverage Tools\CodeCoverage.exe" analyze /output:${{ parameters.workingDirectory }}\TestResults\coverage.coveragexml $coverageFile.FullName
+        condition: and(variables['Test_dll_path'], succeeded())
+
+  - ${{ if eq(parameters.validate, true) }}:
+      - task: MSBuild@1
+        displayName: Build $(project_name) Test (2/2)
+        inputs:
+          solution: '${{ parameters.workingDirectory }}/$(app_directory)/$(app_test_csproj)'
+          msbuildArguments: /p:OutDir="$(Build.ArtifactStagingDirectory)\\" /p:DeployDefaultTarget=WebPublish --warnaserror
+        condition: and(variables['app_test_csproj'], succeeded())
+
+  - ${{ if eq(parameters.validate, true) }}:
+      - task: PowerShell@2
+        displayName: run vstest (2/2)
+        inputs:
+          targetType: inline
+          pwsh: true
+          warningPreference: stop
+          script: |
+            & "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\Extensions\TestPlatform\vstest.console.exe" "$(Build.ArtifactStagingDirectory)\$(App_Test_dll_path)" /logger:trx /Collect:"Code Coverage"
+        condition: and(variables['App_Test_dll_path'], succeeded())
+
+  - ${{ if eq(parameters.validate, true) }}:
+      - task: PowerShell@2
+        displayName: Convert .coverage to .coveragexml (2/2)
+        inputs:
+          targetType: inline
+          pwsh: true
+          warningPreference: stop
+          script: |
+            $coverageFile = Get-ChildItem -Path ${{ parameters.workingDirectory }}\TestResults -Recurse -Filter *.coverage
+            & "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Team Tools\Dynamic Code Coverage Tools\CodeCoverage.exe" analyze /output:${{ parameters.workingDirectory }}\TestResults\coverage.coveragexml $coverageFile.FullName
+        condition: and(variables['App_Test_dll_path'], succeeded())
+
+  - ${{ if eq(parameters.validate, true) }}:
+      - task: SonarQubePrepare@5
+        inputs:
+          SonarQube: SonarQube New
+          projectKey: $(project_name)
+          projectName: $(project_name)
+          projectVersion: $(project_name)-Master
+          extraProperties: |
+            # Additional properties that will be passed to the scanner,
+            # Put one key=value per line, example:
+            # sonar.exclusions=**/*.bin
+            sonar.filesize.limit=50
+            sonar.cs.opencover.reportPaths=${{ parameters.workingDirectory }}\TestResults\coverage.coveragexml
+        condition: and(contains(variables['Build.SourceBranch'], 'refs/heads/master'), succeeded())
+
+  - task: MSBuild@1
+    displayName: Build $(project_name) (1/2)
+    inputs:
+      solution: '${{ parameters.workingDirectory }}/$(app_directory)/$(app_sln)'
+      msbuildArguments: /p:OutDir="$(Build.ArtifactStagingDirectory)\\" /p:DeployDefaultTarget=WebPublish --warnaserror
+    condition: and(variables['app_sln'], succeeded())
+
+  - task: MSBuild@1
+    displayName: Build $(project_name) (2/2)
+    inputs:
+      solution: '${{ parameters.workingDirectory }}/$(app_directory)/$(app_csproj_file)'
+      msbuildArguments: /p:OutDir="$(Build.ArtifactStagingDirectory)\\" /p:DeployDefaultTarget=WebPublish --warnaserror
+    condition: and(variables['app_csproj_file'], succeeded())
+
+  - task: MSBuild@1
+    displayName: Build $(project_name) service (1/2)
+    inputs:
+      solution: '${{ parameters.workingDirectory }}/$(api_directory)/$(api_sln)'
+      msbuildArguments: /p:OutDir="$(Build.ArtifactStagingDirectory)\\" /p:DeployDefaultTarget=WebPublish --warnaserror
+    condition: and(variables['api_sln'], succeeded())
+
+  - task: MSBuild@1
+    displayName: Build $(project_name) service (2/2)
+    inputs:
+      solution: '${{ parameters.workingDirectory }}/$(api_directory)/$(api_csproj_file)'
+      msbuildArguments: /p:OutDir="$(Build.ArtifactStagingDirectory)\\" /p:DeployDefaultTarget=WebPublish --warnaserror
+    condition: and(variables['api_csproj_file'], succeeded())
+
+  - task: MSBuild@1
+    displayName: Build $(project_name) Common service
+    inputs:
+      solution: '${{ parameters.workingDirectory }}/$(api_directory)/$(csvc_csproj_file)'
+      msbuildArguments: /p:OutDir="$(Build.ArtifactStagingDirectory)\\" /p:DeployDefaultTarget=WebPublish --warnaserror
+    condition: and(variables['csvc_csproj_file'], succeeded())
+
+  - ${{ if eq(parameters.validate, true) }}:
+      - task: SonarQubeAnalyze@5
+        condition: and(contains(variables['Build.SourceBranch'], 'refs/heads/master'), succeeded())
+
+  - ${{ if eq(parameters.validate, true) }}:
+      - task: SonarQubePublish@5
+        condition: and(contains(variables['Build.SourceBranch'], 'refs/heads/master'), succeeded())
+
+  - ${{ if eq(parameters.validate, true) }}:
+      - task: sonar-buildbreaker@8
+        inputs:
+          SonarQube: SonarQube New
+        continueOnError: true
+
+  - task: DotNetCoreCLI@2
+    displayName: $(project_name) APP Publish
+    inputs:
+      command: publish
+      publishWebProjects: false
+      projects: '$(app_directory)/$(publish_appcsproj_file)'
+      arguments: '--output $(Build.ArtifactStagingDirectory)/$(publish_path_app)'
+      zipAfterPublish: false
+    condition: and(ne(variables['publish_path_app'], ''), succeeded())
+
+  - task: DotNetCoreCLI@2
+    displayName: $(project_name) APP Publish with Default Path
+    inputs:
+      command: publish
+      publishWebProjects: false
+      projects: '$(app_directory)/$(publish_appcsproj_file)'
+      arguments: '--output $(Build.ArtifactStagingDirectory)'
+      zipAfterPublish: false
+    condition: and(eq(variables['publish_path_app'], ''), variables['publish_appcsproj_file'], succeeded())
+
+  - task: DotNetCoreCLI@2
+    displayName: $(project_name) API Publish
+    inputs:
+      command: publish
+      publishWebProjects: false
+      projects: '$(api_directory)/$(publish_apicsproj_file)'
+      arguments: '--output $(Build.ArtifactStagingDirectory)/$(publish_path_api)'
+      zipAfterPublish: false
+    condition: and(ne(variables['publish_path_api'], ''), succeeded())
+
+  - task: DotNetCoreCLI@2
+    displayName: $(project_name) API Publish with Default Path
+    inputs:
+      command: publish
+      publishWebProjects: false
+      projects: '$(api_directory)/$(publish_apicsproj_file)'
+      arguments: '--output $(Build.ArtifactStagingDirectory)'
+      zipAfterPublish: false
+    condition: and(eq(variables['publish_path_api'], ''), variables['publish_apicsproj_file'], succeeded())
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Artifact $(project_name) APP (1/2)
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)/$(container_path_app)'
+      ArtifactName: $(artifactname_app)
+      publishLocation: Container
+    condition: and(ne(variables['container_path_app'], ''), succeeded())
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Artifact $(project_name) APP (2/2)
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      ArtifactName: $(artifactname_app)
+      publishLocation: Container
+    condition: and(eq(variables['container_path_app'], ''), variables['artifactname_app'], succeeded())
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Artifact $(project_name) service (1/2)
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)/$(container_path_service)'
+      ArtifactName: $(artifactname_service)
+      publishLocation: Container
+    condition: and(ne(variables['container_path_service'], ''), succeeded())
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Artifact $(project_name) service (2/2)
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      ArtifactName: $(artifactname_service)
+      publishLocation: Container
+    condition: and(eq(variables['container_path_service'], ''), variables['artifactname_service'], succeeded())
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Artifact $(project_name) CommonService (1/2)
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)/$(container_path_commonService)'
+      ArtifactName: $(artifactname_commonService)
+      publishLocation: Container
+    condition: and(ne(variables['container_path_commonService'], ''), succeeded())
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Artifact $(project_name) CommonService (2/2)
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      ArtifactName: $(artifactname_commonService)
+      publishLocation: Container
+    condition: and(eq(variables['container_path_commonService'], ''), variables['artifactname_commonService'], succeeded())
+
+  - template: ../templates/remove_sonarqube.yml
+  - template: ../templates/delete_build_files.yml

@@ -1,0 +1,329 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: checkout_path
+    value: LogixNCV
+  - name: dacpac_sqlproj_filepath
+    value: db_scripts/ChartViewer/ChartViewerDB/ChartViewer.sqlproj
+  - name: Dacpack_ArtifactName
+    value: ChartViewer_Dacpac
+stages:
+  - stage: Build_APP
+    displayName: Build_APP
+    pool:
+      name: Build
+    variables:
+      - name: app_directory
+        value: apps/mvc/ChartViewer
+      - name: restore_app_sln
+        value: LogixHealth.ChartViewer.sln
+      - name: app_csproj_file
+        value: LogixHealth.ChartViewer/LogixHealth.ChartViewer.csproj
+      - name: project_name
+        value: LogixNCV-ChartviewerApp
+      - name: container_path_app
+        value: _PublishedWebsites\LogixHealth.ChartViewer
+      - name: artifactname_app
+        value: Application
+      - name: container_path_app
+        value: _PublishedWebsites\LogixHealth.ChartViewer
+    jobs:
+      - job: ChartViewerApp
+        displayName: ChartViewerApp
+        steps:
+          - checkout: self
+            clean: true
+            path: s/ChartViewerApp
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.app_directory }}
+          - template: ../templates/dotnetframework_48_build.yml
+  - stage: Build_API
+    displayName: Build_API
+    dependsOn: [] # Run this stage immediately (instead of being dependant upon the previous step).
+    pool:
+      name: Build
+    variables:
+      - name: app_directory
+        value: apps/mvc/ChartViewer
+      - name: restore_app_sln
+        value: LogixHealth.ChartViewer.sln
+      - name: api_directory
+        value: platform/API/ApplicationServices/ChartViewer-api
+      - name: api_csproj_file
+        value: LogixHealth.ChartViewer.BusinessApi/LogixHealth.ChartViewer.API.csproj
+      - name: test_csproj
+        value: ChartViewerUnitTest/ChartViewerUnitTest.csproj
+      - name: Test_dll_path
+        value: ChartViewerUnitTest.dll
+      - name: project_name
+        value: LogixNCV-CharviewerApi
+      - name: container_path_service
+        value: _PublishedWebsites\LogixHealth.ChartViewer.API
+      - name: artifactname_service
+        value: Service
+    jobs:
+      - job: ChartViewerApi
+        displayName: ChartViewerApi
+        steps:
+          - checkout: self
+            clean: true
+            path: s/ChartViewerApi
+          - template: ../templates/dotnetframework_48_build.yml
+
+  - stage: Build_DAC_PACK
+    displayName: Build-DAC-PACK
+    dependsOn: [] # Run this stage immediately (instead of being dependant upon the previous step).
+    pool:
+      name: Build
+    jobs:
+      - job: Build_DAC_PACK
+        displayName: Build-DAC-PACK
+        steps:
+          - template: ../templates/Dacpac_build_template.yml
+
+  - stage: DEV_DACPKDeployment
+    displayName: DEV_DAC_PACK
+    dependsOn: Build_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDDSQL001
+    jobs:
+      - deployment: DEV
+        environment: DEV
+        variables:
+          - name: DBServer
+            value: BEDDSQL001
+          - name: TargetFolder
+            value: M:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: ChartViewer_Dacpac
+          - name: Dacpac_file
+            value: ChartViewer.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: ChartViewer.publish.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml
+
+  - stage: DEV_APP
+    displayName: DEV_APP
+    dependsOn: Build_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        variables:
+          - name: ArtifactName
+            value: Application
+          - name: Environment
+            value: DEV
+          - name: SiteName
+            value: LogixNCV
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixNCV
+          - name: WebAppPoolName
+            value: LogixNCV
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: cv
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: DEV_API
+    displayName: DEV_API
+    dependsOn: Build_API
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        variables:
+          - name: ArtifactName
+            value: Service
+          - name: Environment
+            value: DEV
+          - name: SiteName
+            value: LogixNCV
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixNCV
+          - name: WebAppPoolName
+            value: LogixNCV
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: cv
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT_APP
+    displayName: UAT_APP
+    dependsOn: Build_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        variables:
+          - name: ArtifactName
+            value: Application
+          - name: Environment
+            value: UAT
+          - name: SiteName
+            value: LogixNCV
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixNCV
+          - name: WebAppPoolName
+            value: LogixNCV
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: cv
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT_API
+    displayName: UAT_API
+    dependsOn: Build_API
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        variables:
+          - name: ArtifactName
+            value: Service
+          - name: Environment
+            value: UAT
+          - name: SiteName
+            value: LogixNCV
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixNCV
+          - name: WebAppPoolName
+            value: LogixNCV
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: cv
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: TRAINING_APP
+    displayName: TRAINING_APP
+    dependsOn: UAT_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: TRAINING_APP
+        variables:
+          - name: ArtifactName
+            value: Application
+          - name: Environment
+            value: Training
+          - name: SiteName
+            value: LogixNCV
+          - name: TargetFolder
+            value: D:\TFS\LogixNCV\Release
+          - name: WebAppPoolName
+            value: LogixNCV
+        environment:
+          name: TRAINING
+          resourceType: virtualMachine
+          tags: cv
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: TRAINING_API
+    displayName: TRAINING_API
+    dependsOn: UAT_API
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: TRAINING
+        variables:
+          - name: ArtifactName
+            value: Service
+          - name: Environment
+            value: Training
+          - name: SiteName
+            value: LogixNCV
+          - name: TargetFolder
+            value: D:\TFS\LogixNCV\Release
+          - name: WebAppPoolName
+            value: LogixNCV
+        environment:
+          name: TRAINING
+          resourceType: virtualMachine
+          tags: cv
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD_APP
+    displayName: PROD_APP
+    dependsOn: UAT_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD_APP
+        variables:
+          - name: ArtifactName
+            value: Application
+          - name: Environment
+            value: Prod
+          - name: SiteName
+            value: LogixNCV
+          - name: TargetFolder
+            value: D:\Azure\LogixNCV\Release
+          - name: WebAppPoolName
+            value: LogixNCV
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: cv
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD_API
+    displayName: PROD_API
+    dependsOn: UAT_API
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        variables:
+          - name: ArtifactName
+            value: Service
+          - name: Environment
+            value: Prod
+          - name: SiteName
+            value: LogixNCV
+          - name: TargetFolder
+            value: D:\Azure\LogixNCV\Release
+          - name: WebAppPoolName
+            value: LogixNCV
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: cv
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

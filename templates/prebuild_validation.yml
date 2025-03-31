@@ -1,0 +1,54 @@
+parameters:
+  - name: directoryPaths
+    type: object
+    default: []
+
+steps:
+  - task: Npm@1
+    displayName: Install Npm Packages
+    inputs:
+      command: install
+
+  - ${{ each directoryPath in parameters.directoryPaths }}:
+      - task: PowerShell@2
+        displayName: prettier check
+        inputs:
+          targetType: inline
+          pwsh: true
+          warningPreference: stop
+          script: |
+            npm run prettier_check -- ${{ directoryPath }}
+
+      - task: PowerShell@2
+        displayName: eslint check
+        inputs:
+          targetType: inline
+          pwsh: true
+          warningPreference: stop
+          script: |
+            npm run eslint_check -- ${{ directoryPath }}
+
+      - task: PowerShell@2
+        displayName: eclint check
+        inputs:
+          targetType: inline
+          pwsh: true
+          warningPreference: stop
+          script: |
+            npm run eclint_check -- ${{ directoryPath }}
+
+  - task: PowerShell@2
+    displayName: Validate .csproj File Standards
+    inputs:
+      targetType: filePath
+      pwsh: true
+      filePath: ./ci_cd/utilities/validate_csproj_standards.ps1
+      arguments: -directoryPaths ${{ join(',',parameters.directoryPaths) }}
+
+  - task: PowerShell@2
+    displayName: Validate dotnet format
+    inputs:
+      targetType: filePath
+      pwsh: true
+      filePath: ./ci_cd/utilities/validate_dotnet_format.ps1
+      arguments: -directoryPaths ${{ join(',',parameters.directoryPaths) }}

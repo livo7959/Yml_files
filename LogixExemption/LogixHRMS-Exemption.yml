@@ -1,0 +1,221 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: dotnet_version
+    value: 8.x
+stages:
+  - stage: Build_APP
+    displayName: Build_APP
+    pool:
+      name: Build
+    variables:
+      - name: app_directory
+        value: apps/mvc/LogixHRMS/LogixExemption/LogixExemption
+      - name: publish_appcsproj_file
+        value: LogixHealth.HRMS.Exemption.csproj
+      - name: app_csproj_file
+        value: LogixHealth.HRMS.Exemption.csproj
+      - name: publish_path_app
+        value: APP
+      - name: artifactname_app
+        value: Exemption
+      - name: project_name
+        value: LogixExemptionApp
+      - name: container_path_app
+        value: APP/LogixExemption
+    jobs:
+      - job: ExemptionApp
+        displayName: ExemptionApp
+        steps:
+          - checkout: self
+            clean: true
+            path: s/LogixExemptionApp
+          - template: ../templates/dotnetframework_8_build.yml
+  - stage: Build_API
+    displayName: Build_API
+    dependsOn: [] # Run this stage immediately (instead of being dependant upon the previous step).
+    pool:
+      name: Build
+    variables:
+      - name: api_directory
+        value: platform/API/ApplicationServices/LogixHRMS/LogixExemptionApi/LogixExemption.Api
+      - name: api_csproj_file
+        value: LogixHealth.HRMS.Exemption.Api.csproj
+      - name: publish_apicsproj_file
+        value: LogixHealth.HRMS.Exemption.Api.csproj
+      - name: publish_path_api
+        value: API
+      - name: artifactname_api
+        value: ExemptionApi
+      - name: project_name
+        value: LogixExemptionApi
+      - name: container_path_api
+        value: API/LogixExemption.Api
+    jobs:
+      - job: ExemptionApi
+        displayName: ExemptionApi
+        steps:
+          - checkout: self
+            clean: true
+            path: s/LogixExemptionApi
+          - template: ../templates/dotnetframework_8_build.yml
+
+  - stage: DEV_APP
+    displayName: DEV_APP
+    dependsOn: Build_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        displayName: DEV
+        variables:
+          - name: ArtifactName
+            value: Exemption
+          - name: SiteName
+            value: LogixHRMS
+          - name: TargetFolder
+            value: D:\TFS\LogixHRMS\LogixExemption\Release
+          - name: WebAppPoolName
+            value: LogixExemption
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: DEV_API
+    displayName: DEV_API
+    dependsOn: Build_API
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        displayName: DEV
+        variables:
+          - name: ArtifactName
+            value: ExemptionApi
+          - name: SiteName
+            value: LogixHRMS
+          - name: TargetFolder
+            value: D:\TFS\LogixHRMS\LogixExemption\Release
+          - name: WebAppPoolName
+            value: LogixExemptionAPI
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT_APP
+    displayName: UAT_APP
+    dependsOn: Build_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        displayName: UAT
+        variables:
+          - name: ArtifactName
+            value: Exemption
+          - name: SiteName
+            value: LogixHRMS
+          - name: TargetFolder
+            value: D:\TFS\LogixHRMS\LogixExemption\Release
+          - name: WebAppPoolName
+            value: LogixExemption
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT_API
+    displayName: UAT_API
+    dependsOn: Build_API
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        displayName: UAT
+        variables:
+          - name: ArtifactName
+            value: ExemptionApi
+          - name: SiteName
+            value: LogixHRMS
+          - name: TargetFolder
+            value: D:\TFS\LogixHRMS\LogixExemption\Release
+          - name: WebAppPoolName
+            value: LogixExemptionApi
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD_APP
+    displayName: PROD_APP
+    dependsOn: UAT_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        displayName: PROD
+        variables:
+          - name: ArtifactName
+            value: Exemption
+          - name: SiteName
+            value: LogixHRMS
+          - name: TargetFolder
+            value: D:\TFS\LogixHRMSADFS
+          - name: WebAppPoolName
+            value: LogixExemption
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: weblc04
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD_API
+    displayName: PROD_API
+    dependsOn: UAT_API
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        displayName: PROD
+        variables:
+          - name: ArtifactName
+            value: ExemptionApi
+          - name: SiteName
+            value: LogixHRMS
+          - name: TargetFolder
+            value: D:\TFS\LogixHRMSADFS
+          - name: WebAppPoolName
+            value: LogixExemptionApi
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: weblc04
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

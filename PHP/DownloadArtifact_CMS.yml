@@ -1,0 +1,31 @@
+steps:
+  - task: PowerShell@2
+    displayName: 'STOP-WEBSITE'
+    inputs:
+      targetType: inline
+      script: |
+        'stop-website -Name $(SiteName)'
+  - task: DeleteFiles@1
+    displayName: 'Clean Destination Folder'
+    inputs:
+      SourceFolder: '$(TargetFolder)\$(ArtifactName)'
+      Contents: '/**'
+  - task: DownloadBuildArtifacts@0
+    inputs:
+      artifactName: '$(ArtifactName)'
+      buildType: 'current'
+      downloadPath: '$(TargetFolder)'
+      OverWrite: true
+  - task: PowerShell@2
+    displayName: 'Remove config file'
+    inputs:
+      targetType: inline
+      script: |
+        Remove-Item –Path "$(TargetFolder)\Release\config.php"
+        Rename-Item -Path "$(TargetFolder)\Release\config_$(Environment).php" -NewName "config.php" -Force
+  - task: PowerShell@2
+    displayName: 'START-WEBSITE'
+    inputs:
+      targetType: inline
+      script: |
+        'start-website -Name $(SiteName)'

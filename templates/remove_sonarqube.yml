@@ -1,0 +1,25 @@
+steps:
+  - task: PowerShell@2
+    displayName: Move and Delete .sonarqube Folder
+    condition: succeededOrFailed()
+    inputs:
+      targetType: inline
+      pwsh: true
+      script: |
+        $sourcePath = "$(Agent.BuildDirectory)\.sonarqube"
+        $destinationPath = "C:\deletefile"
+
+        # Check if the source directory exists
+        if (Test-Path $sourcePath) {
+            # Move the .sonarqube folder to the destination
+            Remove-Item -Path "$destinationPath\.sonarqube" -Recurse -Force
+            Move-Item -Path $sourcePath -Destination $destinationPath -Force
+            # Check if the move was successful and delete the source directory if it is empty
+            if (!(Test-Path $sourcePath)) {
+                Write-Output "The .sonarqube folder has been successfully moved to $destinationPath."
+            } else {
+                Write-Output "Failed to move the .sonarqube folder."
+            }
+        } else {
+            Write-Output "The source path $sourcePath does not exist."
+        }

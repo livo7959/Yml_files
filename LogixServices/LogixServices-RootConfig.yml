@@ -1,0 +1,75 @@
+trigger: none
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: RootConfigCheckout
+        displayName: RootConfigCheckout
+        steps:
+          - checkout: self
+            path: s/RootConfig
+            clean: true
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Artifact'
+            inputs:
+              PathtoPublish: 'apps/mvc/LogixServices-IDP-app/LogixServices.Root.Config'
+              ArtifactName: 'RootConfig'
+              publishLocation: 'Container'
+          - template: ../templates/remove_sonarqube.yml
+          - template: ../templates/delete_build_files.yml
+  - stage: DEV
+    dependsOn: Build
+    jobs:
+      - deployment: DEV
+        displayName: DEV
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadBuildArtifacts@0
+                  inputs:
+                    artifactName: RootConfig
+                    downloadType: single
+                    downloadPath: D:\AzureDevOps\LogixServices\RootFolder\Release
+  - stage: UAT
+    dependsOn: Build
+    jobs:
+      - deployment: UAT
+        displayName: UAT
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadBuildArtifacts@0
+                  inputs:
+                    artifactName: RootConfig
+                    downloadType: single
+                    downloadPath: D:\AzureDevOps\LogixServices\RootFolder\Release
+  - stage: PROD
+    dependsOn: UAT
+    jobs:
+      - deployment: PROD
+        displayName: PROD
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadBuildArtifacts@0
+                  inputs:
+                    artifactName: RootConfig
+                    downloadType: single
+                    downloadPath: D:\AzureDevOps\LogixServices\RootFolder\Release

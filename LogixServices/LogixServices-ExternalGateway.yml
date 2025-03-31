@@ -1,0 +1,97 @@
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: api_directory
+    value: platform/ApiGateway/net8
+  - name: api_csproj_file
+    value: LogixHealth.Enterprise.External.APIGateway/LogixHealth.Enterprise.External.APIGateway.csproj
+  - name: project_name
+    value: ExternalApiGateway
+  - name: artifactname_api
+    value: ExternalGateway
+stages:
+  - stage: Build
+    displayName: Build
+    jobs:
+      - job: Build
+        displayName: Build
+        pool:
+          name: Build
+        variables:
+          solution: '${{ variables.api_directory }}/LogixHealth.Enterprise.External.APIGateway/LogixHealth.Enterprise.External.APIGateway.csproj'
+          buildPlatform: 'Any CPU'
+          buildConfiguration: 'Release'
+        steps:
+          - checkout: self
+            clean: true
+          - template: ../templates/dotnetframework_8_build.yml
+  - stage: Dev
+    dependsOn: Build
+    jobs:
+      - deployment: DEV
+        variables:
+          - name: ArtifactName
+            value: ExternalGateway
+          - name: SiteName
+            value: LogixServices
+          - name: TargetFolder
+            value: D:\TFS\GatewayServices\ExternalGateway\Release
+          - name: WebAppPoolName
+            value: Gateway
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        variables:
+          - name: ArtifactName
+            value: ExternalGateway
+          - name: SiteName
+            value: LogixServices
+          - name: TargetFolder
+            value: D:\TFS\GatewayServices\ExternalGateway\Release
+          - name: WebAppPoolName
+            value: LogixServices
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        variables:
+          - name: ArtifactName
+            value: ExternalGateway
+          - name: SiteName
+            value: LogixServices
+          - name: TargetFolder
+            value: D:\TFS\GatewayServices\ExternalGateway\Release
+          - name: WebAppPoolName
+            value: LogixServices
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

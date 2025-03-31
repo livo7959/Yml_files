@@ -1,0 +1,81 @@
+# This is a newer version of the "dotnetframework_48_build.yml" file. We chose to make a new file
+# instead of updating the old one because we want to refactor all of the global variables into
+# parameters. However, this is a breaking change for the 50+ places in the repository that use this
+# template.
+
+parameters:
+  - name: projectName
+    type: string
+  # The full path to the code directory to check.
+  # For example: C:\_IT\LogixHealth\apps\mvc\LogixStaffing
+  - name: codeDirectory
+    type: string
+  - name: projectSolutionName
+    displayName: The name of the ".sln" file to compile.
+    type: string
+  - name: artifactDirectory
+    type: string
+  - name: artifactName
+    type: string
+  - name: validate
+    displayName: Whether to run SonarQube checks.
+    type: boolean
+  - name: workingDirectory
+    type: string
+    default: $(System.DefaultWorkingDirectory)
+
+steps:
+  # https://learn.microsoft.com/en-us/azure/devops/pipelines/tasks/reference/nuget-tool-installer-v1?view=azure-pipelines
+  - task: NuGetToolInstaller@1
+    displayName: Install NuGet
+    inputs:
+      checkLatest: true
+
+  - task: NuGetCommand@2
+    displayName: Install dependencies
+    env:
+      # Necessary in order to get around the following error:
+      # self signed certificate in certificate chain
+      NODE_EXTRA_CA_CERTS: C:\_IT\BEDROOTCA001.cer
+    inputs:
+      command: restore
+      restoreSolution: ${{ parameters.codeDirectory }}\${{ parameters.projectSolutionName }}
+      feedsToUse: select
+      vstsFeed: LogixLibrary
+
+  # - task: SonarQubePrepare@5
+  #   inputs:
+  #     SonarQube: SonarQube New
+  #     projectKey: ${{ parameters.projectName }}
+  #     projectName: ${{ parameters.projectName }}
+  #     projectVersion: ${{ parameters.projectName }}-Master
+  #     extraProperties: |
+  #       # Additional properties that will be passed to the scanner,
+  #       # Put one key=value per line, example:
+  #       # sonar.exclusions=**/*.bin
+  #       sonar.cs.opencover.reportPaths=${{ parameters.workingDirectory }}\TestResults\coverage.coveragexml
+  #   condition: and(contains(variables['Build.SourceBranch'], 'refs/heads/master'), succeeded())
+
+  - task: MSBuild@1
+    displayName: Build
+    inputs:
+      solution: ${{ parameters.codeDirectory }}\${{ parameters.projectSolutionName }}
+      msbuildArguments: /p:OutDir="$(Build.ArtifactStagingDirectory)\\" /p:DeployDefaultTarget=WebPublish --warnaserror
+  
+  # - task: SonarQubeAnalyze@5
+  #   condition: and(contains(variables['Build.SourceBranch'], 'refs/heads/master'), succeeded())
+
+  # - task: SonarQubePublish@5
+  #   condition: and(contains(variables['Build.SourceBranch'], 'refs/heads/master'), succeeded())
+
+  # - task: sonar-buildbreaker@8
+  #   inputs:
+  #     SonarQube: SonarQube New
+  #   continueOnError: true
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish build artifacts
+    inputs:
+      PathtoPublish: $(Build.ArtifactStagingDirectory)/${{ parameters.artifactDirectory }}
+      ArtifactName: ${{ parameters.artifactName }}
+      publishLocation: Container

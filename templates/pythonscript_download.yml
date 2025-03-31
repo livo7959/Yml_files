@@ -1,0 +1,19 @@
+steps:
+  - checkout: self
+    clean: true
+    path: s/RunPythonScript
+
+  - task: CopyFiles@2
+    displayName: Add files to target folder
+    inputs:
+      SourceFolder: $(Build.SourcesDirectory)\utilities\python\$(Project_path)
+      Contents: '**'
+      TargetFolder: C:\Run_Py_Script\$(Project_path)
+
+  - task: PowerShell@2
+    displayName: Delete Build Files
+    condition: succeededOrFailed()
+    inputs:
+      targetType: inline
+      script: |
+        Remove-Item $(Build.SourcesDirectory)\* -Recurse -Force

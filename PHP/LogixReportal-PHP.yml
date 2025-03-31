@@ -1,0 +1,39 @@
+trigger: none
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: BuildReportal
+        displayName: BuildReportal
+        steps:
+          - checkout: self
+            path: s/Reportal
+            clean: true
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Artifact'
+            inputs:
+              PathtoPublish: 'apps/php/Reportal'
+              ArtifactName: 'App'
+              publishLocation: 'Container'
+          - template: ../templates/remove_sonarqube.yml
+          - template: ../templates/delete_build_files.yml
+  - stage: PROD
+    dependsOn: Build
+    jobs:
+      - deployment: PROD
+        displayName: PROD
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: php
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadBuildArtifacts@0
+                  inputs:
+                    artifactName: app
+                    downloadType: single
+                    downloadPath: D:\AzureDevOps\LogixReportal

@@ -1,0 +1,103 @@
+variables:
+  - name: app_directory
+    value: apps/ConsoleApps/LogixBilling.ClaimsAppealDailyReport
+  - name: dotnet_version
+    value: 8.x
+  - name: app_csproj_file
+    value: LogixHealth.App.AppealDailyReport/LogixHealth.App.AppealDailyReport.csproj
+  - name: project_name
+    value: ClaimsAppealDaily
+  # - name: test_app_csproj_file
+  #   value: LogixHealth.App.AppealDailyReport.MsTest/LogixHealth.App.AppealDailyReport.MsTest.csproj
+  - name: publish_appcsproj_file
+    value: LogixHealth.App.AppealDailyReport/LogixHealth.App.AppealDailyReport.csproj
+  - name: container_path_app
+    value: LogixHealth.App.AppealDailyReport
+  - name: artifactname_app
+    value: ClaimsAppealDailySummaryReport
+  - name: test_app_csproj_file
+    value: LogixHealth.App.AppealDailyReport.MsTest/LogixHealth.App.AppealDailyReport.MsTest.csproj
+pool:
+  name: Build
+stages:
+  - stage: Build
+    jobs:
+      - job: Build
+        displayName: Build
+        steps:
+          - checkout: self
+            clean: true
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.app_directory }}
+          - template: ../templates/dotnetframework_8_build.yml
+  - stage: Dev
+    dependsOn: Build
+    jobs:
+      - deployment: ClaimsAppealDailySummaryReport
+        displayName: ClaimsAppealDailySummaryReport
+        variables:
+          - name: ArtifactName
+            value: ClaimsAppealDailySummaryReport
+          - name: SiteName
+            value:
+          - name: TargetFolder
+            value: D:\AzureDevOps\ConsoleApps\ClaimsAppealDailySummaryReport\Release
+          - name: WebAppPoolName
+            value:
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT
+    dependsOn: Build
+    jobs:
+      - deployment: ClaimsAppealDailySummaryReport
+        displayName: ClaimsAppealDailySummaryReport
+        variables:
+          - name: ArtifactName
+            value: ClaimsAppealDailySummaryReport
+          - name: SiteName
+            value:
+          - name: TargetFolder
+            value: D:\AzureDevOps\ConsoleApps\ClaimsAppealDailySummaryReport\Release
+          - name: WebAppPoolName
+            value:
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD
+    dependsOn: UAT
+    jobs:
+      - deployment: ClaimsAppealDailySummaryReport
+        displayName: ClaimsAppealDailySummaryReport
+        variables:
+          - name: ArtifactName
+            value: ClaimsAppealDailySummaryReport
+          - name: SiteName
+            value:
+          - name: TargetFolder
+            value: D:\AzureDevOps\ConsoleApps\ClaimsAppealDailySummaryReport\Release
+          - name: WebAppPoolName
+            value:
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

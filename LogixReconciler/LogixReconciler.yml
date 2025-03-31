@@ -1,0 +1,360 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: app_directory
+    value: apps/mvc/LogixReconciler
+  - name: app_sln
+    value: LogixReconciler.sln
+  - name: api_directory
+    value: platform/API/ApplicationServices/LogixReconcilerServices
+  - name: app_test_csproj
+    value: LogixReconciler.MSTests/LogixReconciler.MSTests.csproj
+  - name: App_Test_dll_path
+    value: LogixReconciler.MSTests.dll
+  - name: project_name
+    value: LogixDMS-Reconciler
+  - name: container_path_app
+    value: _PublishedWebsites\ReconcilerApplication
+  - name: container_path_service
+    value: _PublishedWebsites\ReconcilerServices
+  - name: container_path_commonService
+    value: _PublishedWebsites\ReconcilerCommonServices
+  - name: artifactname_app
+    value: LogixReconcilerApplication
+  - name: artifactname_service
+    value: LogixReconcilerServices
+  - name: artifactname_commonService
+    value: LogixReconcilerCommonServices
+  - name: autoproject
+    value: ReconcilerPlaywright
+  - name: dtesturl
+    value: 'https://dreconciler.logixhealth.com/LogixReconcilerApplication'
+  - name: qtesturl
+    value: 'https://qreconciler.logixhealth.com/LogixReconcilerApplication'
+  - name: utesturl
+    value: 'https://ureconciler.logixhealth.com/LogixReconcilerApplication'
+  - name: ptesturl
+    value: 'https://reconciler.logixhealth.com/LogixReconcilerApplication'
+  - name: RegressionSuite
+    value: 'regression.xml'
+  - name: SanitySuite
+    value: 'sanity.xml'
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: Reconciler
+        displayName: Reconciler
+        steps:
+          - checkout: self
+            clean: true
+            path: s/LogixReconciler
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.app_directory }}
+                - ${{ variables.api_directory }}
+          - template: ../templates/dotnetframework_48_build.yml
+  - stage: Dev
+    displayName: Dev
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: Dev_Web
+        displayName: Dev-Web
+        variables:
+          - name: ArtifactName
+            value: LogixReconcilerApplication
+          - name: Environment
+            value: dev
+          - name: SiteName
+            value: LogixReconciler
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixReconciler
+          - name: WebAppPoolName
+            value: LogixReconciler
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: ICER-WEB-DEV
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+      - deployment: Dev_App
+        displayName: Dev-App
+        dependsOn: Dev_Web
+        variables:
+          - name: ArtifactName
+            value: LogixReconcilerServices
+          - name: Environment
+            value: dev
+          - name: SiteName
+            value: LogixReconciler
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixReconciler
+          - name: WebAppPoolName
+            value: LogixReconciler
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: ICER-APP-DEV
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+      - deployment: Dev_CSVC
+        displayName: Dev-CSVC
+        dependsOn: Dev_App
+        variables:
+          - name: ArtifactName
+            value: LogixReconcilerCommonServices
+          - name: Environment
+            value: dev
+          - name: SiteName
+            value: LogixReconciler
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixReconciler
+          - name: WebAppPoolName
+            value: LogixReconciler
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: ICER-APP-DEV
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT_Web
+        displayName: UAT-Web
+        variables:
+          - name: ArtifactName
+            value: LogixReconcilerApplication
+          - name: Environment
+            value: UAT
+          - name: SiteName
+            value: LogixReconciler
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixReconciler
+          - name: WebAppPoolName
+            value: LogixReconciler
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: ICER-WEB-UAT
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+      - deployment: UAT_App
+        displayName: UAT-App
+        dependsOn: UAT_Web
+        variables:
+          - name: ArtifactName
+            value: LogixReconcilerServices
+          - name: Environment
+            value: UAT
+          - name: SiteName
+            value: LogixReconciler
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixReconciler
+          - name: WebAppPoolName
+            value: LogixReconciler
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: ICER-APP-UAT
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+      - deployment: UAT_CSVC
+        displayName: UAT-CSVC
+        dependsOn: UAT_App
+        variables:
+          - name: ArtifactName
+            value: LogixReconcilerCommonServices
+          - name: Environment
+            value: UAT
+          - name: SiteName
+            value: LogixReconciler
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixReconciler
+          - name: WebAppPoolName
+            value: LogixReconciler
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: ICER-APP-UAT
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: Training
+    displayName: Training
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: Training_Web
+        displayName: Training-Web
+        variables:
+          - name: ArtifactName
+            value: LogixReconcilerApplication
+          - name: Environment
+            value: Training
+          - name: SiteName
+            value: LogixReconciler
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixReconciler
+          - name: WebAppPoolName
+            value: LogixReconciler
+        environment:
+          name: TRAINING
+          resourceType: virtualMachine
+          tags: TWEBICER
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+      - deployment: Training_App
+        displayName: Training-App
+        dependsOn: Training_Web
+        variables:
+          - name: ArtifactName
+            value: LogixReconcilerServices
+          - name: Environment
+            value: Training
+          - name: SiteName
+            value: LogixReconciler
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixReconciler
+          - name: WebAppPoolName
+            value: LogixReconciler
+        environment:
+          name: TRAINING
+          resourceType: virtualMachine
+          tags: TAPPICER
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+      - deployment: Training_CSVC
+        displayName: Training-CSVC
+        dependsOn: Training_App
+        variables:
+          - name: ArtifactName
+            value: LogixReconcilerCommonServices
+          - name: Environment
+            value: Training
+          - name: SiteName
+            value: LogixReconciler
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixReconciler
+          - name: WebAppPoolName
+            value: LogixReconciler
+        environment:
+          name: TRAINING
+          resourceType: virtualMachine
+          tags: TAPPICER
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD
+    displayName: PROD
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD_Web
+        displayName: PROD-Web
+        variables:
+          - name: ArtifactName
+            value: LogixReconcilerApplication
+          - name: Environment
+            value: Prod
+          - name: SiteName
+            value: LogixReconciler
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixReconciler
+          - name: WebAppPoolName
+            value: LogixReconciler
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: PWEBICER
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+      - deployment: PROD_App
+        displayName: PROD-App
+        dependsOn: PROD_Web
+        variables:
+          - name: ArtifactName
+            value: LogixReconcilerServices
+          - name: Environment
+            value: Prod
+          - name: SiteName
+            value: LogixReconciler
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixReconciler
+          - name: WebAppPoolName
+            value: LogixReconciler
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: PAPPICER
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+      - deployment: PROD_CSVC
+        displayName: PROD-CSVC
+        dependsOn: PROD_App
+        variables:
+          - name: ArtifactName
+            value: LogixReconcilerCommonServices
+          - name: Environment
+            value: Prod
+          - name: SiteName
+            value: LogixReconciler
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixReconciler
+          - name: WebAppPoolName
+            value: LogixReconciler
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: PAPPICER
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

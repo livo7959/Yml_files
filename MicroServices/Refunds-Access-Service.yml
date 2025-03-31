@@ -1,0 +1,49 @@
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: Build
+        steps:
+          - checkout: self
+            clean: true
+          - task: DotNetCoreCLI@2
+            displayName: Restore
+            inputs:
+              command: restore
+              projects: platform/API/Microservices/Refunds/LogixHealth.Microservice.Refunds/LogixHealth.Microservice.Refunds.csproj
+              feedsToUse: select
+              vstsFeed: LogixLibrary
+          # - task: SonarQubePrepare@5
+          #   inputs:
+          #     SonarQube: SonarQube New
+          #     projectKey: '$(project_name)'
+          #     projectName: '$(project_name)'
+          #     projectVersion: '$(project_name)-Master'
+          #   condition: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+          - task: DotNetCoreCLI@2
+            displayName: Build  APP
+            inputs:
+              command: 'build'
+              projects: platform/API/Microservices/Refunds/LogixHealth.Microservice.Refunds/LogixHealth.Microservice.Refunds.csproj
+              arguments: '/p:OutDir="$(Build.ArtifactStagingDirectory)\\" /p:DeployDefaultTarget=WebPublish --warnaserror'
+          # - task: SonarQubeAnalyze@5
+          #   condition: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+          # - task: SonarQubePublish@5
+          #   condition: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+          - task: DotNetCoreCLI@2
+            displayName: 'APP Publish'
+            inputs:
+              command: publish
+              publishWebProjects: false
+              projects: platform/API/Microservices/Refunds/LogixHealth.Microservice.Refunds/LogixHealth.Microservice.Refunds.csproj
+              arguments: '--output $(Build.ArtifactStagingDirectory)'
+              zipAfterPublish: false
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Artifact APP'
+            inputs:
+              PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+              ArtifactName: Billing_DataAccess
+              publishLocation: Container
+          - template: ../templates/delete_build_files.yml

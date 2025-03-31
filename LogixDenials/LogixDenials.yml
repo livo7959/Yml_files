@@ -1,0 +1,291 @@
+trigger: none
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: autoproject
+    value: DenialsPlaywright
+  - name: dtesturl
+    value: https://ddenials.logixhealth.com
+  - name: qtesturl
+    value: https://qdenials.logixhealth.com
+  - name: utesturl
+    value: https://udenials.logixhealth.com
+  - name: ptesturl
+    value: https://denials.logixhealth.com
+  - name: RegressionSuite
+    value: 'regression.xml'
+  - name: SanitySuite
+    value: 'sanity.xml'
+  - name: dotnet_version
+    value: 8.x
+stages:
+  - stage: Build_APP
+    displayName: Build_APP
+    pool:
+      name: Build
+    variables:
+      - name: app_directory
+        value: apps/mvc/LogixDenials/LogixHealth.Denials
+      - name: app_csproj_file
+        value: LogixHealth.Denials.sln
+      - name: project_name
+        value: LogixDenialsApp
+      - name: container_path_app
+        value: APP/LogixHealth.Denials
+      - name: publish_path_app
+        value: APP
+      - name: publish_appcsproj_file
+        value: LogixHealth.Denials/LogixHealth.Denials.csproj
+      - name: artifactname_app
+        value: Release
+      - name: test_app_csproj_file
+        value: LogixHealth.Denials.MSUnitTest/LogixHealth.Denials.MSUnitTest.csproj
+    jobs:
+      - job: DenialsApp
+        displayName: DenialsApp
+        steps:
+          - checkout: self
+            clean: true
+            path: s/LogixDenialsApp
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.app_directory }}
+          - template: ../templates/dotnetframework_8_build.yml
+  - stage: Build_API
+    displayName: Build_API
+    dependsOn: [] # Run this stage immediately (instead of being dependant upon the previous step).
+    pool:
+      name: Build
+    variables:
+      - name: api_directory
+        value: platform/API/ApplicationServices/LogixDenialsServices
+      - name: project_name
+        value: LogixDenialsApi
+      - name: container_path_api
+        value: API/LogixHealth.Denials.API
+      - name: publish_path_api
+        value: API
+      - name: publish_apicsproj_file
+        value: LogixHealth.Denials.API/LogixHealth.Denials.API.csproj
+      - name: artifactname_app
+        value: Release
+      - name: artifactname_api
+        value: Services
+      - name: test_csproj_file
+        value: LogixHealth.Denials.API.MSUnitTest/LogixHealth.Denials.API.MSUnitTest/LogixHealth.Denials.API.MSUnitTest.csproj
+    jobs:
+      - job: DenialsApi
+        displayName: DenialsApi
+        steps:
+          - checkout: self
+            clean: true
+            path: s/LogixDenialsApi
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.api_directory }}
+          - template: ../templates/dotnetframework_8_build.yml
+
+  - stage: Build_DAC_PACK
+    displayName: Build-DAC-PACK
+    dependsOn: [] # Run this stage immediately (instead of being dependant upon the previous step).
+    pool:
+      name: Build
+    variables:
+    - name: checkout_path
+      value: LogixDenials
+    - name: dacpac_sqlproj_filepath
+      value: db_scripts/LogixDenials/DB Project/Denials.sln
+    - name: Dacpack_ArtifactName
+      value: Denials_Dacpac
+    jobs:
+      - job: Build_DAC_PACK
+        displayName: Build-DAC-PACK
+        steps:
+          - template: ../templates/Dacpac_build_template.yml
+  - stage: DACPKDeployment
+    displayName: DEV-DAC-PACK
+    dependsOn: Build_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDDSQL001
+    jobs:
+      - deployment: DEV
+        environment: DEV
+        variables:
+          - name: DBServer
+            value: BEDDSQL001
+          - name: TargetFolder
+            value: M:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: Denials_Dacpac
+          - name: Dacpac_file
+            value: Denials.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: Denials.publish.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml
+  - stage: DEV_APP
+    displayName: DEV_APP
+    dependsOn: Build_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        displayName: DEV
+        variables:
+          - name: ArtifactName
+            value: Release
+          - name: SiteName
+            value: LogixDenials
+          - name: TargetFolder
+            value: D:\TFS\LogixDenials
+          - name: WebAppPoolName
+            value: LogixDenials-new
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: DEV_API
+    displayName: DEV_API
+    dependsOn: Build_API
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        displayName: DEV
+        variables:
+          - name: ArtifactName
+            value: Services
+          - name: SiteName
+            value: LogixDenials
+          - name: TargetFolder
+            value: D:\TFS\LogixDenials
+          - name: WebAppPoolName
+            value: LogixDenialsAPI
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT_APP
+    displayName: UAT_APP
+    dependsOn: Build_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        displayName: UAT
+        variables:
+          - name: ArtifactName
+            value: Release
+          - name: SiteName
+            value: LogixDenials
+          - name: TargetFolder
+            value: D:\TFS\LogixDenials
+          - name: WebAppPoolName
+            value: LogixDenials
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT_API
+    displayName: UAT_API
+    dependsOn: Build_API
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        displayName: UAT
+        variables:
+          - name: ArtifactName
+            value: Services
+          - name: SiteName
+            value: LogixDenials
+          - name: TargetFolder
+            value: D:\TFS\LogixDenials
+          - name: WebAppPoolName
+            value: LogixDenials
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD_APP
+    displayName: PROD_APP
+    dependsOn: UAT_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        displayName: PROD
+        variables:
+          - name: ArtifactName
+            value: Release
+          - name: SiteName
+            value: LogixDenials
+          - name: TargetFolder
+            value: D:\TFS\LogixDenials
+          - name: WebAppPoolName
+            value: LogixDenials
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: billing
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD_API
+    displayName: PROD_API
+    dependsOn: UAT_API
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        displayName: PROD
+        variables:
+          - name: ArtifactName
+            value: Services
+          - name: SiteName
+            value: LogixDenials
+          - name: TargetFolder
+            value: D:\TFS\LogixDenials
+          - name: WebAppPoolName
+            value: LogixDenials
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: billing
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

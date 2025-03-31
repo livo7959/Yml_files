@@ -1,0 +1,148 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: api_directory
+    value: platform/API/ApplicationServices/LogixConnectHeaderServices
+  - name: api_sln
+    value: LogixConnectHeaderServices.sln
+  - name: project_name
+    value: LogixConnect-HeaderFooter
+  - name: test_csproj
+    value: LogixHealth.Common.Services.Tests/LogixHealth.Common.Services.Tests.csproj
+  - name: Test_dll_path
+    value: LogixHealth.Connect.Services.Tests.dll
+  - name: container_path_commonService
+    value: _PublishedWebsites\LogixHealth.Common.Services
+  - name: artifactname_commonService
+    value: connectPortalCommonServices
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: Build
+        displayName: Build
+        steps:
+          - checkout: self
+            path: s/LogixConnect
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.api_directory }}
+          - template: ../templates/dotnetframework_48_build.yml
+  - stage: DEV_HeaderFooter
+    displayName: DEV_Header_FooterService
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: LC_Legacy_Header_Footer_SVC
+        displayName: LC-Legacy-Header/Footer-Services
+        variables:
+          - name: ArtifactName
+            value: connectPortalCommonServices
+          - name: Environment
+            value: DEV
+          - name: SiteName
+            value: LogixServices
+          - name: TargetFolder
+            value: D:\AzureDevOps\LogixServices\Common\Release
+          - name: WebAppPoolName
+            value: LogixServices
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: LogixSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT_HeaderFooter
+    displayName: UAT_Header_FooterService
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: LC_Legacy_Header_Footer_SVC
+        displayName: LC-Legacy-Header/Footer-Services
+        variables:
+          - name: ArtifactName
+            value: connectPortalCommonServices
+          - name: Environment
+            value: UAT
+          - name: SiteName
+            value: LogixServices
+          - name: TargetFolder
+            value: D:\AzureDevOps\LogixServices\Common\Release
+          - name: WebAppPoolName
+            value: LogixServices
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: LogixSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: TRAINING_HeaderFooter
+    displayName: TRAINING_Header_FooterService
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: LC_Legacy_Header_Footer_SVC
+        displayName: LC-Legacy-Header/Footer-Services
+        variables:
+          - name: ArtifactName
+            value: connectPortalCommonServices
+          - name: Environment
+            value: TRAINING
+          - name: SiteName
+            value: LogixServices
+          - name: TargetFolder
+            value: D:\AzureDevOps\LogixServices\Common\Release
+          - name: WebAppPoolName
+            value: LogixServices
+        environment:
+          name: TRAINING
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD_HeaderFooter
+    displayName: PROD_Header_FooterService
+    dependsOn: UAT_HeaderFooter
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: LC_Legacy_HeaderFooterService
+        displayName: LC-Legacy-Header/Footer-Service
+        variables:
+          - name: ArtifactName
+            value: connectPortalCommonServices
+          - name: Environment
+            value: Prod
+          - name: TargetFolder
+            value: D:\AzureDevOps\LogixServices\Common\Release
+          - name: WebAppPoolName
+            value: LogixConnectHeader
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: LogixSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

@@ -1,0 +1,164 @@
+trigger: none
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: release_branch_condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/release/')
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: autoproject
+    value: WebsitePlaywright
+  - name: dtesturl
+    value: 'https://dlogixhealth.logixhealth.com'
+  - name: qtesturl
+    value: 'https://qlogixhealth.logixhealth.com'
+  - name: utesturl
+    value: 'https://ulogixhealth.logixhealth.com'
+  - name: ptesturl
+    value: 'https://www.logixhealth.com'
+  - name: dotnet_version
+    value: 8.x
+stages:
+  - stage: Build_APP
+    displayName: Build_APP
+    pool:
+      name: Build
+    variables:
+      - name: app_directory
+        value: apps/mvc/website
+      - name: app_csproj_file
+        value: LogixHealthWebsite.csproj
+      - name: project_name
+        value: LogixWebsiteApp
+      - name: publish_appcsproj_file
+        value: LogixHealthWebsite.csproj
+      - name: container_path_app
+        value: APP
+      - name: artifactname_app
+        value: Release
+      - name: publish_path_app
+        value: APP
+    jobs:
+      - job: WebsiteApp
+        displayName: WebsiteApp
+        steps:
+          - checkout: self
+            clean: true
+            path: s/LogixWebsiteApp
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.app_directory }}
+          - template: ../templates/dotnetframework_48_build.yml
+  - stage: DEV_APP
+    displayName: DEV_APP
+    dependsOn: Build_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        displayName: DEV
+        variables:
+          - name: ArtifactName
+            value: Release
+          - name: SiteName
+            value: LogixHealth
+          - name: TargetFolder
+            value: D:\AzureDevOps\CorpWebsite
+          - name: WebAppPoolName
+            value: LogixHealth
+          - name: Environment
+            value: DEV
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT_APP
+    displayName: UAT_APP
+    dependsOn: Build_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        displayName: UAT
+        variables:
+          - name: ArtifactName
+            value: Release
+          - name: SiteName
+            value: LogixHealth
+          - name: TargetFolder
+            value: D:\AzureDevOps\CorpWebsite
+          - name: WebAppPoolName
+            value: LogixHealth
+          - name: Environment
+            value: UAT
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT_Smoke_Tests
+    displayName: UAT_Smoke_Tests
+    dependsOn: UAT_APP
+    pool:
+      name: QAAUTO
+    jobs:
+      - deployment: Run_Smoke_Tests
+        displayName: Run_Smoke_Tests
+        environment: UAT
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                  path: s\
+                  clean: true
+                - task: PowerShell@2
+                  displayName: Execute Smoke Test
+                  inputs:
+                    targetType: filePath
+                    filepath: 'test\automation\Execute-Test-Automation.ps1'
+                    arguments: >
+                      -appdir $(autoproject)
+                      -env $(utesturl)
+  - stage: PROD_APP
+    displayName: PROD_APP
+    dependsOn: UAT_APP
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        displayName: PROD
+        variables:
+          - name: ArtifactName
+            value: Release
+          - name: SiteName
+            value: LogixHealth
+          - name: TargetFolder
+            value: D:\AzureDevOps\CorpWebsite
+          - name: WebAppPoolName
+            value: LogixHealth
+          - name: Environment
+            value: PROD
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: ops
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

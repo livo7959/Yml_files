@@ -1,0 +1,145 @@
+trigger: none
+
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: autoproject
+    value: RemitParserPlaywright
+  - name: dtesturl
+    value: 'https://dremitparser.logixhealth.com/home'
+  - name: qtesturl
+    value: 'https://qremitparser.logixhealth.com/home'
+  - name: utesturl
+    value: 'https://uremitparser.logixhealth.com/home'
+  - name: ptesturl
+    value: 'https://remitparser.logixhealth.com/home'
+  - name: RegressionSuite
+    value: 'regression.xml'
+  - name: SanitySuite
+    value: 'sanity.xml'
+  - name: angular_version
+    value: 18.x
+  - name: cli_working_directory
+    value: apps/Angular/projects
+  - name: package_working_directory
+    value: apps/Angular
+  - name: sonar_project_name
+    value: RemitParser
+  - name: sonar_working_directory
+    value: apps/Angular/projects/logix-remitparser/src
+  - name: build_project_name
+    value: remitparser
+  # - name: build_testproject_name
+  #   value:
+  - name: pubilsh_path
+    value: apps/Angular/dist/logix-remitparser
+  - name: artifactname
+    value: App
+  - name: Prebuild_Validation
+    value: prebuild
+parameters:
+  - name: Build_env
+    type: string
+    default: DEV
+    values:
+      - DEV
+      - UAT
+      - PROD
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+
+    jobs:
+      - job: RemitParser
+        displayName: RemitParser
+        steps:
+          - checkout: self
+          - template: ../templates/angular_build.yml
+            parameters:
+              Build_env: ${{ parameters.Build_env }}
+  - stage: DEV
+    displayName: DEV
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        displayName: DEV
+        variables:
+          - name: ArtifactName
+            value: App
+          - name: SiteName
+            value: LogixRemitParser
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixRemitParser
+          - name: WebAppPoolName
+            value: LogixRemitParser
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: billing
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        displayName: UAT
+        variables:
+          - name: ArtifactName
+            value: App
+          - name: SiteName
+            value: LogixRemitParser
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixRemitParser
+          - name: WebAppPoolName
+            value: LogixRemitParser
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: billing
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD
+    displayName: PROD
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        displayName: PROD
+        variables:
+          - name: ArtifactName
+            value: App
+          - name: SiteName
+            value: LogixRemitParser
+          - name: TargetFolder
+            value: D:\TFS\Release\LogixRemitParser
+          - name: WebAppPoolName
+            value: LogixRemitParser
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: billing
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

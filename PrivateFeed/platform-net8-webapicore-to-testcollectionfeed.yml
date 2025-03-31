@@ -1,0 +1,40 @@
+pool:
+  name: Build
+
+jobs:
+  - job: PublishLibraryToFeed
+    steps:
+      - task: UseDotNet@2
+        displayName: 'Use .NET Core sdk 8.x'
+        inputs:
+          version: 8.x
+      - task: DotNetCoreCLI@2
+        inputs:
+          command: restore
+          projects: 'platform/Libraries/net8/LogixHealth.EnterpriseLibrary.WebApiCore/LogixHealth.EnterpriseLibrary.WebApiCore.csproj'
+          feedsToUse: select
+      - task: DotNetCoreCLI@2
+        inputs:
+          command: 'build'
+          projects: 'platform/Libraries/net8/LogixHealth.EnterpriseLibrary.WebApiCore/LogixHealth.EnterpriseLibrary.WebApiCore.csproj'
+      - task: UseDotNet@2
+        displayName: 'Use .NET Core sdk 8.x'
+        inputs:
+          version: 8.x
+      - task: DotNetCoreCLI@2
+        inputs:
+          command: 'pack'
+          packagesToPack: 'platform/Libraries/net8/LogixHealth.EnterpriseLibrary.WebApiCore/LogixHealth.EnterpriseLibrary.WebApiCore.csproj'
+          nobuild: true
+          versioningScheme: 'off'
+      - task: NuGetAuthenticate@0
+        displayName: 'NuGet Authenticate'
+      - task: NuGetCommand@2
+        displayName: 'NuGet push'
+        inputs:
+          command: 'push'
+          packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'
+          nuGetFeedType: 'internal'
+          publishVstsFeed: '6292c2f2-3024-496c-b36b-d7f3e6b5d111'
+      - template: ../templates/remove_sonarqube.yml
+      - template: ../templates/delete_build_files.yml

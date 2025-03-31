@@ -1,0 +1,10 @@
+jobs:
+  - job: Run_DB_Scripts
+    dependsOn: Deploy_Into_QA_App
+    pool: server
+    steps:
+      - task: ManualValidation@0
+        inputs:
+          notifyUsers: '[Software Engineering]\DBA'
+          instructions: Please execute the necessary scripts associated with this release here $(dbScripts)
+          condition: and(eq(variables['dbScripts']), succeeded())

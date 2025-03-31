@@ -1,0 +1,115 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: api_directory
+    value: platform/API/Microservices/ReportingDM
+  - name: api_csproj_file
+    value: LogixHealth.Microservice.ReportingDM/LogixHealth.Microservice.ReportingDM.csproj
+  - name: project_name
+    value: Microservices-ReportingDM
+  - name: publish_apicsproj_file
+    value: LogixHealth.Microservice.ReportingDM/LogixHealth.Microservice.ReportingDM.csproj
+  - name: artifactname_api
+    value: ReportingDM
+  - name: dotnet_version
+    value: 8.x
+  - name: test_csproj_file
+    value: LogixHealth.Microservice.ReportingDM.Test/LogixHealth.Microservice.ReportingDM.Test.csproj
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: ReportingDM
+        displayName: ReportingDM
+        steps:
+          - checkout: self
+            clean: true
+            path: s/ReportingDM
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.api_directory }}
+          - template: ../templates/dotnetframework_8_build.yml
+  - stage: DEV
+    displayName: DEV
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        variables:
+          - name: ArtifactName
+            value: ReportingDM
+          - name: SiteName
+            value: reportingdm.dmicrosvc.logixhealth.com
+          - name: TargetFolder
+            value: D:\TFS\MicroServices\Atomic\ReportingDM\Release\
+          - name: WebAppPoolName
+            value: reportingdm.dmicrosvc.logixhealth.com
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        variables:
+          - name: ArtifactName
+            value: ReportingDM
+          - name: SiteName
+            value: reportingdm.umicrosvc.logixhealth.com
+          - name: TargetFolder
+            value: D:\TFS\MicroServices\Atomic\ReportingDM\Release\
+          - name: WebAppPoolName
+            value: reportingdm.umicrosvc.logixhealth.com
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD
+    displayName: PROD
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        variables:
+          - name: ArtifactName
+            value: ReportingDM
+          - name: SiteName
+            value: reportingdm.microsvc.logixhealth.com
+          - name: TargetFolder
+            value: D:\TFS\MicroServices\Atomic\ReportingDM\Release\
+          - name: WebAppPoolName
+            value: reportingdm.microsvc.logixhealth.com
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

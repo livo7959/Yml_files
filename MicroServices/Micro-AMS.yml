@@ -1,0 +1,213 @@
+schedules:
+  - cron: "0 0 * * 6" # Every Saturday at midnight UTC
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+
+parameters:
+  - name: Environment
+    type: string
+    default: development
+    values:
+      - development
+      - uat
+      - prod
+
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: sonarToken
+    value: 984e75ab53210597fdf9318e160fd2a5b136af05
+  - name: buildConfiguration
+    value: Release
+  - name: sonarProjectKey
+    value: Microservices-AMS
+  - name: sonarScannerVersion
+    value: '5.15'
+  - name: codeCoverageReport
+    value: '$(Build.SourcesDirectory)/testes/coverage.opencover.xml'
+  - name: api_directory
+    value: platform/API/Microservices/AMS
+  - name: api_csproj_file
+    value: LogixHealth.Microservice.AMS/LogixHealth.Microservice.AMS.csproj
+  - name: project_name
+    value: Microservices-AMS
+  - name: container_path_api
+    value: LogixHealth.Microservice.AMS
+  - name: artifactname_api
+    value: AMS
+  - name: publish_apicsproj_file
+    value: LogixHealth.Microservice.AMS/LogixHealth.Microservice.AMS.csproj
+  - name: test_csproj_file
+    value: AMSLogixHealth.Microservice.AMS.MStest/LogixHealth.Microservice.AMS.MStest.csproj
+  - name: EF_sln
+    value: yes
+  - name: buildEnvironment
+    value: ${{ parameters.Environment }}
+
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: AMS
+        displayName: AMS
+        steps:
+          - checkout: self
+            clean: true
+            path: s/AMS
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.api_directory }}
+          - template: ../templates/dotnetframework_8_build.yml
+
+  - stage: EFDeployment_DEV
+    displayName: EF-Deploy-Dev
+    dependsOn: Build
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDSQLBK001
+    jobs:
+      - deployment: DEV
+        environment: DEV
+        variables:
+          - name: databaseName
+            value: logixoltp
+          - name: scriptPaths
+            value: E:\DB-solutions\Dev\Efbundle\script.sql
+          - name: servers
+            value: BEDDSQL001
+          - name: Download_Path
+            value: E:\DB-solutions\Dev
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/EF_SQl_Script_Execution.yml
+  - stage: DEV
+    displayName: DEV
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        variables:
+          - name: ArtifactName
+            value: AMS
+          - name: SiteName
+            value: ams.dmicrosvc.logixhealth.com-new
+          - name: TargetFolder
+            value: D:\TFS\MicroServices\Atomic\AMS\Release\
+          - name: WebAppPoolName
+            value: ams.dmicrosvc.logixhealth.com-new
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: EFDeployment_UAT
+    displayName: EF-Deploy-UAT
+    dependsOn: Build
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDSQLBK001
+    jobs:
+      - deployment: UAT
+        environment: UAT
+        variables:
+          - name: databaseName
+            value: logixoltp
+          - name: scriptPaths
+            value: E:\DB-solutions\Dev\Efbundle\script.sql
+          - name: servers
+            value: BEDUSQL001
+          - name: Download_Path
+            value: E:\DB-solutions\Dev
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/EF_SQl_Script_Execution.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        variables:
+          - name: ArtifactName
+            value: AMS
+          - name: SiteName
+            value: ams.umicrosvc.logixhealth.com
+          - name: TargetFolder
+            value: D:\TFS\MicroServices\Atomic\AMS\Release
+          - name: WebAppPoolName
+            value: ams.umicrosvc.logixhealth.com
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: EFDeploymentPROD
+    displayName: EF-Deploy-PROD
+    dependsOn: EFDeployment_UAT
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDSQLBK001
+    jobs:
+      - deployment: PROD
+        environment: PROD
+        variables:
+          - name: databaseName
+            value: logixoltp
+          - name: scriptPaths
+            value: E:\DB-solutions\Dev\Efbundle\script.sql
+          - name: servers
+            value: BEDSQLLC02
+          - name: Download_Path
+            value: E:\DB-solutions\Dev
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/EF_SQl_Script_Execution.yml
+  - stage: PROD
+    displayName: PROD
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        variables:
+          - name: ArtifactName
+            value: AMS
+          - name: SiteName
+            value: ams.microsvc.logixhealth.com
+          - name: TargetFolder
+            value: D:\TFS\MicroServices\Atomic\AMS\Release
+          - name: WebAppPoolName
+            value: ams.microsvc.logixhealth.com
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

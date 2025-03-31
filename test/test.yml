@@ -1,0 +1,64 @@
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: Job_1
+        displayName: Agent job 1
+        steps:
+          - checkout: self
+            path: s/LogixPaidRight
+            clean: true
+          - task: NuGetCommand@2
+            displayName: Restore $(project_name) service
+            inputs:
+              command: restore
+              restoreSolution: 'apps/mvc/LogixPaidRightApplication/LogixPaidRight.sln'
+              feedsToUse: select
+              vstsFeed: LogixLibrary
+          # - task: NuGetCommand@2
+          #   displayName: Restore $(project_name) service
+          #   inputs:
+          #     command: restore
+          #     restoreSolution: 'apps/mvc/LogixPaidRightApplication/LogixHealth.PaidRight.MSUnitTest/LogixHealth.PaidRight.MSUnitTest.csproj'
+          #     feedsToUse: select
+          #     vstsFeed: LogixLibrary
+          # - task: MSBuild@1
+          #   displayName: Build $(project_name) Test
+          #   inputs:
+          #     solution: 'apps/mvc/LogixPaidRightApplication/LogixHealth.PaidRight.MSUnitTest/LogixHealth.PaidRight.MSUnitTest.csproj'
+          #     msbuildArguments: /p:OutDir="$(Build.ArtifactStagingDirectory)\\" /p:DeployDefaultTarget=WebPublish
+          # - task: PowerShell@2
+          #   displayName: run vstest
+          #   inputs:
+          #     targetType: inline
+          #     pwsh: true
+          #     warningPreference: stop
+          #     script: |
+          #       & "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\Extensions\TestPlatform\vstest.console.exe" "$(Build.ArtifactStagingDirectory)\LogixHealth.PaidRight.MSUnitTest.dll" /logger:trx /Collect:"Code Coverage"
+          # - task: PowerShell@2
+          #   displayName: Convert .coverage to .coveragexml
+          #   inputs:
+          #     targetType: inline
+          #     pwsh: true
+          #     warningPreference: stop
+          #     script: |
+          #       $coverageFile = Get-ChildItem -Path $(System.DefaultWorkingDirectory)\TestResults -Recurse -Filter *.coverage
+          #       & "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Team Tools\Dynamic Code Coverage Tools\CodeCoverage.exe" analyze /output:$(System.DefaultWorkingDirectory)\TestResults\coverage.coveragexml $coverageFile.FullName
+          - task: SonarQubePrepare@5
+            inputs:
+              SonarQube: sonarqubetestpoc
+              projectKey: Test
+              projectName: Test
+              projectVersion: Test-Master
+              extraProperties: |
+                sonar.inclusions=$(System.DefaultWorkingDirectory)\apps\mvc\LogixPaidRightApplication\** , $(System.DefaultWorkingDirectory)\platform\API\ApplicationServices\**  # Include only the main project directory
+              #  sonar.exclusions=$(System.DefaultWorkingDirectory)\LogixHealth.PaidRight.Api.MSUnitTest\**
+          - task: MSBuild@1
+            displayName: Build $(project_name)
+            inputs:
+              solution: 'apps/mvc/LogixPaidRightApplication/LogixPaidRight.sln'
+              msbuildArguments: /p:OutDir="$(Build.ArtifactStagingDirectory)\\" /p:DeployDefaultTarget=WebPublish
+          - task: SonarQubeAnalyze@5
+          - task: SonarQubePublish@5

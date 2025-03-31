@@ -1,0 +1,36 @@
+parameters:
+  - name: buildType
+    type: string
+    values:
+      - app
+      - api
+
+stages:
+  - stage: deploy_${{ parameters.buildType }}_dev
+    dependsOn: build_${{ parameters.buildType }}
+    jobs:
+      # https://learn.microsoft.com/en-us/azure/devops/pipelines/process/deployment-jobs?view=azure-devops
+      - deployment: dev
+        variables:
+          - name: ArtifactName
+            ${{ if eq(parameters.buildType, 'app') }}:
+              value: LogixStaffingApplication
+            ${{ if eq(parameters.buildType, 'api') }}:
+              value: StaffingServices
+          - name: Environment
+            value: development
+          - name: SiteName
+            value: LogixStaffing
+          - name: TargetFolder
+            value: D:\TFS\LogixStaffing
+          - name: WebAppPoolName
+            value: LogixStaffing
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

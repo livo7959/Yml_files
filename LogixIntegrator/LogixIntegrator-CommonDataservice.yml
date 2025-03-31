@@ -1,0 +1,130 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: app_directory
+    value: apps/wpf/Integrator/LogixCommonDataService
+  - name: app_sln
+    value: LogixHealth.ICER.CommonServices.sln
+  - name: project_name
+    value: LogixIntegrator-CommonDataSVC
+  - name: container_path_app
+    value: _PublishedWebsites\LogixHealth.ICER.CommonServices
+  - name: artifactname_app
+    value: Application
+  - name: app_test_csproj
+    value: LogixHealth.ICER.CommonServices.Tests/LogixHealth.ICER.CommonServices.Tests.csproj
+  - name: App_Test_dll_path
+    value: LogixHealth.ICER.CommonServices.Tests.dll
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: Build
+        steps:
+          - checkout: self
+            clean: true
+            path: s/LogixIntegrator
+          - template: ../templates/dotnetframework_48_build.yml
+  - stage: Dev
+    displayName: Dev
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    variables:
+      - name: ArtifactName
+        value: Application
+      - name: Environment
+        value: Dev
+      - name: SiteName
+        value: LogixCommonDataService
+      - name: TargetFolder
+        value: D:\TFS\Release\LogixCommonDataServices
+      - name: WebAppPoolName
+        value: LogixDataServices
+    jobs:
+      - deployment: Dev
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: ICER-APP-DEV
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    variables:
+      - name: ArtifactName
+        value: Application
+      - name: Environment
+        value: UAT
+      - name: SiteName
+        value: LogixCommonDataService
+      - name: TargetFolder
+        value: D:\TFS\Release\LogixCommonDataServices
+      - name: WebAppPoolName
+        value: LogixCommonDataService
+    jobs:
+      - deployment: UAT_001
+        displayName: UAT-001
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: ICER-APP-UAT
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+      - deployment: UAT_002
+        displayName: UAT-002
+        dependsOn: UAT_001
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: ICER-APP-UAT-002
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD
+    displayName: LogixIntegrator-CDSVC
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    variables:
+      - name: ArtifactName
+        value: Application
+      - name: Environment
+        value: Production
+      - name: SiteName
+        value: LogixCommonDataService
+      - name: TargetFolder
+        value: D:\TFS\Release\LogixCommonDataServices
+      - name: WebAppPoolName
+        value: LogixCommonDataService
+    jobs:
+      - deployment: PROD
+        displayName: PROD
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: PAPPICER
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

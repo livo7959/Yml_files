@@ -1,0 +1,50 @@
+steps:
+  - checkout: self
+    path: s/$(checkout_path)
+    clean: true
+  - task: PowerShell@2
+    displayName: 'Build Solution'
+    inputs:
+      targetType: inline
+      script: |
+        & "C:\Program Files\dotnet\dotnet.exe" build $(playwright_sln_file) --configuration Debug
+  - task: PowerShell@2
+    displayName: 'Test Hardcoded Path'
+    inputs:
+      targetType: inline
+      pwsh: true
+      script: |
+        $filePath = "$(Build.SourcesDirectory)\$(playwright_path)\bin\Debug\net8.0\playwright.ps1"
+        Write-Host "Testing file: $filePath"
+        $fileExists = Test-Path $filePath
+        Write-Host "File Exists: $fileExists"
+  - task: PowerShell@2
+    displayName: 'Install Playwright Browsers'
+    inputs:
+      targetType: inline
+      pwsh: true
+      script: |
+        pwsh "$(Build.SourcesDirectory)\$(playwright_path)\bin\Debug\net8.0\playwright.ps1" install
+  # Step 3: Run Tests
+  - task: PowerShell@2
+    displayName: 'Run Tests'
+    condition: succeededOrFailed()
+    inputs:
+      targetType: inline
+      script: |
+        & "C:\Program Files\dotnet\dotnet.exe" test $(playwright_sln_file)  --logger "html;LogFileName=test-results.html"
+      condition: always()
+  # Step 4: Publish Test Results
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFiles: '**/*.trx'
+      testRunTitle: 'Playwright and .NET Tests'
+    displayName: 'Publish Test Results'
+  - task: PowerShell@2
+    displayName: Delete Build Files
+    condition: succeededOrFailed()
+    inputs:
+      targetType: inline
+      script: |
+        Remove-Item $(Build.SourcesDirectory)\* -Recurse -Force
+        Remove-Item $(Build.ArtifactStagingDirectory)\* -Recurse -Force

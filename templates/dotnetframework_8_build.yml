@@ -1,0 +1,171 @@
+steps:
+  - task: UseDotNet@2
+    displayName: Use .NET Core $(dotnet_version)
+    inputs:
+      version: $(dotnet_version)
+    condition: and(variables['dotnet_version'], succeeded())
+  - task: DotNetCoreCLI@2
+    displayName: Restore $(project_name)
+    inputs:
+      command: restore
+      projects: $(app_directory)/$(app_csproj_file)
+      feedsToUse: select
+      vstsFeed: LogixLibrary
+    condition: and(variables['app_csproj_file'], succeeded())
+  - task: DotNetCoreCLI@2
+    displayName: Restore $(project_name)
+    inputs:
+      command: restore
+      projects: $(api_directory)/$(api_csproj_file)
+      feedsToUse: select
+      vstsFeed: LogixLibrary
+    condition: and(variables['api_csproj_file'], succeeded())
+  - task: SonarQubePrepare@5
+    inputs:
+      SonarQube: SonarQube New
+      projectKey: $(project_name)
+      projectName: $(project_name)
+      projectVersion: $(project_name)-Master
+    condition: and(contains(variables['Build.SourceBranch'], 'refs/heads/master'), succeeded())
+  - task: UseDotNet@2
+    displayName: 'Use .NET Core sdk $(dotnet_version)'
+    inputs:
+      version: $(dotnet_version)
+    condition: and(variables['dotnet_version'], succeeded())
+  - task: DotNetCoreCLI@2
+    displayName: Build $(project_name) APP
+    inputs:
+      command: 'build'
+      projects: '$(app_directory)/$(app_csproj_file)'
+      arguments: '/p:OutDir="$(Build.ArtifactStagingDirectory)\\" /p:DeployDefaultTarget=WebPublish --warnaserror'
+    condition: and(variables['app_csproj_file'], succeeded())
+  - task: DotNetCoreCLI@2
+    displayName: Build $(project_name) API
+    inputs:
+      command: 'build'
+      projects: '$(api_directory)/$(api_csproj_file)'
+      arguments: '/p:OutDir="$(Build.ArtifactStagingDirectory)\\" /p:DeployDefaultTarget=WebPublish --warnaserror'
+    condition: and(variables['api_csproj_file'], succeeded())
+  - task: DotNetCoreCLI@2
+    displayName: $(project_name)-Test
+    inputs:
+      command: 'test'
+      projects: $(app_directory)/$(test_app_csproj_file)
+      arguments: '--collect "Code Coverage"'
+    condition: and(variables['test_app_csproj_file'], succeeded())
+  - task: DotNetCoreCLI@2
+    displayName: $(project_name)-Test
+    inputs:
+      command: 'test'
+      projects: $(api_directory)/$(test_csproj_file)
+      arguments: '--collect "Code Coverage"'
+    condition: and(variables['test_csproj_file'], succeeded())
+  - task: DotNetCoreCLI@2
+    displayName: $(project_name)-Playwright-Integration-Test
+    inputs:
+      command: 'test'
+      projects: $(api_directory)/$(integration_test_csrpoj_file)
+      arguments: '--collect "Code Coverage" --filter FullyQualifiedName~Playwright"'
+    condition: and(variables['integration_test_csrpoj_file'], succeeded())
+  - task: DotNetCoreCLI@2
+    displayName: 'Install EF tool'
+    inputs:
+      command: 'custom'
+      custom: 'tool'
+      arguments: 'install --global dotnet-ef'
+    condition: and(variables['EF_sln'], succeeded())
+
+  - script: |
+          echo "Running migrations in $ASPNETCORE_ENVIRONMENT is  $(buildEnvironment)"
+    displayName: EF Migration Environment
+    condition: and(variables['buildEnvironment'], succeeded())
+  - task: DotNetCoreCLI@2
+    displayName: 'Create EF Migration '
+    inputs:
+      command: 'custom'
+      custom: 'ef'
+      arguments: 'migrations script --idempotent --project $(api_directory)/$(api_csproj_file) --output $(System.ArtifactsDirectory)/script.sql'
+    env:
+      ASPNETCORE_ENVIRONMENT: $(buildEnvironment) # decleare it in variables
+    condition: and(variables['EF_sln'], variables['buildEnvironment'], succeeded())
+  - task: SonarQubeAnalyze@5
+    condition: and(contains(variables['Build.SourceBranch'], 'refs/heads/master'), succeeded())
+  - task: SonarQubePublish@5
+    condition: and(contains(variables['Build.SourceBranch'], 'refs/heads/master'), succeeded())
+  - task: sonar-buildbreaker@8
+    inputs:
+      SonarQube: SonarQube New
+    continueOnError: true
+  - task: DotNetCoreCLI@2
+    displayName: '$(project_name) APP Publish'
+    inputs:
+      command: publish
+      publishWebProjects: false
+      projects: '$(app_directory)/$(publish_appcsproj_file)'
+      arguments: '--output $(Build.ArtifactStagingDirectory)/$(publish_path_app)'
+      zipAfterPublish: false
+    condition: and(ne(variables['publish_path_app'], ''), succeeded())
+  - task: DotNetCoreCLI@2
+    displayName: '$(project_name) APP Publish with Default Path'
+    inputs:
+      command: publish
+      publishWebProjects: false
+      projects: '$(app_directory)/$(publish_appcsproj_file)'
+      arguments: '--output $(Build.ArtifactStagingDirectory)'
+      zipAfterPublish: false
+    condition: and(eq(variables['publish_path_app'], ''), variables['publish_appcsproj_file'], succeeded())
+  - task: DotNetCoreCLI@2
+    displayName: '$(project_name) API Publish'
+    inputs:
+      command: publish
+      publishWebProjects: false
+      projects: '$(api_directory)/$(publish_apicsproj_file)'
+      arguments: '--output $(Build.ArtifactStagingDirectory)/$(publish_path_api)'
+      zipAfterPublish: false
+    condition: and(ne(variables['publish_path_api'], ''), succeeded())
+  - task: DotNetCoreCLI@2
+    displayName: '$(project_name) API Publish with Default Path'
+    inputs:
+      command: publish
+      publishWebProjects: false
+      projects: '$(api_directory)/$(publish_apicsproj_file)'
+      arguments: '--output $(Build.ArtifactStagingDirectory)'
+      zipAfterPublish: false
+    condition: and(eq(variables['publish_path_api'], ''), variables['publish_apicsproj_file'], succeeded())
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Artifact $(project_name) APP'
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)/$(container_path_app)'
+      ArtifactName: $(artifactname_app)
+      publishLocation: Container
+    condition: and(ne(variables['container_path_app'], ''), succeeded())
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Artifact $(project_name) APP'
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      ArtifactName: $(artifactname_app)
+      publishLocation: Container
+    condition: and(eq(variables['container_path_app'], ''), variables['artifactname_app'], succeeded())
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Artifact $(project_name) API'
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)/$(container_path_api)'
+      ArtifactName: $(artifactname_api)
+      publishLocation: Container
+    condition: and(ne(variables['container_path_api'], ''), succeeded())
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Artifact $(project_name) API'
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      ArtifactName: $(artifactname_api)
+      publishLocation: Container
+    condition: and(eq(variables['container_path_api'], ''), variables['artifactname_api'], succeeded())
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Artifact $(project_name) API'
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)/script.sql'
+      ArtifactName: Efbundle
+      publishLocation: Container
+    condition: and(variables['EF_sln'], succeeded())
+  - template: ../templates/remove_sonarqube.yml
+  - template: ../templates/delete_build_files.yml

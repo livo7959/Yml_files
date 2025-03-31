@@ -1,0 +1,59 @@
+steps:
+  - task: DownloadBuildArtifacts@0
+    displayName: 'Download Artifact DACKPACK'
+    inputs:
+      artifactName: '$(Dacpack_ArtifactName)'
+      buildType: 'current'
+      downloadPath: '$(TargetFolder)'
+  - task: ReplaceVariables@2
+    displayName: 'Replace Variables'
+    inputs:
+      PathToFolder: '$(TargetFolder)\$(Dacpack_ArtifactName)'
+      FilePattern: '*.xml'
+  - task: CmdLine@2
+    displayName: 'BackupDatabase'
+    inputs:
+      script: |
+        cd "C:\Program Files\Microsoft SQL Server\160\DAC\bin"
+        $dateTime = Get-Date -Format "yyyyMMdd_HHmmss"
+        SqlPackage.exe /Action:Extract /TargetFile:H:\DACPAC_Deployment_Backup\$(DBServer)_$(Database)_+$dateTime.dacpac  /p:ExtractAllTableData=false /p:VerifyExtraction=false  /p:IgnorePermissions=true /p:IgnoreUserLoginMappings=true /SourceConnectionString:"Server=$(DBServer);Database=$(Database);Trusted_Connection=True;Encrypt=True;TrustServerCertificate=True;"
+
+  - task: CmdLine@2
+    displayName: 'Run SqlPackage.exe'
+    inputs:
+      script: |
+        cd "C:\Program Files\Microsoft SQL Server\160\DAC\bin"
+        SqlPackage.exe /Action:Publish /SourceFile:"$(TargetFolder)\$(Dacpack_ArtifactName)\$(Dacpac_file)" ^
+          /p:IncludeCompositeObjects=False ^
+          /p:DropObjectsNotInSource=False ^
+          /p:BlockOnPossibleDataLoss=True ^
+          /p:IncludeTransactionalScripts=True ^
+          /p:DropConstraintsNotInSource=False ^
+          /p:DropDmlTriggersNotInSource=False ^
+          /p:DropExtendedPropertiesNotInSource=False ^
+          /p:DropIndexesNotInSource=False ^
+          /p:DropStatisticsNotInSource=False ^
+          /p:ScriptNewConstraintValidation=False ^
+          /p:DoNotAlterChangeDataCaptureObjects=False ^
+          /p:DoNotAlterReplicatedObjects=False ^
+          /p:DisableAndReenableDdlTriggers=False ^
+          /p:DisableIndexesForDataPhase=False ^
+          /p:AllowTableRecreation=False ^
+          /p:GenerateSmartDefaults=True ^
+          /p:IgnoreExtendedProperties=True ^
+          /p:ScriptDatabaseOptions=False ^
+          /p:IgnorePermissions=True ^
+          /p:IgnoreRoleMembership=True ^
+          /p:IgnoreUserSettingsObjects=True ^
+          /p:IgnoreLoginSids=True ^
+          /p:IgnoreColumnOrder=True ^
+          /p:CommandTimeout=180 ^
+          /p:ExcludeObjectTypes="Logins;LinkedServerLogins;ExternalDataSources;Users;Credentials;DatabaseRoles;ServerRoles;ServerRoleMembership" ^
+          /pr:"$(TargetFolder)\$(Dacpack_ArtifactName)\$(xml_file)"
+  - task: PowerShell@2
+    displayName: Delete Build Files
+    condition: succeededOrFailed()
+    inputs:
+      targetType: inline
+      script: |
+        Remove-Item $(TargetFolder)\$(Dacpack_ArtifactName)\* -Recurse -Force

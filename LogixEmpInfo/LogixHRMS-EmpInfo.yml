@@ -1,0 +1,96 @@
+# schedules:
+#   - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+#     displayName: Automated SonarQube Build
+#     branches:
+#       include:
+#         - master
+#     always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: ne(variables['Build.Reason'], 'Schedule')
+  - name: api_directory
+    value: platform/API/ApplicationServices/LogixEmpInfo - api
+  - name: app_directory
+    value: apps/mvc/LogixEmpInfo
+  - name: publish_appcsproj_file
+    value: LogixHealth.EmpInfo/LogixHealth.EmpInfo.csproj
+  - name: publish_apicsproj_file
+    value: LogixHealth.EmpInfo.Api/LogixHealth.EmpInfo.Api.csproj
+  - name: project_name
+    value: LogixEmpinfo
+  - name: container_path_app
+    value: APP/LogixHealth.EmpInfo
+  - name: container_path_service
+    value: API/LogixHealth.EmpInfo.Api
+  - name: publish_path_app
+    value: APP
+  - name: publish_path_api
+    value: API
+  - name: app_sln
+    value: LogixHealth.EmpInfo.sln
+stages:
+  - stage: Build
+    displayName: Build
+    jobs:
+      - job: Build
+        displayName: Build
+        pool:
+          name: Build
+        steps:
+          - checkout: self
+            clean: true
+            path: s/LogixEmpinfo
+          - template: ../templates/dotnetframework_48_build.yml
+  - stage: DEV
+    displayName: DEV
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        variables:
+          - group: Empinfo_DEV
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/dotnetframework_8_build.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        variables:
+          - group: Empinfo_UAT
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/dotnetframework_8_build.yml
+  - stage: PROD
+    displayName: PROD
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        variables:
+          - group: Empinfo_PROD
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/dotnetframework_8_build.yml

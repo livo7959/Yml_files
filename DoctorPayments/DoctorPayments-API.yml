@@ -1,0 +1,119 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: release_branch_condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/release/')
+  - name: dotnet_version
+    value: 8.x
+  - name: api_directory
+    value: platform/API/ApplicationServices/DoctorPaymentsServices
+  - name: api_csproj_file
+    value: DP.NetCore/DP.NetCoreAPI/DoctorPayments.API.csproj
+  - name: project_name
+    value: DoctorPaymentsApi
+  - name: publish_apicsproj_file
+    value: DP.NetCore/DP.NetCoreAPI/DoctorPayments.API.csproj
+  - name: publish_path_api
+    value: API
+  - name: container_path_api
+    value: API/DP.NetCoreAPI
+  - name: artifactname_api
+    value: DoctorPaymentsAPI
+  - name: test_csproj_file
+    value: DP.NetCore/DoctorPayments.MSTest/DoctorPayments.MSTest.csproj
+stages:
+  - stage: Build_API
+    displayName: Build_API
+    pool:
+      name: Build
+    jobs:
+      - job: DoctorPaymentsApi
+        displayName: DoctorPaymentsApi
+        steps:
+          - checkout: self
+            path: s/DoctorPaymentsApi
+            clean: true
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.api_directory }}
+          - template: ../templates/dotnetframework_8_build.yml
+  - stage: DEV_API
+    displayName: DEV_API
+    dependsOn: Build_API
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        variables:
+          - name: ArtifactName
+            value: DoctorPaymentsAPI
+          - name: SiteName
+            value: LogixServices
+          - name: WebAppPoolName
+            value: DoctorPayments
+          - name: TargetFolder
+            value: D:\AzureDevOps\LogixServices\DrPayAPI\Release
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: LogixSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT_API
+    displayName: UAT_API
+    dependsOn: Build_API
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        variables:
+          - name: ArtifactName
+            value: DoctorPaymentsAPI
+          - name: SiteName
+            value: LogixServices
+          - name: WebAppPoolName
+            value: DoctorPayments
+          - name: TargetFolder
+            value: D:\AzureDevOps\LogixServices\DrPayAPI\Release
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: LogixSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD_API
+    displayName: PROD_API
+    dependsOn: UAT_API
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        variables:
+          - name: ArtifactName
+            value: DoctorPaymentsAPI
+          - name: SiteName
+            value: LogixServices
+          - name: WebAppPoolName
+            value: LogixServices
+          - name: TargetFolder
+            value: D:\AzureDevOps\LogixServices\DrPayAPI\Release
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: LogixSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

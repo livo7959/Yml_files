@@ -1,0 +1,115 @@
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: true
+variables:
+  - name: SonarQube_Condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: api_directory
+    value: platform/API/OrchestratorServices/Billing/LogixHealth.Orchestration.Billing.Appeal
+  - name: api_csproj_file
+    value: LogixHealth.Orchestration.Billing.Appeal.csproj
+  - name: project_name
+    value: Orch-Billing-Appeal
+  - name: artifactname_api
+    value: Orch_Billing_Appeal
+  - name: container_path_api
+    value: LogixHealth.Orchestration.Billing.Appeal
+  - name: test_csproj_file
+    value: ../LogixHealth.Orchestration.Billing.Appeal.MsTest/LogixHealth.Orchestration.Billing.Appeal.MsTest.csproj
+  - name: publish_apicsproj_file
+    value: LogixHealth.Orchestration.Billing.Appeal.csproj
+  - name: dotnet_version
+    value: 8.x
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: Build
+        steps:
+          - checkout: self
+            clean: true
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.api_directory }}
+          - template: ../templates/dotnetframework_8_build.yml
+  - stage: DEV
+    displayName: DEV
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: DEV
+        variables:
+          - name: ArtifactName
+            value: Orch_Billing_Appeal
+          - name: SiteName
+            value: billing.dorchsvc.logixhealth.com
+          - name: TargetFolder
+            value: D:\AzureDevOps\APIServices\Orchestration\Billing\Release
+          - name: WebAppPoolName
+            value: billing.dorchsvc.Appeal
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: UAT
+        variables:
+          - name: ArtifactName
+            value: Orch_Billing_Appeal
+          - name: SiteName
+            value: billing.uorchsvc.logixhealth.com
+          - name: TargetFolder
+            value: D:\AzureDevOps\APIServices\Orchestration\Billing\Release
+          - name: WebAppPoolName
+            value: billing.uorchsvc.Appeal
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD
+    displayName: PROD
+    dependsOn: UAT
+    condition: ${{ variables.build_reason_condition }}
+    jobs:
+      - deployment: PROD
+        variables:
+          - name: ArtifactName
+            value: Orch_Billing_Appeal
+          - name: SiteName
+            value: billing.orchsvc.logixhealth.com
+          - name: TargetFolder
+            value: D:\AzureDevOps\APIServices\Orchestration\Billing\Release
+          - name: WebAppPoolName
+            value: billing.orchsvc.Appeal
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: MicroSVC
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

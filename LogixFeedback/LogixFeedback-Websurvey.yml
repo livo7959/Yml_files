@@ -1,0 +1,167 @@
+variables:
+  - name: feature_branch_condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/feature/')
+  - name: master_branch_condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+  - name: release_branch_condition
+    value: contains(variables['Build.SourceBranch'], 'refs/heads/release')
+
+  - name: SonarQube_Condition
+    value: ${{ variables.master_branch_condition }}
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: app_directory
+    value: apps/mvc/LogixWebSurveys
+  - name: app_csproj_file
+    value: LogixHealth.WebSurveys/LogixHealth.WebSurveys.csproj
+  - name: project_name
+    value: WebSurveys
+  - name: publish_appcsproj_file
+    value: LogixHealth.WebSurveys/LogixHealth.WebSurveys.csproj
+  - name: container_path_app
+    value: LogixHealth.WebSurveys
+  - name: artifactname_app
+    value: WebSurveys
+  - name: dotnet_version
+    value: 8.x
+
+schedules:
+  - cron: 0 0 * * 6 # Every Saturday at midnight UTC time
+    displayName: Automated SonarQube Build
+    branches:
+      include:
+        - master
+    always: True
+
+trigger: none
+
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: WebSurveys
+        displayName: WebSurveys
+        steps:
+          - checkout: self
+            path: s/WebSurveys
+            clean: true
+          - template: ../templates/prebuild_validation.yml
+            parameters:
+              directoryPaths:
+                - ${{ variables.app_directory }}
+          - template: ../templates/dotnetframework_8_build.yml
+
+  - stage: DEV
+    displayName: DEV
+    dependsOn: Build
+    condition: and(succeeded(), or(${{ variables.feature_branch_condition }}, ${{ variables.master_branch_condition }}))
+    jobs:
+      - deployment: DEV
+        variables:
+          - name: ArtifactName
+            value: WebSurveys
+          - name: SiteName
+            value: LogixFeedback
+          - name: TargetFolder
+            value: D:\TFS\LogixFeedback\Release
+          - name: WebAppPoolName
+            value: LogixWebsurveys
+        environment:
+          name: DEV
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: UAT
+    displayName: UAT
+    dependsOn: Build
+    condition: and(succeeded(), ${{ variables.release_branch_condition }})
+    jobs:
+      - deployment: UAT_Root
+        variables:
+          - name: ArtifactName
+            value: WebSurveys
+          - name: SiteName
+            value: WebSurveys
+          - name: TargetFolder
+            value: D:\TFS\
+          - name: WebAppPoolName
+            value: WebSurveys
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+      - deployment: UAT_SubApp
+        dependsOn: UAT_Root
+        variables:
+          - name: ArtifactName
+            value: WebSurveys
+          - name: SiteName
+            value: WebSurveys
+          - name: TargetFolder
+            value: D:\TFS\WebSurveys
+          - name: WebAppPoolName
+            value: WebSurveys
+        environment:
+          name: UAT
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+  - stage: PROD
+    displayName: PROD
+    dependsOn: UAT
+    condition: and(succeeded(), ${{ variables.release_branch_condition }})
+    jobs:
+      - deployment: PROD_Root
+        variables:
+          - name: ArtifactName
+            value: WebSurveys
+          - name: SiteName
+            value: WebSurveys
+          - name: TargetFolder
+            value: D:\TFS\WebSurveysDefaultFolder
+          - name: WebAppPoolName
+            value: WebSurveys
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml
+      - deployment: PROD_SA
+        dependsOn: PROD_Root
+        variables:
+          - name: ArtifactName
+            value: WebSurveys
+          - name: SiteName
+            value: WebSurveys
+          - name: TargetFolder
+            value: D:\Sub
+          - name: WebAppPoolName
+            value: WebSurveys
+        environment:
+          name: PROD
+          resourceType: virtualMachine
+          tags: saas
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/DownloadArtifact.yml

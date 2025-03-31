@@ -1,0 +1,96 @@
+variables:
+  - name: checkout_path
+    value: LogixPaidRight
+  - name: dacpac_sqlproj_filepath
+    value: db_scripts/Billing/Billing DB/Billing.sqlproj
+  - name: Dacpack_ArtifactName
+    value: Billing_Dacpac
+stages:
+  - stage: Build_DAC_PACK
+    displayName: Build-DAC-PACK
+    dependsOn: [] # Run this stage immediately (instead of being dependant upon the previous step).
+    pool:
+      name: Build
+    jobs:
+      - job: Build_DAC_PACK
+        displayName: Build-DAC-PACK
+        steps:
+          - template: ../templates/Dacpac_build_template.yml
+  - stage: DACPKDeployment_DEV
+    displayName: DEV-DAC-PACK
+    dependsOn: Build_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDDSQL001
+    jobs:
+      - deployment: DEV
+        environment: DEV
+        variables:
+          - name: DBServer
+            value: BEDDSQL001
+          - name: TargetFolder
+            value: M:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: Billing_Dacpac
+          - name: Dacpac_file
+            value: Billing.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: Billing.publish.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml
+  - stage: DACPKDeployment_UAT
+    displayName: UAT-DAC-PACK
+    dependsOn: Build_DAC_PACK
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDSQLBK001
+    jobs:
+      - deployment: UAT
+        environment: UAT
+        variables:
+          - name: DBServer
+            value: BEDUSQL001
+          - name: TargetFolder
+            value: H:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: Billing_Dacpac
+          - name: Dacpac_file
+            value: Billing.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: Billing.publish.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml
+  - stage: DACPKDeployment_PROD
+    displayName: PROD-DAC-PACK
+    dependsOn: DACPKDeployment_UAT
+    pool:
+      name: DBA
+      demands:
+        - agent.name -equals BEDSQLBK001
+    jobs:
+      - deployment: PROD
+        environment: PROD
+        variables:
+          - name: DBServer
+            value: BEDSQLLC02
+          - name: TargetFolder
+            value: H:\DACPACK-solutions
+          - name: Dacpack_ArtifactName
+            value: Billing_Dacpac
+          - name: Dacpac_file
+            value: Billing.dacpac # give the sql filename ending with .dacpac instead of .sqlproj
+          - name: xml_file
+            value: Billing.publish.xml # give file name for your xml file
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: ../templates/Dacpac_deployment_template.yml
