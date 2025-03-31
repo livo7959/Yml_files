@@ -1,0 +1,35 @@
+stages:
+  - stage: Remove_Code_Disable_Tasks
+    pool:
+      name: PROD
+      demands: Agent.Name -equals BEDBICDN001
+    jobs:
+      - job: Remove_Code_Disable_Tasks
+        displayName: Remove_Code_Disable_Tasks
+        steps:
+          - task: PowerShell@2
+            displayName: Delete Old Files
+            condition: succeededOrFailed()
+            inputs:
+              targetType: inline
+              script: |
+                Remove-Item C:\PythonScripts\InactiveUserTracking\* -Recurse -Force
+                Remove-Item C:\PythonScripts\SSMS_Generate_Scripts\* -Recurse -Force
+                Remove-Item 'C:\PythonScripts\Tableau Server Group And Member Sync\GroupandMembershipSync.py'
+                Remove-Item 'C:\PythonScripts\Tableau Project Management\Tableau_project_creator.py'
+                Remove-Item 'C:\PythonScripts\Tableau Server User Sync\TableauUserSync.py'
+                Remove-Item C:\PythonScripts\TS_WB_Migration\* -Recurse -Force
+                Remove-Item C:\PythonScripts\TSOwner_Automation\* -Recurse -Force
+                Remove-Item C:\PythonScripts\Webhooks_DQChecks\* -Recurse -Force
+                Remove-Item C:\PythonScripts\Webhooks_TSRefreshFailures\* -Recurse -Force
+                Remove-Item C:\inetpub\wwwroot\Python\Tableau_Project_Creator\* -Recurse -Force
+                Remove-Item C:\inetpub\wwwroot\Python\Tableau_Wb_Owner_Management\* -Recurse -Force
+                Remove-Item C:\inetpub\wwwroot\Python\TableauServerAuditReports\* -Recurse -Force
+          - task: PowerShell@2
+            displayName: 'Disable Scheduled Tasks'
+            inputs:
+              targetType: 'inline'
+              script: |
+                Disable-ScheduledTask -TaskName 'InactiveUserTracking'
+                Disable-ScheduledTask -TaskName 'Webhooks_DQ_Alerts'
+                Disable-ScheduledTask -TaskName 'Webhooks Extract Refresh Failures'

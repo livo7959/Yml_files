@@ -1,0 +1,48 @@
+trigger: none
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: CCRAI_Automation
+        displayName: CCRAI_Automation
+        steps:
+          - checkout: self
+            path: s/CCRAI_Automation
+            clean: true
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Artifact'
+            inputs:
+              PathtoPublish: 'utilities/python/CCRAI_Automation'
+              ArtifactName: 'CCRAI_Automation'
+              publishLocation: 'Container'
+          - template: ../templates/remove_sonarqube.yml
+          - template: ../templates/delete_build_files.yml
+  - stage: PROD
+    dependsOn: Build
+    jobs:
+      - deployment: PROD
+        displayName: PROD
+        environment: PROD
+        pool:
+          name: PROD
+          demands: Agent.Name -equals BEDBICDN001
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: PowerShell@2
+                  displayName: Delete Old Files
+                  condition: succeededOrFailed()
+                  inputs:
+                    targetType: inline
+                    script: |
+                      Remove-Item C:\PythonScripts\CCRAI_Automation\tests\* -Recurse -Force
+                      Remove-Item C:\PythonScripts\CCRAI_Automation\callscript.bat
+                      Remove-Item C:\PythonScripts\CCRAI_Automation\Mod_CCRAI.py
+                - task: DownloadBuildArtifacts@0
+                  inputs:
+                    artifactName: CCRAI_Automation
+                    downloadType: single
+                    downloadPath: C:\PythonScripts\

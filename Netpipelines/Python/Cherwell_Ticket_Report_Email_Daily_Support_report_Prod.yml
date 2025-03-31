@@ -1,0 +1,37 @@
+schedules:
+  - cron: 0 12 * * * # UTC For - Schedule at 7 AM EST
+    displayName: Automated Python Build
+    branches:
+      include:
+        - release/logixbi/cherwell-daily-support-report-common
+    always: true
+
+stages:
+  - stage: PythonScriptRun
+    displayName: Python_Script_Run
+    # Runs only if triggered by cron job & branch is correct
+    condition: |
+      and(
+        eq(variables['Build.Reason'], 'Schedule'),
+        eq(variables['Build.SourceBranch'], 'refs/heads/release/logixbi/cherwell-daily-support-report-common')
+      )
+    variables:
+      - name: file_path
+        value: 'C:\Run_Py_Script\CherwellTicketReport'
+      - name: file_name
+        value: 'Cherwell_Ticket_Report_Email_Daily_Support_report.py'
+      - name: venv_activate_path
+        value: 'C:/PythonVenvs/InfraSec/Scripts/activate.ps1'
+      - name: python_exe
+        value: 'C:/PythonVenvs/InfraSec/Scripts/python.exe'
+      - name: environment
+        value: production
+    pool:
+      name: PROD
+      demands:
+        - Agent.name -equals BEDPAUTOSPRT001
+    jobs:
+      - job: RunPythonScript
+        displayName: RunPythonScript
+        steps:
+          - template: ../templates/pythonscript_run.yml

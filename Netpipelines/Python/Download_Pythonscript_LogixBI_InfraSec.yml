@@ -1,0 +1,37 @@
+parameters:
+  - name: AgentName
+    type: string
+    values: 
+      - BEDPAUTOSPRT001
+      - BEDPBICDN001  # Add more agent names if needed
+
+stages:
+  - stage: Download_PythonScript
+    displayName: Download_PythonScript
+    condition: ne(variables['Build.Reason'], 'Schedule') # Skip this stage for cron jobs    
+    pool:
+      name: PROD
+      demands:
+        - Agent.name -equals ${{ parameters.AgentName }}
+    jobs:
+      - job: Download_PythonScript
+        displayName: Download_PythonScript
+        steps:
+          - checkout: self
+            clean: true
+            path: s/RunPythonScript
+
+          - task: CopyFiles@2
+            displayName: Add files to target folder
+            inputs:
+              SourceFolder: $(Build.SourcesDirectory)\utilities\python
+              Contents: '**'
+              TargetFolder: C:\Run_Py_Script
+
+          - task: PowerShell@2
+            displayName: Delete Build Files
+            condition: succeededOrFailed()
+            inputs:
+              targetType: inline
+              script: |
+                Remove-Item $(Build.SourcesDirectory)\* -Recurse -Force

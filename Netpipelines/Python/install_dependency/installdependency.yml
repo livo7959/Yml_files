@@ -1,0 +1,75 @@
+parameters:
+  - name: Dependency_Name
+    displayName: Dependency Group
+    type: string
+    default: LogixBI
+    values:
+      - LogixBI
+      - InfraSec
+  - name: Agent_Pool
+    displayName: Environment
+    type: string
+    default: DEV
+    values:
+      - DEV
+      - PROD
+
+variables:
+  - name: buildpool
+    value: ${{ parameters.Agent_Pool }}
+  - name: buildserverpool
+    ${{ if and(eq( parameters.Agent_Pool, 'DEV'), eq( parameters.Dependency_Name, 'LogixBI'))}}:
+      value: BEDDBICDN001
+    ${{ if and(eq( parameters.Agent_Pool, 'PROD'), eq( parameters.Dependency_Name, 'LogixBI'))}}:
+      value: BEDPBICDN001
+    ${{ if and(eq( parameters.Agent_Pool, 'PROD'), eq( parameters.Dependency_Name, 'InfraSec'))}}:
+      value: BEDPAUTOSPRT001
+  - name: requirementtxt
+    ${{ if eq( parameters.Dependency_Name, 'LogixBI')}}:
+      value: logixbi_requirements.txt
+    ${{ if eq( parameters.Dependency_Name, 'InfraSec')}}:
+      value: infrasec_requirements.txt
+  - name: venv
+    ${{ if eq( parameters.Dependency_Name, 'LogixBI')}}:
+      value: C:/PythonVenvs/LogixBI
+    ${{ if eq( parameters.Dependency_Name, 'InfraSec')}}:
+      value: C:/PythonVenvs/InfraSec
+
+stages:
+  - stage: RequirmentInstall
+    displayName: Requirment.txt_Install
+    jobs:
+      - job: Install
+        displayName: Install_dependency
+        pool:
+          name: $(buildpool)
+          demands:
+            - agent.name -equals $(buildserverpool)
+
+        steps:
+          - checkout: self
+            clean: true
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: '3.13.0' # Specify the Python version
+              addToPath: true
+          # Task to copy requirements.txt to the specified server folder
+          - task: CopyFiles@2
+            inputs:
+              SourceFolder: '$(Build.SourcesDirectory)/utilities/python/'
+              Contents: '$(requirementtxt)'
+              TargetFolder: 'C:/requirments'
+              CleanTargetFolder: true
+            displayName: 'Copy $(requirementtxt) to Server Folder'
+
+          - task: PowerShell@2
+            displayName: 'Create Virtual Environment, Install, and List Python Packages'
+            inputs:
+              targetType: 'inline'
+              script: |
+                python -m pip install --upgrade pip
+                python -m venv $(venv)
+                $(venv)/Scripts/activate
+                pip install -r C:/requirments/$(requirementtxt)
+                pip list  # Display the list of installed packages
+                Remove-Item $(Build.SourcesDirectory)\* -Recurse -Force

@@ -1,0 +1,37 @@
+schedules:
+  - cron: 0 11 * * * # UTC For - Daily at 6AM EST
+    displayName: Automated Python Build
+    branches:
+      include:
+        - feature
+    always: true
+  - cron: 0 15 * * * # UTC For - Daily at 10AM EST
+    displayName: Automated Python Build
+    branches:
+      include:
+        - feature
+    always: true
+
+stages:
+  - stage: PythonScriptRun
+    displayName: Python_Script_Run
+    variables:
+      - name: file_path
+        value: '$(Build.SourcesDirectory)\utilities\python\MonthlyExecutiveSummary'
+      - name: file_name
+        value: 'monthly_executive_summary.py'
+      - name: venv_activate_path
+        value: 'C:/PythonVenvs/LogixBI/Scripts/activate.ps1'
+      - name: python_exe
+        value: 'C:/PythonVenvs/LogixBI/Scripts/python.exe'
+      - name: environment
+        value: development
+    pool:
+      name: DEV
+      demands:
+        - Agent.name -equals BEDDBICDN001
+    jobs:
+      - job: RunPythonScript
+        displayName: RunPythonScript
+        steps:
+          - template: ../templates/pythonscript_run.yml

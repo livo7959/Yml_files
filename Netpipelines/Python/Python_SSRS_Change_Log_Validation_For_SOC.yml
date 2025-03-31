@@ -1,0 +1,47 @@
+trigger: none
+stages:
+  - stage: Build
+    displayName: Build
+    pool:
+      name: Build
+    jobs:
+      - job: SSRS_Change_Log_Validation_For_SOC
+        displayName: SSRS_Change_Log_Validation_For_SOC
+        steps:
+          - checkout: self
+            path: s/SSRS_Change_Log_Validation_For_SOC
+            clean: true
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Artifact'
+            inputs:
+              PathtoPublish: 'utilities/python/SSRS_Change_Log_Validation_For_SOC'
+              ArtifactName: 'SSRS_Change_Log_Validation_For_SOC'
+              publishLocation: 'Container'
+          - template: ../templates/remove_sonarqube.yml
+          - template: ../templates/delete_build_files.yml
+  - stage: PROD
+    dependsOn: Build
+    jobs:
+      - deployment: PROD
+        displayName: PROD
+        environment: PROD
+        pool:
+          name: PROD
+          demands: Agent.Name -equals BEDBICDN001
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: PowerShell@2
+                  displayName: Delete Old Files
+                  condition: succeededOrFailed()
+                  inputs:
+                    targetType: inline
+                    script: |
+                      Remove-Item C:\PythonScripts\SSRS_Change_Log_Validation_For_SOC\callscript.bat
+                      Remove-Item C:\PythonScripts\SSRS_Change_Log_Validation_For_SOC\SSRS_Change_Log_Validation_For_SOC.py
+                - task: DownloadBuildArtifacts@0
+                  inputs:
+                    artifactName: SSRS_Change_Log_Validation_For_SOC
+                    downloadType: single
+                    downloadPath: C:\PythonScripts\

@@ -1,0 +1,37 @@
+schedules:
+  - cron: 0 13 14,15,16,17,18 * * # UTC For - at 8AM EST on 14,15,16,17,18 of every month
+    displayName: Automated Python Build
+    branches:
+      include:
+        - release/logixbi/paradise-qc-common
+    always: true
+
+stages:
+  - stage: PythonScriptRun
+    displayName: Python_Script_Run
+    # Runs only if triggered by cron job & branch is correct
+    condition: |
+      and(
+        eq(variables['Build.Reason'], 'Schedule'),
+        eq(variables['Build.SourceBranch'], 'refs/heads/release/logixbi/paradise-qc-common')
+      )
+    variables:
+      - name: file_path
+        value: 'C:\Run_Py_Script\ParadiseQC'
+      - name: file_name
+        value: 'ParadiseQC.py'
+      - name: venv_activate_path
+        value: 'C:/PythonVenvs/LogixBI/Scripts/activate.ps1'
+      - name: python_exe
+        value: 'C:/PythonVenvs/LogixBI/Scripts/python.exe'
+      - name: environment
+        value: production
+    pool:
+      name: PROD
+      demands:
+        - Agent.name -equals BEDPBICDN001
+    jobs:
+      - job: RunPythonScript
+        displayName: RunPythonScript
+        steps:
+          - template: ../templates/pythonscript_run.yml

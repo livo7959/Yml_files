@@ -1,0 +1,59 @@
+#Set variables for new Python script deployment
+variables:
+  - name: build_reason_condition
+    value: and(ne(variables['Build.Reason'], 'Schedule'), succeeded())
+  - name: jobName
+    value: NewJobName
+  - name: build_directory
+    value: TabCmd/IEP_Provider_Scorecards
+  - name: script_directory
+    value: D:\AzureDevOps\IEP_Scorecard_Performance\Release
+  - name: script_fileName
+    value: IEP_Scorecard_Performance2023.py
+  - name: requirementPathAndFile
+    value: D:\AzureDevOps\IEP_Scorecard_Performance\Requirements\logix_performance_requirements.txt
+  - name: scheduledTaskName
+    value: IEPScorecardPerformance
+#Pull script from AzDO, clear current script, deploy new script, install requirements, trigger scheduled task
+stages:
+  - stage: ${{ variables.jobName }}
+    pool:
+      name: BuildPY
+    jobs:
+      - job: ${{ variables.jobName }}
+        displayName: ${{ variables.jobName }}
+        steps:
+          - checkout: self
+            clean: true
+          - task: DeleteFiles@1
+            displayName: 'Delete Old File'
+            inputs:
+              SourceFolder: '${{ variables.script_directory }}'
+              Contents: '${{ variables.script_fileName }}'
+          - task: CopyFiles@2
+            displayName: 'Copy New File'
+            inputs:
+              SourceFolder: '$(Build.SourcesDirectory)/${{ variables.build_directory }}/${{ variables.script_fileName }}'
+              Contents: '${{ variables.script_fileName }}'
+              TargetFolder: '${{ variables.script_directory }}'
+          - task: PowerShell@2
+            displayName: 'Install Requirements'
+            inputs:
+              targetType: 'inline'
+              script: 'pip.exe install -r ${{ variables.requirementPathAndFile }}'
+              pwsh: true
+          - task: PowerShell@2
+            displayName: 'Trigger Scheduled Task'
+            inputs:
+              targetType: 'inline'
+              pwsh: true
+              script: |
+                Start-ScheduledTask -TaskName ${{ variables.scheduledTaskName }}
+          - task: PowerShell@2
+            displayName: Delete Build Files
+            condition: succeededOrFailed()
+            inputs:
+              targetType: inline
+              pwsh: true
+              script: |
+                Remove-Item $(Build.SourcesDirectory)\* -Recurse -Force

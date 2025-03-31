@@ -1,0 +1,37 @@
+schedules:
+  - cron: 0 11 * * * # UTC For - Daily at 6AM EST
+    displayName: Automated Python Build
+    branches:
+      include:
+        - release/logixbi/coding-monthend-automation-common
+    always: true
+
+stages:
+  - stage: PythonScriptRun
+    displayName: Python_Script_Run
+    # Runs only if triggered by cron job & branch is correct
+    condition: |
+      and(
+        eq(variables['Build.Reason'], 'Schedule'),
+        eq(variables['Build.SourceBranch'], 'refs/heads/release/logixbi/coding-monthend-automation-common')
+      )
+    variables:
+      - name: file_path
+        value: 'C:\Run_Py_Script\CodingMonthEndAutomation'
+      - name: file_name
+        value: 'Coding_ME.py'
+      - name: venv_activate_path
+        value: 'C:/PythonVenvs/LogixBI/Scripts/activate.ps1'
+      - name: python_exe
+        value: 'C:/PythonVenvs/LogixBI/Scripts/python.exe'
+      - name: environment
+        value: production
+    pool:
+      name: PROD
+      demands:
+        - Agent.name -equals BEDPBICDN001
+    jobs:
+      - job: RunPythonScript
+        displayName: RunPythonScript
+        steps:
+          - template: ../templates/pythonscript_run.yml

@@ -1,0 +1,31 @@
+schedules:
+  - cron: 0 6 1 3,6,9,12 * # UTC For - On mar, june, sep and dec, 1st day, 1 am EST
+    displayName: Automated Python Build
+    branches:
+      include:
+        - feature
+    always: true
+
+stages:
+  - stage: PythonScriptRun
+    displayName: Python_Script_Run
+    variables:
+      - name: file_path
+        value: '$(Build.SourcesDirectory)\utilities\python\PEReportsArchive'
+      - name: file_name
+        value: 'PEReportsArchive.py'
+      - name: venv_activate_path
+        value: 'C:/PythonVenvs/LogixBI/Scripts/activate.ps1'
+      - name: python_exe
+        value: 'C:/PythonVenvs/LogixBI/Scripts/python.exe'
+      - name: environment
+        value: development
+    pool:
+      name: DEV
+      demands:
+        - Agent.name -equals BEDDBICDN001
+    jobs:
+      - job: RunPythonScript
+        displayName: RunPythonScript
+        steps:
+          - template: ../templates/pythonscript_run.yml
