@@ -1,0 +1,51 @@
+steps:
+- powershell: |
+   # Check Docker Engine version
+   docker --version
+  displayName: 'Check Docker Engine Version'
+
+- task: JFrog.jfrog-artifactory-vsts-extension.jfrog-cli-generic.JfrogCli@1
+  displayName: 'JFrog CLI download'
+  inputs:
+    artifactoryService: 'Jfrog Artifactory Write'
+    useCustomVersion: true
+    command: 'jfrog rt dl "nuget-eurofins-dop/deployYmlscripts/*" --sort-by=created --sort-order=desc'  
+
+- task: PowerShell@2
+  displayName: 'Docker Login'
+  inputs:
+    targetType: filePath
+    filePath: '$(Build.SourcesDirectory)/deployYmlscripts/Scripts/docker-login.ps1'
+    arguments: '-User $(EF_Docker_UserName) -Password (ConvertTo-SecureString -String "$(EF_Docker_Password)" -AsPlainText -Force)'
+
+- powershell: |
+    # Create a Uri object for npm url
+    $uri = New-Object System.Uri('$(EF_Artifactory_NPM_URL)')
+
+    # Get the hostheader and absolute path
+    $npm_url = $uri.Host + $uri.AbsolutePath
+
+    # Create a Uri object for npm url
+    $uri = New-Object System.Uri('$(EF_Artifactory_NPMEFDOL_URL)')
+
+    # Get the hostheader and absolute path
+    $npmefdol_url = $uri.Host + $uri.AbsolutePath
+
+    $imageName = "packages.alm.eurofins.com/docker-eurofins-dol/results/assessments/assessment-web:feature-assessment-client-web"
+
+    # cd '$(Build.SourcesDirectory)app/Assessments.App'
+
+    docker build `
+    --build-arg ARTIFACTORY_NPM_URL=$npm_url `
+    --build-arg ARTIFACTORY_NPM_TOKEN=$(EF_Artifactory_NPM_Token) `
+    --build-arg ARTIFACTORY_NPMEFDOL_URL=$npmefdol_url `
+    --build-arg ARTIFACTORY_NPMEFDOL_TOKEN=$(EF_Artifactory_NPMEFDOL_Token) `
+    --build-arg NUGET_SOURCE=$(EF_Artifactory_NugetEFDOP_URL)/index.json `
+    --build-arg NUGET_SHAREDSOURCE=$(EF_Artifactory_NugetEFShared_URL)/index.json `
+    --build-arg NUGET_USERNAME=$(EF_Docker_Nuget_UserName) `
+    --build-arg NUGET_PASSWORD=$(EF_Docker_Nuget_ApiKey) `
+    -t $imageName .
+
+    docker push $imageName
+
+  displayName: 'Build and Run Docker Image'
