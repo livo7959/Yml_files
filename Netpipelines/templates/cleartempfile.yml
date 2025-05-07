@@ -1,0 +1,76 @@
+trigger: none
+
+parameters:
+  - name: poolName
+    type: string
+    values:
+      - eCommerce-Docker
+      - eCommerce-OrderingV2
+      - eCommerce
+      - eCommerce-Docker-GNLA
+      - eCommerce-GNLA
+      - eCommerce-ReleasePipeline
+
+  - name: ComputerName
+    type: string
+    values:
+      - GNLA001APVD851 
+      - EU50APVD395 
+      - EU50APVD403 
+      - GNLA001APVD573 
+      - GNLA001APVD574 
+      - GNLA001APVD575 
+      - EOLAPVD573 
+      - EU50APVD407 
+
+  - name: poolToComputersMap
+    type: object
+    default:
+      eCommerce-Docker:
+        - EU50APVD395 
+        - EU50APVD403 
+      eCommerce-OrderingV2:
+        - EU50APVD407
+      eCommerce-Docker-GNLA:
+        - GNLA001APVD573 
+        - GNLA001APVD574 
+        - GNLA001APVD575 
+      eCommerce:
+        - GNLA001APVD851
+
+stages:
+- stage: Clearfiles
+  displayName: Clear-Temp-Files
+  jobs:
+  - job: clearfiles
+    displayName: Clear-Temp-Files
+    pool:
+      name: ${{ parameters.poolName }}
+      demands:
+        - agent.computername -equals ${{ parameters.ComputerName }}
+    steps:
+    - task: PowerShell@2
+      displayName: 'Clear Temp Folder'
+      inputs:
+        targetType: 'inline'
+        script: |
+          $folderMode = '${{ parameters.folderMode }}'
+          $tempPath = ""
+
+          switch ($folderMode) {
+            'default' { $tempPath = 'C:\Temp\' }
+            'alt1'    { $tempPath = 'C:\Users\LU_SVC_TFSBUILD\.nuget\' }
+            default   { 
+              Write-Error "Unknown folderMode: $folderMode"
+              exit 1
+            }
+          }
+
+          Write-Host "Using temp folder path: $tempPath"
+
+          if (Test-Path $tempPath) {
+              Remove-Item "$tempPath\*" -Recurse -Force -ErrorAction SilentlyContinue
+              Write-Host "Temp folder cleared."
+          } else {
+              Write-Host "Path does not exist: $tempPath"
+          }
