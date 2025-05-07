@@ -1,0 +1,118 @@
+steps:
+- task: JFrog.jfrog-artifactory-vsts-extension.jfrog-cli-generic.JfrogCli@1
+  displayName: 'JFrog CLI download'
+  inputs:
+    artifactoryService: 'Jfrog Artifactory Write'
+    useCustomVersion: true
+    command: 'jfrog rt dl "nuget-eurofins-dop/deployYmlscripts/*" --sort-by=created --sort-order=desc'
+    
+- script: |
+    cd "$(Build.SourcesDirectory)/deployYmlscripts/"
+    if exist Scripts\ (
+        dir
+        dir Scripts\
+    ) else (
+        echo "Scripts directory does not exist."
+        exit /b 1
+    )
+  displayName: 'List files in deployYmlscripts and Scripts directory'
+
+
+- powershell: |
+   # Angular docker file creation
+   $dockerfileContent = @"
+   # syntax=docker/dockerfile:1.6
+   FROM packages.alm.eurofins.com/docker-eurofins-dol/dop/dotnet/aspnet:8.0 AS base
+   FROM packages.alm.eurofins.com/docker-eurofins-dol/dop/dotnet/spa-build:8.0 AS build
+   FROM build as publish
+   WORKDIR "/sln/client/Web"
+   RUN dotnet publish "Web.csproj" --no-build -c Release -o /app/publish
+   FROM base AS final
+   WORKDIR /app
+   USER app
+   COPY --from=publish /app/publish .
+   ENTRYPOINT ["dotnet", "Eurofins.Online.Ordering.Magpie.Client.Web.dll"]
+   "@
+   $source = "$(Build.SourcesDirectory)"
+   $dockerfilePath = "$source\Dockerfile"
+   $dockerfileContent | Out-File -FilePath $dockerfilePath -Encoding utf8
+   Write-Host "Dockerfile created at: $dockerfilePath"
+   
+   
+  displayName: 'Create dockerfile'
+  
+- task: PowerShell@2
+  displayName: 'Docker Login'
+  inputs:
+    targetType: filePath
+    filePath: '$(Build.SourcesDirectory)/deployYmlscripts/Scripts/docker-login.ps1'
+    arguments: '-User $(EF_Docker_UserName) -Password (ConvertTo-SecureString -String "$(EF_Docker_Password)" -AsPlainText -Force)'
+    
+- powershell: |
+      Write-Host "Repository Name: $($env:BUILD_REPOSITORY_NAME)"
+      Write-Host "Branch Name: $($env:BUILD_SOURCEBRANCHNAME)"
+      Write-Host "Branch Name: $($env:BUILD_SOURCEBRANCH)"
+
+      $branchSource = "$(Build.SourceBranch)"
+      $branchSourcePath = $branchSource -replace "refs/heads/", ""
+      $branchSourcePath
+      $branchSourcePath = $branchSourcePath -replace "/", "-"
+      $branchSourcePath
+
+      $repo = "$(Build.Repository.Name)"
+      $dotIndex = $repo.IndexOf('.')
+      Write-Host "dot intex is $dotIndex"
+
+      if ($dotIndex -ge 0) {
+          $firstPart = $repo.Substring(0, $dotIndex)
+          $secondPart = $repo.Substring($dotIndex + 1)
+          $secondPart = $secondPart -replace '\.', '-'
+          $branch = $branchSourcePath
+
+          if ($repo -eq "ordering.magpie.client.web")
+          {
+             $secondPart = 'magpie'
+             if ($branch -eq 'main') {
+               $branch = 'latest'
+             }
+          }
+          
+          Write-Output "First part: ---$firstPart---"
+          Write-Output "Second part: ---$secondPart---"
+
+          $image = "$(EF_Docker_Registry)" + "/" + "$firstPart" + "/" + $secondPart + "-web" + ":" + "$branch"
+          
+          write-host "image name is ---$image---"
+      } else {
+          Write-Output "No dot found in the input string."
+      }
+      
+      #Below is for ca-auth copy to .docker folder as docker build expects .docker/ca-auth folder
+      $source = "$(Build.SourcesDirectory)"
+      $capath = $source + "\.docker\ca-auth"
+      $ori = $source + "\deployYmlscripts\Certificates\ca-auth\*"
+      If(!(test-path -PathType container $capath))
+      {
+        New-Item -ItemType Directory -Path $capath
+        Copy-Item "$ori" -Destination $capath -Recurse
+      }
+      
+      #Below is for ca-auth copy to .docker folder as docker build expects .docker/ca-build folder
+      $path = $source + "\.docker\ca-build"
+      $ori1 = $source + "\deployYmlscripts\Certificates\ca-build\*"
+      If(!(test-path -PathType container $path))
+      {
+        New-Item -ItemType Directory -Path $path
+        Copy-Item "$ori1" -Destination $path -Recurse
+      }
+      
+      # Docker build app 
+      if (Test-Path -Path "$(Build.SourcesDirectory)\Dockerfile") {
+          write-host "build command is docker build . -f $(Build.SourcesDirectory)\Dockerfile -t $image"
+          docker build . -f $(Build.SourcesDirectory)\Dockerfile -t $image --build-arg NUGET_USERNAME=$(EF_Docker_Nuget_UserName) --build-arg NUGET_PASSWORD=$(EF_Docker_Nuget_ApiKey)
+          docker push $image
+      } else {
+          write-host "Dockerfile not exist"
+      }
+  #failOnStderr: true
+  displayName: 'docker build and push' 
