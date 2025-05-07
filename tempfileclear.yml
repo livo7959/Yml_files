@@ -1,0 +1,47 @@
+trigger: none
+
+schedules:
+  - cron: "0 12 * * 0"
+    displayName: Weekly Cleanup Sunday Noon
+    branches:
+      include:
+        - main
+    always: true
+
+parameters:
+  - name: poolName
+    type: string
+    default: eCommerce-Docker
+    values:
+      - eCommerce-Docker
+      - eCommerce-OrderingV2
+      - eCommerce-Docker-GNLA
+      - eCommerce-GNLA
+
+  - name: poolToComputersMap
+    type: object
+    default:
+      eCommerce-Docker:
+        - EU50APVD395 
+        - EU50APVD403 
+      eCommerce-OrderingV2:
+        - EU50APVD407
+      eCommerce-Docker-GNLA:
+        - GNLA001APVD573 
+        - GNLA001APVD574 
+        - GNLA001APVD575 
+
+jobs:
+- ${{ each computer in parameters.poolToComputersMap[parameters.poolName] }}:
+  - job: Cleanup_${{ computer }}
+    displayName: "Clean temp on ${{ computer }}"
+    pool:
+      name: ${{ parameters.poolName }}
+      demands:
+        - agent.name -equals ${{ computer }}
+    steps:
+      - powershell: |
+          Write-Host "Clearing TEMP folders on $env:COMPUTERNAME"
+          Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
+          docker system prune -af
+        displayName: "Clean temp and Docker cache"
