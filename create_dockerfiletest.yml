@@ -1,0 +1,175 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+# resources:
+  # repositories:
+    # - repository: deploymentTools
+      # type: git
+      # name: DeploymentTools
+
+parameters:
+  dotnetProj: ''
+
+steps:
+#- checkout: self
+#- checkout: DeploymentTools
+
+- task: JFrog.jfrog-artifactory-vsts-extension.jfrog-cli-generic.JfrogCli@1
+  displayName: 'JFrog CLI download'
+  inputs:
+    artifactoryService: 'Jfrog Artifactory Write'
+    useCustomVersion: true
+    command: 'jfrog rt dl "nuget-eurofins-dop/deployYmlscripts/*" --sort-by=created --sort-order=desc'
+
+- task: PowerShell@2
+  displayName: Check Framework Version
+  inputs:
+    filePath: '$(Build.SourcesDirectory)/deployYmlscripts/Scripts/FrameworkVer.ps1'
+    arguments: '-source $(Build.SourcesDirectory)'
+    
+- task: PowerShell@2
+  displayName: display Framework Version and dll name
+  inputs:
+    targetType: 'inline'
+    script: 'write-host aspnet_version = $(aspnet_version) dllname is $(dll_name)'
+    
+#- task: PowerShell@2
+  #displayName: Get csproj and props files
+  #inputs:
+    #filePath: '$(Build.SourcesDirectory)/DeploymentTools/Scripts/CopyCommands.ps1'
+    #arguments: '-source $(Build.SourcesDirectory)/$(Build.Repository.Name)'
+    
+#- task: PowerShell@2
+  #displayName: display copyCommands
+  #inputs:
+    #targetType: 'inline'
+    #script: 'write-host  $(CopyCommands)'
+
+- task: PowerShell@2
+  displayName: 'Create Docker file'
+  inputs:
+    targetType: filePath
+    filePath: '$(Build.SourcesDirectory)/deployYmlscripts/Scripts/create_dockerfile.ps1'
+    arguments: '-AspnetVersion $(aspnet_version) -source $(Build.SourcesDirectory) -dotnetProj ${{ parameters.dotnetProj }} -NugetSource $(EF_Docker_Nuget_Source) -NugetSharedSource $(EF_Docker_Nuget_SharedSource) -NugetUsrname $(EF_Docker_Nuget_UserName) -NugetApiKey $(EF_Docker_Nuget_ApiKey)'
+  #condition: and(Succeeded(), contains(variables['Build.SourceBranch'], 'ymlpoc'))
+
+# - task: PowerShell@2
+#   displayName: 'Docker Login'
+#   inputs:
+#     targetType: filePath
+#     filePath: '$(Build.SourcesDirectory)/deployYmlscripts/Scripts/docker-login.ps1'
+#     arguments: '-User $(EF_Docker_UserName) -Password (ConvertTo-SecureString -String "$(EF_Docker_Password)" -AsPlainText -Force)'
+
+- task: PowerShell@2
+  displayName: 'Docker Login'
+  inputs:
+    targetType: 'inline'
+    script: |
+        # filePath: '$(Build.SourcesDirectory)/deployYmlscripts/Scripts/docker-login.ps1'
+        # arguments: '-User $(EF_Docker_UserName) -Password (ConvertTo-SecureString -String "$(EF_Docker_Password)" -AsPlainText -Force)'
+        [CmdletBinding()]
+        Param(
+            [string]$User=$(EF_Docker_UserName),
+            [securestring]$Password=(ConvertTo-SecureString -String "$(EF_Docker_Password)" -AsPlainText -Force)
+        )
+
+        try {
+            # Convert SecureString to plain text
+            $PlainPassword = [System.Net.NetworkCredential]::new("", $Password).Password
+            if (-not $PlainPassword) {
+                throw "Password conversion failed."
+            }
+
+            Write-Host "Attempting Docker login for user: $User..."
+            
+            # Use --password-stdin to avoid warnings
+            $PlainPassword | docker login packages.alm.eurofins.com --username $User --password-stdin
+
+            Write-Host "Docker login successful."
+        } catch {
+            Write-Error "Docker login failed: $_"
+            exit 1
+        }
+
+
+- powershell: |
+      Write-Host "Repository Name: $($env:BUILD_REPOSITORY_NAME)"
+      Write-Host "Branch Name: $($env:BUILD_SOURCEBRANCHNAME)"
+      Write-Host "Branch Name: $($env:BUILD_SOURCEBRANCH)"
+
+      $branchSource = "$(Build.SourceBranch)"
+      $branchSourcePath = $branchSource -replace "refs/heads/", ""
+      $branchSourcePath
+      $branchSourcePath = $branchSourcePath -replace "/", "-"
+      $branchSourcePath
+
+      $repo = "$(Build.Repository.Name)"
+      $dotIndex = $repo.IndexOf('.')
+      Write-Host "dot intex is $dotIndex"
+
+      if ($dotIndex -ge 0) {
+          $firstPart = $repo.Substring(0, $dotIndex)
+          $secondPart = $repo.Substring($dotIndex + 1)
+          $secondPart = $secondPart -replace '\.', '-'
+          $branch = $branchSourcePath
+
+          if ($repo -eq "ordering.magpie.service")
+          {
+             $secondPart = 'magpie'
+             if ($branch -eq 'main') {
+               $branch = 'latest'
+             }
+          }
+          
+          Write-Output "First part: ---$firstPart---"
+          Write-Output "Second part: ---$secondPart---"
+
+          write-host "docker - dotnetprojt is ${{ parameters.dotnetProj }} "
+
+          if ("${{ parameters.dotnetProj }}" -match 'Command') {
+            write-host "inside docker commmand "
+            $image = "$(EF_Docker_Registry)" + "/" + "$firstPart" + "/" + $secondPart + "-command-api-http" + ":" + "$branch"
+          }
+          elseif ("${{ parameters.dotnetProj }}" -match 'Query') {
+            write-host "inside docker query "
+            $image = "$(EF_Docker_Registry)" + "/" + "$firstPart" + "/" + $secondPart + "-query-api-http" + ":" + "$branch"
+          }
+          else {
+            write-host "inside docker else "
+            $image = "$(EF_Docker_Registry)" + "/" + "$firstPart" + "/" + $secondPart + ":" + "$branch"
+          }
+          write-host "image name is ---$image---"
+      } else {
+          Write-Output "No dot found in the input string."
+      }
+      if (Test-Path -Path "$(Build.SourcesDirectory)\.dockerignore")
+      {
+        write-host ".dockerignore file is already exist"
+      } 
+      else 
+      {
+        Copy-Item -Path "$(Build.SourcesDirectory)\deployYmlscripts\Scripts\.dockerignore" -Destination "$(Build.SourcesDirectory)\" -Force
+        write-host "Placed .dockerignore file to $(Build.SourcesDirectory)\"
+      }
+      # Docker build app 
+      if (Test-Path -Path "$(Build.SourcesDirectory)\Dockerfile") {
+          write-host "build command is docker build . -f $(Build.SourcesDirectory)\Dockerfile -t $image"
+          docker build . -f $(Build.SourcesDirectory)\Dockerfile -t $image
+          docker push $image
+      } else {
+          write-host "Dockerfile not exist"
+      }
+      # Docker build DB
+      $imagedb = "$(EF_Docker_Registry)" + "/" + "$firstPart" + "/" + $secondPart + "-data" + ":" + "$branch"
+          write-host "db image name is ---$imagedb---"
+      if ( (Test-Path -Path "$(Build.SourcesDirectory)\Dockerfile-db") -and (Test-Path -Path "$(Build.SourcesDirectory)\.db")) {
+          write-host "build command is docker build .db -f $(Build.SourcesDirectory)\Dockerfile-db -t $imagedb"
+          docker build .db -f $(Build.SourcesDirectory)\Dockerfile-db -t $imagedb
+          docker push $imagedb
+      } else {
+          write-host "Either Dockerfile-db or .db folder doen not exist, Hence not creating Database image"
+      }
+  #failOnStderr: true
+  displayName: 'docker build and push' 
