@@ -1,0 +1,188 @@
+    steps:
+    - task: PowerShell@2
+      displayName: 'Run PowerShell Script'
+      inputs:
+        targetType: 'inline'
+        script: |
+          # === CONFIGURATION ===
+          $organization  = "GSC-ITSO-ADSCollection1"
+          $projectId     = "ccc51b37-5521-4513-a257-23ee2c437bb8"   
+          $personalToken = "${env:TOKEN}"   
+            # === DEFAULT 7-DAY RANGE ===
+            $startDate = (Get-Date).Date.AddDays(-7)
+            $endDate   = (Get-Date).Date.AddDays(1)
+
+            $startUtc = $startDate.ToUniversalTime().ToString("o")
+            $endUtc   = $endDate.ToUniversalTime().ToString("o")
+            $dateToCheck = "$($startDate.ToString('yyyy-MM-dd'))_to_$($endDate.AddDays(-1).ToString('yyyy-MM-dd'))"
+            Write-Host "📅 Date range set from $($startDate.ToShortDateString()) to $($endDate.AddDays(-1).ToShortDateString())"
+
+            # === AUTH HEADER ===
+            $basicAuth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$personalToken"))
+            $headers   = @{ Authorization = "Basic $basicAuth" }
+
+            # === ERROR KEYWORDS ===
+            $errorKeywords = @("error", "exception")
+
+            # === RESULTS COLLECTION ===
+            $results = [System.Collections.Generic.List[psobject]]::new()
+            Write-Host "`nFetching failed builds for $dateToCheck...`n"
+
+            # ================================
+            # STEP 1: Get Failed Builds
+            # ================================
+            $buildsUrl = "https://dev.azure.com/$organization/$projectId/_apis/build/builds?statusFilter=completed&resultFilter=failed&minTime=$startUtc&maxTime=$endUtc&`$top=1000&api-version=7.1-preview.7"
+            try {
+                $builds = (Invoke-RestMethod -Uri $buildsUrl -Headers $headers).value
+                Write-Host "📋 Total failed builds on ${dateToCheck}: $($builds.Count)"
+            } catch {
+                Write-Warning ( "⚠️ Failed to fetch builds: " + $_.Exception.Message )
+                return
+            }
+
+            # ================================
+            # STEP 2: Process each failed build
+            # ================================
+            foreach ($build in $builds) {
+                $buildId        = $build.id
+                $definitionName = $build.definition.name
+                Write-Host "`n🔍 Processing Build ID $buildId — Definition: $definitionName"
+
+                # === STEP 2.1: Get Log Metadata ===
+                $logsUrl = "https://dev.azure.com/$organization/$projectId/_apis/build/builds/$buildId/logs?api-version=7.1-preview.2"
+                try {
+                    $logMeta = (Invoke-RestMethod -Uri $logsUrl -Headers $headers).value
+                } catch {
+                    Write-Warning "⚠️ Could not fetch logs for Build ID $buildId"
+                    continue
+                }
+
+                Write-Host "  → Found $($logMeta.Count) logs"
+                if (-not $logMeta -or $logMeta.Count -lt 2) {
+                    Write-Warning "⚠️ Not enough logs for Build ID $buildId to get the second-to-last log."
+                    continue
+                }
+
+                foreach ($log in $logMeta[-2..-2]) {
+                    $logId = $log.id
+                    $downloadUrl = ($log.url -split "\?")[0] + "?download=true"
+
+                    try {
+                        $resp = Invoke-WebRequest -Uri $downloadUrl -Headers $headers -UseBasicParsing
+                        $lines = $resp.Content -split "`n"
+                    } catch {
+                        Write-Warning "⚠️ Could not read log $logId"
+                        continue
+                    }
+
+                    # Extract Agent Name
+                    $agentLine = $lines | Where-Object { $_ -match "Agent name: (.+)" } | Select-Object -First 1
+                    if ($agentLine -match "Agent name: (.+)") {
+                        $agentName = $matches[1].Trim()
+                    } else {
+                        $agentName = "Unknown"
+                    }
+                    # === Track task and extract error lines ===
+                    $currentTask = "Unknown"
+                    $logErrorCount = 0
+
+                    foreach ($line in $lines) {
+                        if ($line -match "##\[section\]Starting: (.+)") {
+                            $currentTask = $matches[1].Trim()
+                        }
+
+                        foreach ($kw in $errorKeywords) {
+                            if ($line -match ("(?i)\b" + [regex]::Escape($kw) + "\b")) {
+                                $results.Add([PSCustomObject]@{
+                                    Date       = $dateToCheck
+                                    BuildID    = $buildId
+                                    Definition = $definitionName
+                                    LogID      = $logId
+                                    Agent      = $agentName
+                                    ErrorName  = $currentTask
+                                    ErrorLine  = $line.Trim()
+                                })
+                                $logErrorCount++
+                                break
+                            }
+                        }
+                    }
+
+                    Write-Host ("    ↳ Log ID {0} has {1} lines → {2} error(s)" -f $logId, $lines.Count, $logErrorCount)
+                }
+            }
+            # ================================
+            # STEP 3: Output results
+            # ================================
+            Write-Host "`n📊 Error Lines Detected on ${dateToCheck}:`n"
+            if ($results.Count -eq 0) {
+                Write-Host "✅ No matching error lines found on this date."
+            } else {
+                $results | Sort-Object BuildID, LogID , ErrorName | Format-Table Date, BuildID, Definition, LogID, Agent, ErrorLine -AutoSize
+            }
+
+            # ================================
+            # STEP 4: Export to CSV
+            # ================================
+            $startTag = $startDate.ToString('yyyyMMdd')
+            $endTag   = $endDate.AddDays(-1).ToString('yyyyMMdd')
+            $reportDir = "D:\build_reports"
+            if (-not (Test-Path $reportDir)) { New-Item -Path $reportDir -ItemType Directory | Out-Null }
+            $csvPath  = "$reportDir\FailedBuildErrors_${startTag}_to_${endTag}.csv"
+
+            $results | Sort-Object BuildID, LogID ,Task | Export-Csv -Path $csvPath -NoTypeInformation -Encoding UTF8
+            Write-Host "`n📄 Error details exported to: $csvPath"
+
+            # === EXPORT TO EXCEL ===
+            Import-Module ImportExcel -ErrorAction Stop
+            
+            # Paths
+            $inputCsvPath = "D:\build_reports\FailedBuildErrors_${startTag}_to_${endTag}.csv"
+            $outputExcelPath = "D:\build_reports\GroupedBuildErrors_${startTag}_to_${endTag}.xlsx"
+            
+            # Read the CSV
+            $data = Import-Csv $inputCsvPath
+            
+            # Group and combine error lines
+            $groupedData = $data | Group-Object Date, BuildID, Definition, LogID, Agent, ErrorName | ForEach-Object {
+                $group = $_.Group
+                [PSCustomObject]@{
+                    Date       = $group[0].Date
+                    BuildID    = $group[0].BuildID
+                    Definition = $group[0].Definition
+                    LogID      = $group[0].LogID
+                    Agent      = $group[0].Agent
+                    ErrorName  = $group[0].ErrorName
+                    ErrorLine  = ($group | Where-Object { $_.PSObject.Properties['ErrorLine'] } | Select-Object -ExpandProperty ErrorLine) -join "`n"
+                }
+            }
+            
+            # Export all grouped data into a single worksheet
+            $groupedData | Export-Excel -Path $outputExcelPath -WorksheetName 'GroupedErrors' -AutoSize
+            
+            Write-Host "✅ Done! File exported to: $outputExcelPath"
+
+            #FinalResult 
+            Import-Module ImportExcel
+
+            # File paths
+            $inputPath  = "D:\build_reports\GroupedBuildErrors_${startTag}_to_${endTag}.xlsx"
+            $outputPath = "D:\build_reports\FinalReport_${startTag}_to_${endTag}.xlsx"
+
+            # Load the Excel data
+            $data = Import-Excel -Path $inputPath -WorksheetName "GroupedErrors"
+
+            # Strip date prefix directly in ErrorLine and filter out rows with "0 Error(s)"
+            $data = $data | Where-Object {
+                $_.ErrorLine -notmatch '0 Error\(s\)'
+            } | ForEach-Object {
+                $_.ErrorLine = ($_.ErrorLine -split "`n" | ForEach-Object {
+                    $_ -replace '^\d{4}-\d{2}-\d{2}T[0-9:.]+Z\s*', ''
+                }) -join "`n"
+                $_
+            }
+
+            # Export to new Excel file
+            $data | Export-Excel -Path $outputPath -WorksheetName "GroupedErrors" -AutoSize
+
+            Write-Host "✅ Done! Cleaned ErrorLine saved to: $outputPath"
