@@ -1,0 +1,46 @@
+$org = "GSC-ITSO-ADSCollection1"
+$poolId = 30
+$agentId = 47
+$apiVersion = "7.1-preview.1"
+$pat = "95B292gqhAWnfIrUN3RJNCFcp8whOHPaoFMuLdotr5fGWqF2kvMXJQQJ99BDACAAAAA2Je5DAAASAZDO48b2"
+$base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$pat"))
+
+$url = "https://dev.azure.com/$org/_apis/distributedtask/pools/$poolId/jobrequests?agentId=$agentId&api-version=$apiVersion"
+
+$response = Invoke-RestMethod -Uri $url -Method Get -Headers @{Authorization = "Basic $base64AuthInfo"}
+
+foreach ($job in $response.value) {
+    if ($job.queueTime -and $job.assignTime -and $job.receiveTime -and $job.finishTime) {
+        $queueTime = [datetime]$job.queueTime
+        $assignTime = [datetime]$job.assignTime
+        $receiveTime = [datetime]$job.receiveTime
+        $finishTime = [datetime]$job.finishTime
+
+        $queueWaitMin = ($assignTime - $queueTime).TotalMinutes
+        $agentWaitMin = ($receiveTime - $assignTime).TotalMinutes
+        $uiWaitMin = ($receiveTime - $queueTime).TotalMinutes
+        $jobDurationMin = ($finishTime - $receiveTime).TotalMinutes
+
+        $projectName = $job.definition.name
+        $buildId = $job.owner.id
+        $name = $job.reservedAgent.name
+        $result = $job.result
+
+        Write-Output "`nProject: $projectName"
+        Write-Output "Build ID: $buildId"
+        Write-Output "Agent Name: $name"
+        Write-Output "Result       : $result"
+        Write-Output "  Queue Wait: $([math]::Round($queueWaitMin,2)) min"
+        Write-Output "  Agent Wait: $([math]::Round($agentWaitMin,2)) min"
+        Write-Output "  UI Wait:    $([math]::Round($uiWaitMin,2)) min"
+        Write-Output "  Duration:   $([math]::Round($jobDurationMin,2)) min"
+    }
+}
+
+
+For pool id https://dev.azure.com/GSC-ITSO-ADSCollection1/eCommerce/_apis/distributedtask/queues?api-version=7.1-preview.1
+ 
+agent id :- https://dev.azure.com/GSC-ITSO-ADSCollection1/_apis/distributedtask/pools?api-version=7.1
+ 
+queue time :- https://dev.azure.com/GSC-ITSO-ADSCollection1/_apis/distributedtask/pools/30/jobrequests?agentId=47&api-version=7.1-preview.1
+ 
